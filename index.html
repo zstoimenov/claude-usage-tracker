@@ -171,11 +171,39 @@
       text-transform: uppercase;
       letter-spacing: 1px;
     }
+    .stat-card-remaining {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
     .stat-value {
       font-weight: 600;
     }
-    .stat-value.large { font-size: 18px; }
+    .stat-value.large { font-size: 22px; }
     .stat-value.small { font-size: 12px; }
+
+    .checkins-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 6px;
+    }
+    .checkin-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+    }
+    .checkin-time {
+      font-size: 12px;
+      color: #94a3b8;
+      font-weight: 500;
+      letter-spacing: 0.3px;
+    }
+    .checkin-pct {
+      font-size: 15px;
+      font-weight: 700;
+      color: #e2e8f0;
+    }
 
     .footer {
       text-align: center;
@@ -572,17 +600,15 @@
     }
 
     function formatDuration(ms) {
-      if (ms <= 0) return "0s";
-      const s = Math.floor(ms / 1000);
-      const d = Math.floor(s / 86400);
-      const h = Math.floor((s % 86400) / 3600);
-      const m = Math.floor((s % 3600) / 60);
-      const sec = s % 60;
+      if (ms <= 0) return "0m";
+      const totalMin = Math.floor(ms / 60000);
+      const d = Math.floor(totalMin / 1440);
+      const h = Math.floor((totalMin % 1440) / 60);
+      const m = totalMin % 60;
       const parts = [];
       if (d) parts.push(d + "d");
       if (h) parts.push(h + "h");
-      if (m) parts.push(m + "m");
-      parts.push(sec + "s");
+      if (m || (!d && !h)) parts.push(m + "m");
       return parts.join(" ");
     }
 
@@ -602,6 +628,44 @@
         hour: "2-digit", minute: "2-digit",
         hour12: false,
       });
+    }
+
+    // Returns the next two check-in times (07:30 and 19:30 AWST) within 24h,
+    // each with { label: "07:30 Thu", pct: 43.2 }
+    function getNextCheckIns() {
+      const nowMs        = Date.now();
+      const cycleStartMs = getCycleStartUTC();
+      const checkTimes   = [7.5, 19.5]; // hours in AWST (07:30 and 19:30)
+      const results      = [];
+
+      // We look at today and tomorrow in AWST to find the next two slots
+      for (let dayOffset = 0; dayOffset <= 1 && results.length < 2; dayOffset++) {
+        for (let ci = 0; ci < checkTimes.length && results.length < 2; ci++) {
+          // Build the candidate UTC ms for this AWST hour on dayOffset
+          const awstNow     = new Date(nowMs + AWST_OFFSET_MS);
+          // Midnight of today in AWST as UTC ms
+          const awstMidnight = Date.UTC(
+            awstNow.getUTCFullYear(),
+            awstNow.getUTCMonth(),
+            awstNow.getUTCDate()
+          ) + dayOffset * 86400000;
+          const candidateUtcMs = awstMidnight + checkTimes[ci] * 3600000 - AWST_OFFSET_MS;
+
+          // Only include if it's in the future and within 24h
+          if (candidateUtcMs > nowMs && candidateUtcMs <= nowMs + 86400000) {
+            const elapsed = candidateUtcMs - cycleStartMs;
+            const pct     = Math.min(100, Math.max(0, (elapsed / CYCLE_MS) * 100));
+            const label   = new Date(candidateUtcMs).toLocaleString("en-AU", {
+              timeZone: "Australia/Perth",
+              weekday: "short",
+              hour: "2-digit", minute: "2-digit",
+              hour12: false,
+            });
+            results.push({ label, pct });
+          }
+        }
+      }
+      return results;
     }
 
     function barColour(driftStatus) {
@@ -681,25 +745,16 @@
       <div class="day-grid" id="dayGrid"></div>
 
       <div class="stats-grid">
-        <div class="stat-card">
-          <div class="stat-label">Elapsed</div>
-          <div class="stat-value large" id="statElapsed">—</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">Remaining</div>
+        <div class="stat-card stat-card-remaining">
+          <div class="stat-label">Time Remaining</div>
           <div class="stat-value large" id="statRemaining" style="color:#64748b">—</div>
         </div>
-        <div class="stat-card">
-          <div class="stat-label">Cycle started</div>
-          <div class="stat-value small" id="statStarted" style="color:#94a3b8">—</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">Resets at</div>
-          <div class="stat-value small" id="statResets" style="color:#94a3b8">—</div>
+        <div class="stat-card stat-card-checkins">
+          <div class="stat-label">Next Check-ins</div>
+          <div class="checkins-list" id="checkInsList">—</div>
         </div>
       </div>
 
-      <div class="footer" id="footer">—</div>
 
       <!-- ── Layer 2 ──────────────────────────────────────────────────────── -->
       <button class="tracker-toggle" id="trackerToggle">
@@ -1085,18 +1140,27 @@
         }
       });
 
-      document.getElementById("statElapsed").style.color   = colour;
-      document.getElementById("statElapsed").textContent   = formatDuration(elapsedMs);
       document.getElementById("statRemaining").textContent = formatDuration(remainingMs);
-      document.getElementById("statStarted").textContent   = formatAsAWST(cycleStartMs);
-      document.getElementById("statResets").textContent    = formatAsAWST(cycleEndMs);
-      document.getElementById("footer").textContent        = "Current AWST: " + formatAsAWST(nowMs);
+
+      // ── Check-ins projection ──
+      const checkIns    = getNextCheckIns();
+      const checkInsList = document.getElementById("checkInsList");
+      if (checkIns.length) {
+        checkInsList.innerHTML = checkIns.map(c => `
+          <div class="checkin-row">
+            <span class="checkin-time">${c.label}</span>
+            <span class="checkin-pct">${c.pct.toFixed(1)}%</span>
+          </div>
+        `).join("");
+      } else {
+        checkInsList.innerHTML = `<span style="color:#475569;font-size:12px">—</span>`;
+      }
     }
 
     update();
     renderLayer2();
-    setInterval(update, 1000);
-    setInterval(renderLayer2, 10000); // refresh layer 2 every 10s
+    setInterval(update, 60000);       // minute-level refresh — saves battery
+    setInterval(renderLayer2, 60000); // align layer 2 to same cadence
 
     // ─── Service Worker ───────────────────────────────────────────────────────
     if ("serviceWorker" in navigator) {
