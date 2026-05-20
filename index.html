@@ -309,9 +309,9 @@
       letter-spacing: 0.5px;
     }
     .drift-badge.on-track  { background: #14532d; color: #4ade80; }
-    .drift-badge.ahead     { background: #1e3a5f; color: #60a5fa; }
-    .drift-badge.drifting  { background: #451a03; color: #fb923c; }
-    .drift-badge.at-risk   { background: #450a0a; color: #f87171; }
+    .drift-badge.drifting  { background: #422006; color: #eab308; }
+    .drift-badge.at-risk   { background: #431407; color: #f97316; }
+    .drift-badge.critical  { background: #450a0a; color: #ef4444; }
     .drift-badge.no-data   { background: #1e293b; color: #475569; border: 1px solid #334155; }
 
     /* Dual-bar drift visualiser */
@@ -689,13 +689,13 @@
     }
 
     function barColour(driftStatus) {
-      // Colour driven by drift status, not elapsed time.
+      // Colour driven by drift status (symmetric — both over and under-use penalised).
       // Neutral slate when no weekly % has been entered yet.
       switch (driftStatus) {
         case "on-track": return "#22c55e";
-        case "ahead":    return "#60a5fa";
-        case "drifting": return "#f59e0b";
-        case "at-risk":  return "#ef4444";
+        case "drifting": return "#eab308";
+        case "at-risk":  return "#f97316";
+        case "critical": return "#ef4444";
         default:         return "#94a3b8"; // no-data: neutral
       }
     }
@@ -732,15 +732,15 @@
 
     function getDriftStatus(weeklyPct, timePct) {
       if (weeklyPct === null || weeklyPct === undefined) return "no-data";
-      const gap = weeklyPct - timePct; // positive = ahead, negative = behind
-      if (gap >= 5)  return "ahead";
-      if (gap >= -5) return "on-track";
-      if (gap >= -15) return "drifting";
-      return "at-risk";
+      const gap = Math.abs(weeklyPct - timePct); // symmetric — both over and under-use penalised
+      if (gap < 5)  return "on-track";
+      if (gap < 10) return "drifting";
+      if (gap < 20) return "at-risk";
+      return "critical";
     }
 
     function getDriftLabel(status) {
-      return { "ahead": "Ahead", "on-track": "On Track", "drifting": "Drifting", "at-risk": "At Risk", "no-data": "No Data" }[status];
+      return { "on-track": "On Track", "drifting": "Drifting", "at-risk": "At Risk", "critical": "Critical", "no-data": "No Data" }[status];
     }
 
     // ─── Build DOM (once) ─────────────────────────────────────────────────────
@@ -1025,24 +1025,24 @@
       driftBadge.textContent = getDriftLabel(status);
 
       if (weeklyPct !== null && weeklyPct !== undefined) {
-        const weekColour = status === "ahead"    ? "#60a5fa"
-                         : status === "on-track" ? "#4ade80"
-                         : status === "drifting" ? "#fb923c"
-                         : "#f87171";
+        const weekColour = status === "on-track" ? "#22c55e"
+                         : status === "drifting"  ? "#eab308"
+                         : status === "at-risk"   ? "#f97316"
+                         : "#ef4444"; // critical
         driftWeeklyBar.style.width      = Math.min(100, weeklyPct) + "%";
         driftWeeklyBar.style.background = weekColour;
         driftWeeklyVal.textContent      = weeklyPct.toFixed(1) + "%";
 
         const gap = weeklyPct - timePct;
         if (gap > 0) {
-          driftGapLabel.textContent = `You're ${gap.toFixed(1)}% ahead of target`;
-          driftGapLabel.style.color = "#4ade80";
+          driftGapLabel.textContent = `You're ${gap.toFixed(1)}% over target`;
+          driftGapLabel.style.color = status === "on-track" ? "#22c55e" : status === "drifting" ? "#eab308" : status === "at-risk" ? "#f97316" : "#ef4444";
         } else if (gap < 0) {
-          driftGapLabel.textContent = `You're ${Math.abs(gap).toFixed(1)}% behind target`;
-          driftGapLabel.style.color = status === "drifting" ? "#fb923c" : status === "at-risk" ? "#f87171" : "#64748b";
+          driftGapLabel.textContent = `You're ${Math.abs(gap).toFixed(1)}% under target`;
+          driftGapLabel.style.color = status === "on-track" ? "#22c55e" : status === "drifting" ? "#eab308" : status === "at-risk" ? "#f97316" : "#ef4444";
         } else {
           driftGapLabel.textContent = "Perfectly on target";
-          driftGapLabel.style.color = "#4ade80";
+          driftGapLabel.style.color = "#22c55e";
         }
       } else {
         driftWeeklyBar.style.width = "0%";
