@@ -154,20 +154,20 @@
     }
 
     .stats-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
+      display: flex;
+      flex-direction: column;
       gap: 12px;
       margin-bottom: 20px;
     }
     .stat-card {
       background: #1e293b;
       border-radius: 10px;
-      padding: 14px 16px;
+      padding: 20px 20px;
     }
     .stat-label {
       font-size: 11px;
       color: #64748b;
-      margin-bottom: 4px;
+      margin-bottom: 6px;
       text-transform: uppercase;
       letter-spacing: 1px;
     }
@@ -179,30 +179,36 @@
     .stat-value {
       font-weight: 600;
     }
-    .stat-value.large { font-size: 22px; }
+    .stat-value.large { font-size: 26px; }
     .stat-value.small { font-size: 12px; }
 
     .checkins-list {
       display: flex;
       flex-direction: column;
-      gap: 8px;
-      margin-top: 6px;
+      gap: 7px;
     }
     .checkin-row {
       display: flex;
-      justify-content: space-between;
       align-items: baseline;
+      gap: 0;
     }
     .checkin-time {
-      font-size: 12px;
+      font-size: 13px;
       color: #94a3b8;
       font-weight: 500;
       letter-spacing: 0.3px;
+      flex-shrink: 0;
+    }
+    .checkin-dots {
+      flex: 1;
+      border-bottom: 1px dotted #334155;
+      margin: 0 8px 3px;
     }
     .checkin-pct {
-      font-size: 15px;
+      font-size: 16px;
       font-weight: 700;
       color: #e2e8f0;
+      flex-shrink: 0;
     }
 
     .footer {
@@ -1149,6 +1155,7 @@
         checkInsList.innerHTML = checkIns.map(c => `
           <div class="checkin-row">
             <span class="checkin-time">${c.label}</span>
+            <span class="checkin-dots"></span>
             <span class="checkin-pct">${c.pct.toFixed(1)}%</span>
           </div>
         `).join("");
