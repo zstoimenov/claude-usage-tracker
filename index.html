@@ -46,13 +46,13 @@
     .header-label {
       font-size: 13px;
       letter-spacing: 3px;
-      color: #64748b;
+      color: #94a3b8;
       text-transform: uppercase;
       margin-bottom: 8px;
     }
     .header-sub {
       font-size: 13px;
-      color: #475569;
+      color: #64748b;
     }
 
     .big-pct {
@@ -69,11 +69,11 @@
     .big-pct .unit {
       font-size: clamp(28px, 7vw, 40px);
       font-weight: 400;
-      color: #94a3b8;
+      color: #cbd5e1;
     }
     .big-pct .sub {
       font-size: 14px;
-      color: #64748b;
+      color: #94a3b8;
       margin-top: 6px;
     }
 
@@ -101,7 +101,7 @@
       display: flex;
       justify-content: space-between;
       font-size: 11px;
-      color: #475569;
+      color: #64748b;
       margin-bottom: 28px;
     }
 
@@ -149,7 +149,7 @@
     }
     .day-time {
       font-size: 9px;
-      color: #475569;
+      color: #64748b;
       margin-top: 1px;
     }
 
@@ -166,7 +166,7 @@
     }
     .stat-label {
       font-size: 11px;
-      color: #475569;
+      color: #64748b;
       margin-bottom: 4px;
       text-transform: uppercase;
       letter-spacing: 1px;
@@ -180,7 +180,7 @@
     .footer {
       text-align: center;
       font-size: 12px;
-      color: #334155;
+      color: #475569;
       margin-bottom: 24px;
     }
 
@@ -249,7 +249,7 @@
     }
     .drift-card-title {
       font-size: 11px;
-      color: #475569;
+      color: #64748b;
       text-transform: uppercase;
       letter-spacing: 1px;
     }
@@ -279,7 +279,7 @@
     }
     .drift-bar-row-label {
       font-size: 10px;
-      color: #475569;
+      color: #64748b;
       width: 44px;
       flex-shrink: 0;
       text-align: right;
@@ -299,14 +299,14 @@
     }
     .drift-bar-value {
       font-size: 10px;
-      color: #64748b;
+      color: #94a3b8;
       width: 36px;
       flex-shrink: 0;
     }
     .drift-gap-label {
       text-align: center;
       font-size: 11px;
-      color: #475569;
+      color: #64748b;
       margin-top: 8px;
     }
 
@@ -367,7 +367,7 @@
     }
     .sessions-stat-sub {
       font-size: 10px;
-      color: #334155;
+      color: #475569;
       margin-top: 2px;
     }
 
@@ -379,7 +379,7 @@
     }
     .log-card-title {
       font-size: 11px;
-      color: #475569;
+      color: #64748b;
       text-transform: uppercase;
       letter-spacing: 1px;
       margin-bottom: 12px;
@@ -393,7 +393,7 @@
     .log-field label {
       display: block;
       font-size: 10px;
-      color: #475569;
+      color: #64748b;
       margin-bottom: 4px;
       letter-spacing: 0.5px;
     }
@@ -460,7 +460,7 @@
     }
     .avg-sample {
       font-size: 10px;
-      color: #334155;
+      color: #475569;
       margin-top: 2px;
     }
     .avg-right {
@@ -468,12 +468,12 @@
     }
     .avg-right-label {
       font-size: 10px;
-      color: #475569;
+      color: #64748b;
       margin-bottom: 2px;
     }
     .avg-range {
       font-size: 12px;
-      color: #64748b;
+      color: #94a3b8;
     }
 
     /* History table */
@@ -490,7 +490,7 @@
     }
     .history-title {
       font-size: 11px;
-      color: #475569;
+      color: #64748b;
       text-transform: uppercase;
       letter-spacing: 1px;
     }
@@ -512,7 +512,7 @@
       font-size: 11px;
     }
     .history-table th {
-      color: #334155;
+      color: #64748b;
       font-weight: 500;
       text-align: left;
       padding: 0 4px 6px;
@@ -520,7 +520,7 @@
       font-size: 10px;
     }
     .history-table td {
-      color: #64748b;
+      color: #94a3b8;
       padding: 5px 4px;
       border-top: 1px solid #0f172a;
     }
@@ -528,7 +528,7 @@
     .history-table td.delta-neg { color: #f87171; font-weight: 600; }
     .history-empty {
       text-align: center;
-      color: #334155;
+      color: #475569;
       font-size: 12px;
       padding: 16px 0 4px;
     }
@@ -604,11 +604,16 @@
       });
     }
 
-    function barColour(pct) {
-      if (pct < 50) return "#22c55e";
-      if (pct < 75) return "#f59e0b";
-      if (pct < 90) return "#ef4444";
-      return "#dc2626";
+    function barColour(driftStatus) {
+      // Colour driven by drift status, not elapsed time.
+      // Neutral slate when no weekly % has been entered yet.
+      switch (driftStatus) {
+        case "on-track": return "#22c55e";
+        case "ahead":    return "#60a5fa";
+        case "drifting": return "#f59e0b";
+        case "at-risk":  return "#ef4444";
+        default:         return "#94a3b8"; // no-data: neutral
+      }
     }
 
     // ─── Storage ──────────────────────────────────────────────────────────────
@@ -1028,7 +1033,8 @@
       const elapsedMs    = nowMs - cycleStartMs;
       const remainingMs  = cycleEndMs - nowMs;
       const pct          = Math.min(100, Math.max(0, (elapsedMs / CYCLE_MS) * 100));
-      const colour       = barColour(pct);
+      const driftStatus  = getDriftStatus(trackerData.spotWeekly, pct);
+      const colour       = barColour(driftStatus);
       const activeDayIdx = getActiveDayIndex();
 
       const pctEl = document.getElementById("pctNumber");
@@ -1047,7 +1053,7 @@
         const labelEl= document.getElementById("daylabel-" + i);
 
         bar.style.border       = active ? `1px solid ${colour}` : "1px solid transparent";
-        labelEl.style.color    = active ? "#e2e8f0" : done ? "#475569" : "#334155";
+        labelEl.style.color    = active ? "#e2e8f0" : done ? "#64748b" : "#475569";
         labelEl.style.fontWeight = active ? "700" : "400";
 
         if (i === 0) {
