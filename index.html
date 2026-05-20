@@ -176,6 +176,20 @@
       flex-direction: column;
       justify-content: center;
     }
+    .stat-card-inner {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .stat-card-left {
+      display: flex;
+      flex-direction: column;
+    }
+    .stat-card-right {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+    }
     .stat-value {
       font-weight: 600;
     }
@@ -691,7 +705,12 @@
       try {
         const raw = localStorage.getItem(STORAGE_KEY);
         if (!raw) return { sessions: [], trackerOpen: false, spotWeekly: null };
-        return JSON.parse(raw);
+        const data = JSON.parse(raw);
+        // Migrate: bare number → {value, ts} (ts:0 = treated as stale, won't display)
+        if (typeof data.spotWeekly === "number") {
+          data.spotWeekly = { value: data.spotWeekly, ts: 0 };
+        }
+        return data;
       } catch(e) {
         return { sessions: [], trackerOpen: false, spotWeekly: null };
       }
@@ -752,8 +771,16 @@
 
       <div class="stats-grid">
         <div class="stat-card stat-card-remaining">
-          <div class="stat-label">Time Remaining</div>
-          <div class="stat-value large" id="statRemaining" style="color:#64748b">—</div>
+          <div class="stat-card-inner">
+            <div class="stat-card-left">
+              <div class="stat-label">Time Remaining</div>
+              <div class="stat-value large" id="statRemaining" style="color:#64748b">—</div>
+            </div>
+            <div class="stat-card-right">
+              <div class="stat-label" id="weeklyBadgeLabel" style="display:none;text-align:right">Weekly Usage</div>
+              <div class="stat-value large" id="weeklyBadge" style="display:none;text-align:right">—</div>
+            </div>
+          </div>
         </div>
         <div class="stat-card stat-card-checkins">
           <div class="stat-label">Next Check-ins</div>
@@ -930,7 +957,7 @@
         normalizedDelta: parseFloat(norm.toFixed(3))
       });
       // Also update spot weekly to latest "after"
-      trackerData.spotWeekly = a;
+      trackerData.spotWeekly = { value: a, ts: Date.now() };
       saveData(trackerData);
       logBefore.value  = "";
       logSession.value = "";
@@ -946,13 +973,13 @@
 
     // Pre-fill if we have a stored value
     if (trackerData.spotWeekly !== null) {
-      spotInput.value = trackerData.spotWeekly;
+      spotInput.value = trackerData.spotWeekly.value;
     }
 
     spotBtn.addEventListener("click", () => {
       const v = parseFloat(spotInput.value);
       if (isNaN(v) || v < 0 || v > 100) return;
-      trackerData.spotWeekly = v;
+      trackerData.spotWeekly = { value: v, ts: Date.now() };
       saveData(trackerData);
       renderLayer2();
     });
@@ -979,7 +1006,7 @@
       const timePct      = Math.min(100, Math.max(0, (elapsedMs / CYCLE_MS) * 100));
 
       // Current weekly % — prefer most recent session log "after", else spot check
-      const weeklyPct = trackerData.spotWeekly;
+      const weeklyPct = trackerData.spotWeekly !== null ? trackerData.spotWeekly.value : null;
 
       // ── Drift bars ──
       const driftTimeBar    = document.getElementById("driftTimeBar");
@@ -1094,7 +1121,8 @@
       const elapsedMs    = nowMs - cycleStartMs;
       const remainingMs  = cycleEndMs - nowMs;
       const pct          = Math.min(100, Math.max(0, (elapsedMs / CYCLE_MS) * 100));
-      const driftStatus  = getDriftStatus(trackerData.spotWeekly, pct);
+      const spotValue    = trackerData.spotWeekly !== null ? trackerData.spotWeekly.value : null;
+      const driftStatus  = getDriftStatus(spotValue, pct);
       const colour       = barColour(driftStatus);
       const activeDayIdx = getActiveDayIndex();
 
@@ -1147,6 +1175,21 @@
       });
 
       document.getElementById("statRemaining").textContent = formatDuration(remainingMs);
+
+      // ── Weekly usage badge (fresh if logged within 12h) ──
+      const weeklyBadge = document.getElementById("weeklyBadge");
+      const weeklyLabel = document.getElementById("weeklyBadgeLabel");
+      const TWELVE_HOURS = 12 * 60 * 60 * 1000;
+      const sw = trackerData.spotWeekly;
+      if (sw !== null && (Date.now() - sw.ts) < TWELVE_HOURS) {
+        weeklyBadge.textContent = sw.value.toFixed(1) + "%";
+        weeklyBadge.style.color = colour;
+        weeklyLabel.style.display = "";
+        weeklyBadge.style.display = "";
+      } else {
+        weeklyLabel.style.display = "none";
+        weeklyBadge.style.display = "none";
+      }
 
       // ── Check-ins projection ──
       const checkIns    = getNextCheckIns();
