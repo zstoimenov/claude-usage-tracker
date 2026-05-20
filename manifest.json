@@ -2,7 +2,7 @@
   "name": "Claude Usage Cycle",
   "short_name": "Claude Cycle",
   "description": "Track your Claude weekly usage cycle — resets every Wednesday at 13:00 AWST",
-  "start_url": "/",
+  "start_url": "/claude-usage-tracker/",
   "display": "standalone",
   "background_color": "#0f172a",
   "theme_color": "#0f172a",

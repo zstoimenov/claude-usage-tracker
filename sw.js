@@ -1,10 +1,10 @@
-const CACHE_NAME = "claude-cycle-v2";
+const CACHE_NAME = "claude-cycle-v3";
 const ASSETS = [
-  "/",
-  "/index.html",
-  "/manifest.json",
-  "/icons/icon-192.png",
-  "/icons/icon-512.png"
+  "/claude-usage-tracker/",
+  "/claude-usage-tracker/index.html",
+  "/claude-usage-tracker/manifest.json",
+  "/claude-usage-tracker/icons/icon-192.png",
+  "/claude-usage-tracker/icons/icon-512.png"
 ];
 
 // Install: cache all assets
