@@ -206,7 +206,7 @@
       font-size: 22px;
       font-weight: 700;
       color: #e2e8f0;
-      line-height: 1.1;
+      line-height: 1.5;
     }
     .pacing-badge {
       display: inline-block;
@@ -732,20 +732,14 @@
 
     // ─── Pacing helpers ───────────────────────────────────────────────────────
 
-    // Returns true if a given AWST decimal hour falls in the sleep window (21:30–07:30)
     function isAsleepAtAWST(awstHour) {
-      // Sleep window crosses midnight: asleep if hour >= 21.5 OR hour < 7.5
       return awstHour >= SLEEP_START_AWST || awstHour < SLEEP_END_AWST;
     }
 
-    // Count available session START slots from fromUtcMs to toUtcMs,
-    // stepping in SESSION_LOCK_MS increments, skipping sleep windows.
-    // firstSlotUtcMs is when the first slot becomes available (estimated next unlock).
     function countAvailableSlots(firstSlotUtcMs, toUtcMs) {
       let slots = 0;
       let cursor = firstSlotUtcMs;
       while (cursor < toUtcMs) {
-        // Convert cursor to AWST decimal hour
         const awstDate = new Date(cursor + AWST_OFFSET_MS);
         const awstHour = awstDate.getUTCHours() + awstDate.getUTCMinutes() / 60;
         if (!isAsleepAtAWST(awstHour)) {
@@ -756,9 +750,6 @@
       return slots;
     }
 
-    // Estimate when the next session slot opens, and confidence in that estimate.
-    // Uses most recent of: last session log ts, last spot-check ts.
-    // Returns { nextSlotUtcMs, confidencePct, signalAgeMs, signalSource }
     function estimateNextSlot(trackerData) {
       const nowMs = Date.now();
       let bestTs   = 0;
@@ -775,13 +766,11 @@
       }
 
       if (bestTs === 0) {
-        // No signal — assume slot is available now
         return { nextSlotUtcMs: nowMs, confidencePct: 15, signalAgeMs: null, signalSource: "none" };
       }
 
       const signalAgeMs   = nowMs - bestTs;
       const nextSlotUtcMs = bestTs + SESSION_LOCK_MS;
-      // If the estimated unlock has already passed, next slot is now
       const effectiveSlot = Math.max(nextSlotUtcMs, nowMs);
 
       let confidencePct;
@@ -793,8 +782,6 @@
       return { nextSlotUtcMs: effectiveSlot, confidencePct, signalAgeMs, signalSource: source };
     }
 
-    // Main pacing calculation.
-    // Returns { availableSlots, sessionsRemaining, ratio, badge, badgeLabel, confidencePct, signalSource, forfeited }
     function calcPacing(trackerData) {
       const nowMs        = Date.now();
       const cycleEndMs   = getCycleStartUTC() + CYCLE_MS;
@@ -811,7 +798,6 @@
 
       const availableSlots = countAvailableSlots(nextSlotUtcMs, cycleEndMs);
 
-      // Sessions remaining from usage data
       const avgData  = calcAvg(trackerData.sessions);
       const weeklyPct = trackerData.spotWeekly !== null ? trackerData.spotWeekly.value : null;
 
@@ -830,7 +816,6 @@
         forfeited = Math.max(0, sessionsRemaining - availableSlots);
       }
 
-      // Badge
       let badge, badgeLabel;
       if (ratio === null) {
         badge = "no-data"; badgeLabel = "No Usage Data";
@@ -1276,19 +1261,26 @@
       const pacingBadgeWrap    = document.getElementById("pacingBadgeWrap");
       const pacingConfidenceEl = document.getElementById("pacingConfidence");
 
-      // Slot count line
+      // Slot count lines — two clearly labelled rows
       if (pacing.sessionsRemaining !== null) {
         const sessStr = pacing.sessionsRemaining.toFixed(1);
-        pacingSlotsEl.textContent = `${pacing.availableSlots} slots · ${sessStr} needed`;
+        pacingSlotsEl.innerHTML =
+          `<span style="font-size:22px;font-weight:700">${pacing.availableSlots}</span>` +
+          `<span style="font-size:12px;color:#64748b;font-weight:400;margin-left:5px">time slots left</span>` +
+          `<br>` +
+          `<span style="font-size:22px;font-weight:700">${sessStr}</span>` +
+          `<span style="font-size:12px;color:#64748b;font-weight:400;margin-left:5px">sessions needed</span>`;
       } else {
-        pacingSlotsEl.textContent = `${pacing.availableSlots} slot${pacing.availableSlots !== 1 ? "s" : ""} available`;
+        pacingSlotsEl.innerHTML =
+          `<span style="font-size:22px;font-weight:700">${pacing.availableSlots}</span>` +
+          `<span style="font-size:12px;color:#64748b;font-weight:400;margin-left:5px">time slots left</span>`;
       }
 
       // Badge
       pacingBadgeWrap.innerHTML =
         `<span class="pacing-badge ${pacing.badge}">${pacing.badgeLabel}</span>`;
 
-      // Forfeit warning line
+      // Forfeit warning + confidence line
       let confText = "";
       if (pacing.forfeited > 0.1 && isFinite(pacing.forfeited)) {
         confText = `~${pacing.forfeited.toFixed(1)} sessions at risk`;
