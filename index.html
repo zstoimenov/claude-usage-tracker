@@ -496,6 +496,43 @@
       font-size: 12px; padding: 16px 0 4px;
     }
 
+    /* ── Time-left pill selector ─────────────────────────────────────────── */
+    .time-left-row {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+    .time-left-label {
+      font-size: 10px;
+      color: #64748b;
+      letter-spacing: 0.5px;
+    }
+    .time-left-pills {
+      display: flex;
+      gap: 6px;
+    }
+    .time-pill {
+      flex: 1;
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 6px;
+      color: #475569;
+      font-size: 11px;
+      font-weight: 500;
+      padding: 6px 0;
+      text-align: center;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
+      user-select: none;
+    }
+    .time-pill:hover { border-color: #475569; color: #94a3b8; }
+    .time-pill.selected {
+      background: #0f4c81;
+      border-color: #1d6fa8;
+      color: #bfdbfe;
+    }
+
     /* ── FAB (Log a Session shortcut) ────────────────────────────────────── */
     .fab {
       position: fixed;
@@ -618,6 +655,16 @@
       <div class="log-field">
         <label>Week % After</label>
         <input type="number" id="sheetAfter" min="0" max="100" step="0.1" placeholder="e.g. 28" inputmode="decimal" />
+      </div>
+    </div>
+    <div class="time-left-row">
+      <div class="time-left-label">Time left in session (optional)</div>
+      <div class="time-left-pills" id="sheetTimePills">
+        <button class="time-pill" data-ms="14400000">~4h</button>
+        <button class="time-pill" data-ms="10800000">~3h</button>
+        <button class="time-pill" data-ms="7200000">~2h</button>
+        <button class="time-pill" data-ms="3600000">~1h</button>
+        <button class="time-pill" data-ms="1800000">&lt;30m</button>
       </div>
     </div>
     <div class="log-row">
@@ -744,23 +791,29 @@
       const nowMs = Date.now();
       let bestTs = 0;
       let source = "none";
+      let timeLeftMs = null;
 
       const sw = trackerData.spotWeekly;
       if (sw && sw.ts && sw.ts > bestTs) { bestTs = sw.ts; source = "spot-check"; }
       if (trackerData.sessions.length > 0 && trackerData.sessions[0].ts > bestTs) {
-        bestTs = trackerData.sessions[0].ts; source = "session log";
+        bestTs     = trackerData.sessions[0].ts;
+        source     = "session log";
+        timeLeftMs = trackerData.sessions[0].timeLeftMs ?? null;
       }
 
       if (bestTs === 0) {
         return { nextSlotUtcMs: nowMs, confidencePct: 15, signalAgeMs: null, signalSource: "none" };
       }
 
-      const signalAgeMs   = nowMs - bestTs;
-      const nextSlotUtcMs = Math.max(bestTs + SESSION_LOCK_MS, nowMs);
+      const signalAgeMs = nowMs - bestTs;
+      // If we have an explicit time-left reading, next slot = log_time + timeLeftMs
+      // Otherwise fall back to log_time + full SESSION_LOCK_MS
+      const lockMs      = (timeLeftMs !== null) ? timeLeftMs : SESSION_LOCK_MS;
+      const nextSlotUtcMs = Math.max(bestTs + lockMs, nowMs);
 
       let confidencePct;
-      if      (signalAgeMs < 1 * 3600000) confidencePct = 90;
-      else if (signalAgeMs < 3 * 3600000) confidencePct = 70;
+      if      (signalAgeMs < 1 * 3600000) confidencePct = timeLeftMs !== null ? 95 : 90;
+      else if (signalAgeMs < 3 * 3600000) confidencePct = timeLeftMs !== null ? 80 : 70;
       else if (signalAgeMs < 5 * 3600000) confidencePct = 50;
       else                                 confidencePct = 30;
 
@@ -900,8 +953,8 @@
             <div class="pacing-confidence" id="pacingConfidence"></div>
           </div>
         </div>
-        <div class="stat-card stat-card-checkins">
-          <div class="stat-label">Next Check-ins</div>
+        <div class="stat-card stat-card-checkins" style="padding:16px 20px">
+          <div class="pacing-label" style="margin-bottom:10px">Next Check-ins</div>
           <div class="checkins-list" id="checkInsList">—</div>
         </div>
       </div>
@@ -969,6 +1022,16 @@
               <div class="log-field">
                 <label>Week % After</label>
                 <input type="number" id="logAfter" min="0" max="100" step="0.1" placeholder="e.g. 28" />
+              </div>
+            </div>
+            <div class="time-left-row">
+              <div class="time-left-label">Time left in session (optional)</div>
+              <div class="time-left-pills" id="panelTimePills">
+                <button class="time-pill" data-ms="14400000">~4h</button>
+                <button class="time-pill" data-ms="10800000">~3h</button>
+                <button class="time-pill" data-ms="7200000">~2h</button>
+                <button class="time-pill" data-ms="3600000">~1h</button>
+                <button class="time-pill" data-ms="1800000">&lt;30m</button>
               </div>
             </div>
             <div class="log-row">
@@ -1059,6 +1122,29 @@
     const sheetPreview  = document.getElementById("sheetPreview");
     const sheetLogBtn   = document.getElementById("sheetLogBtn");
 
+    let sheetTimeLeftMs = null;
+    let panelTimeLeftMs = null;
+
+    // ── Pill wiring helper ────────────────────────────────────────────────────
+    function wirePills(containerId, onSelect) {
+      const container = document.getElementById(containerId);
+      container.addEventListener("click", e => {
+        const pill = e.target.closest(".time-pill");
+        if (!pill) return;
+        const alreadySelected = pill.classList.contains("selected");
+        container.querySelectorAll(".time-pill").forEach(p => p.classList.remove("selected"));
+        if (alreadySelected) {
+          onSelect(null);   // tap again to deselect
+        } else {
+          pill.classList.add("selected");
+          onSelect(parseInt(pill.dataset.ms, 10));
+        }
+      });
+    }
+
+    wirePills("sheetTimePills",  ms => { sheetTimeLeftMs = ms; });
+    wirePills("panelTimePills",  ms => { panelTimeLeftMs = ms; });
+
     function openSheet() {
       sheet.classList.add("open");
       sheetBackdrop.classList.add("open");
@@ -1106,14 +1192,17 @@
       trackerData.sessions.unshift({
         ts: Date.now(), weekBefore: b, sessionUsed: s, weekAfter: a,
         delta: parseFloat(delta.toFixed(2)),
-        normalizedDelta: parseFloat(norm.toFixed(3))
+        normalizedDelta: parseFloat(norm.toFixed(3)),
+        timeLeftMs: sheetTimeLeftMs
       });
       trackerData.spotWeekly = { value: a, ts: Date.now() };
       saveData(trackerData);
-      // Reset sheet inputs
+      // Reset sheet inputs and pills
       sheetBefore.value = ""; sheetSession.value = ""; sheetAfter.value = "";
       sheetLogBtn.disabled = true;
       sheetPreview.textContent = "Fill in all three fields to preview";
+      sheetTimeLeftMs = null;
+      document.querySelectorAll("#sheetTimePills .time-pill").forEach(p => p.classList.remove("selected"));
       closeSheet();
       renderLayer2();
       update();
@@ -1158,13 +1247,16 @@
       trackerData.sessions.unshift({
         ts: Date.now(), weekBefore: b, sessionUsed: s, weekAfter: a,
         delta: parseFloat(delta.toFixed(2)),
-        normalizedDelta: parseFloat(norm.toFixed(3))
+        normalizedDelta: parseFloat(norm.toFixed(3)),
+        timeLeftMs: panelTimeLeftMs
       });
       trackerData.spotWeekly = { value: a, ts: Date.now() };
       saveData(trackerData);
       logBefore.value = ""; logSession.value = ""; logAfter.value = "";
       logBtn.disabled = true;
       logPreview.textContent = "Fill in all three fields to preview";
+      panelTimeLeftMs = null;
+      document.querySelectorAll("#panelTimePills .time-pill").forEach(p => p.classList.remove("selected"));
       renderLayer2();
     });
 
