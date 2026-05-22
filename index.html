@@ -20,36 +20,61 @@
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+    /*
+     * PERMANENT VIEWPORT LAYOUT
+     * ─────────────────────────────────────────────────────────────────────────
+     * body fills the full dynamic viewport height (100dvh).
+     * #app is a flex column that stretches to fill body, then uses
+     * space-between to distribute its direct children across the available
+     * height — no fixed margins between sections, so any content change
+     * automatically re-distributes spacing.
+     *
+     * Safe-area insets handle notches / home-indicator bars on iOS.
+     * The horizontal padding is kept; only vertical distribution is changed.
+     * ─────────────────────────────────────────────────────────────────────────
+     */
+
+    html, body {
+      height: 100%;
+    }
+
     body {
-      min-height: 100vh;
-      min-height: 100dvh;
+      height: 100dvh;
+      overflow: hidden;           /* Layer 1 screen: no scroll */
       background: #0f172a;
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: flex-start;
       font-family: -apple-system, 'Inter', 'Helvetica Neue', sans-serif;
-      padding: clamp(12px, 2.5vh, 24px);
-      padding-top: max(clamp(12px, 2.5vh, 24px), env(safe-area-inset-top));
-      padding-bottom: max(clamp(12px, 2.5vh, 24px), env(safe-area-inset-bottom));
+      /* horizontal + safe-area padding only; NO vertical padding on body */
+      padding-left:  max(16px, env(safe-area-inset-left));
+      padding-right: max(16px, env(safe-area-inset-right));
       color: #e2e8f0;
     }
 
     #app {
       width: 100%;
       max-width: 560px;
+      /* Fill the full body height, accounting for safe areas */
+      height: 100%;
+      padding-top:    max(12px, env(safe-area-inset-top));
+      padding-bottom: max(12px, env(safe-area-inset-bottom));
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;  /* ← THE KEY: distributes children */
     }
 
+    /* ── Header ─────────────────────────────────────────────────────────── */
     .header {
       text-align: center;
-      margin-bottom: clamp(16px, 3vh, 32px);
+      /* no margin — space-between handles gaps */
     }
     .header-label {
       font-size: 13px;
       letter-spacing: 3px;
       color: #94a3b8;
       text-transform: uppercase;
-      margin-bottom: 8px;
+      margin-bottom: 4px;
     }
     .header-sub {
       font-size: 13px;
@@ -61,9 +86,9 @@
       margin-left: 6px;
     }
 
+    /* ── Big % ──────────────────────────────────────────────────────────── */
     .big-pct {
       text-align: center;
-      margin-bottom: clamp(12px, 2.5vh, 28px);
     }
     .big-pct .number {
       font-size: clamp(52px, 14vw, 88px);
@@ -80,18 +105,21 @@
     .big-pct .sub {
       font-size: 14px;
       color: #94a3b8;
-      margin-top: 6px;
+      margin-top: 4px;
     }
 
+    /* ── Main bar ───────────────────────────────────────────────────────── */
+    .main-bar-section {
+      /* groups bar + labels so space-between treats them as one unit */
+    }
     .main-bar-wrap {
       background: #1e293b;
       border-radius: 12px;
       overflow: visible;
       height: 20px;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
       position: relative;
     }
-    /* Clip only the fill bar, not the marker */
     .main-bar-inner {
       position: absolute;
       inset: 0;
@@ -140,13 +168,13 @@
       justify-content: space-between;
       font-size: 11px;
       color: #64748b;
-      margin-bottom: clamp(12px, 2.5vh, 28px);
     }
+
+    /* ── Day grid ───────────────────────────────────────────────────────── */
     .day-grid {
       display: grid;
       grid-template-columns: repeat(7, 1fr);
       gap: 6px;
-      margin-bottom: clamp(12px, 2.5vh, 28px);
     }
     .day-cell {
       text-align: center;
@@ -158,9 +186,6 @@
       height: 6px;
       margin-bottom: 4px;
       border: 1px solid transparent;
-    }
-    .day-bar.active {
-      /* border set dynamically */
     }
     .day-bar-fill {
       position: absolute;
@@ -190,16 +215,16 @@
       margin-top: 1px;
     }
 
+    /* ── Stats grid ─────────────────────────────────────────────────────── */
     .stats-grid {
       display: flex;
       flex-direction: column;
-      gap: clamp(8px, 1.2vh, 12px);
-      margin-bottom: clamp(10px, 1.8vh, 20px);
+      gap: 8px;
     }
     .stat-card {
       background: #1e293b;
       border-radius: 10px;
-      padding: clamp(14px, 2vh, 20px);
+      padding: clamp(12px, 1.8vh, 18px);
     }
     .stat-label {
       font-size: 11px;
@@ -218,7 +243,6 @@
       grid-template-columns: 1fr 1fr;
       gap: 12px;
     }
-    .pacing-stat { }
     .pacing-stat-label {
       font-size: 11px;
       color: #475569;
@@ -291,15 +315,7 @@
       flex-shrink: 0;
     }
 
-    .footer {
-      text-align: center;
-      font-size: 12px;
-      color: #475569;
-      margin-bottom: 24px;
-    }
-
-    /* ── Layer 2: Session Tracker ─────────────────────────────────────────── */
-
+    /* ── Session Tracker toggle (anchored at bottom of Layer 1 view) ─── */
     .tracker-toggle {
       width: 100%;
       background: none;
@@ -316,7 +332,7 @@
       justify-content: center;
       gap: 8px;
       transition: border-color 0.2s, color 0.2s;
-      margin-bottom: 0;
+      flex-shrink: 0;
     }
     .tracker-toggle:hover {
       border-color: #334155;
@@ -331,6 +347,17 @@
       transform: rotate(180deg);
     }
 
+    /* ── Layer 2 panel — scrollable overlay ─────────────────────────────
+     * When open, the panel renders BELOW the toggle button in normal
+     * document flow. The body gets overflow: auto so Layer 2 is scrollable
+     * but Layer 1 still fits without scroll when collapsed.
+     * ─────────────────────────────────────────────────────────────────── */
+    body.tracker-open {
+      overflow: auto;
+      height: auto;
+      min-height: 100dvh;
+    }
+
     .tracker-panel {
       overflow: hidden;
       max-height: 0;
@@ -343,10 +370,11 @@
     }
 
     .tracker-inner {
-      padding-top: 20px;
+      padding-top: 16px;
+      padding-bottom: 16px;
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 14px;
     }
 
     /* Drift indicator */
@@ -380,7 +408,6 @@
     .drift-badge.critical  { background: #450a0a; color: #ef4444; }
     .drift-badge.no-data   { background: #1e293b; color: #475569; border: 1px solid #334155; }
 
-    /* Dual-bar drift visualiser */
     .drift-bars {
       display: flex;
       flex-direction: column;
@@ -424,7 +451,6 @@
       margin-top: 8px;
     }
 
-    /* Spot check */
     .spot-check-row {
       display: flex;
       gap: 8px;
@@ -457,7 +483,6 @@
     }
     .spot-btn:hover { background: #334155; color: #e2e8f0; }
 
-    /* Sessions remaining */
     .sessions-card {
       background: #1e293b;
       border-radius: 10px;
@@ -466,7 +491,6 @@
       grid-template-columns: 1fr 1fr;
       gap: 12px;
     }
-    .sessions-stat { }
     .sessions-stat-label {
       font-size: 11px;
       color: #475569;
@@ -485,7 +509,6 @@
       margin-top: 2px;
     }
 
-    /* Log session form */
     .log-card {
       background: #1e293b;
       border-radius: 10px;
@@ -550,47 +573,6 @@
     .log-btn:hover { background: #1e5f9a; }
     .log-btn:disabled { background: #1e293b; color: #334155; cursor: not-allowed; }
 
-    /* Avg stat */
-    .avg-card {
-      background: #1e293b;
-      border-radius: 10px;
-      padding: 14px 16px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .avg-left { }
-    .avg-label {
-      font-size: 11px;
-      color: #475569;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      margin-bottom: 2px;
-    }
-    .avg-value {
-      font-size: 20px;
-      font-weight: 700;
-      color: #e2e8f0;
-    }
-    .avg-sample {
-      font-size: 10px;
-      color: #475569;
-      margin-top: 2px;
-    }
-    .avg-right {
-      text-align: right;
-    }
-    .avg-right-label {
-      font-size: 10px;
-      color: #64748b;
-      margin-bottom: 2px;
-    }
-    .avg-range {
-      font-size: 12px;
-      color: #94a3b8;
-    }
-
-    /* History table */
     .history-card {
       background: #1e293b;
       border-radius: 10px;
@@ -662,9 +644,9 @@
     const STORAGE_KEY    = "claude-tracker-v1";
 
     // ─── Pacing constants ─────────────────────────────────────────────────────
-    const SESSION_LOCK_MS  = 5 * 60 * 60 * 1000;   // 5 hours in ms
-    const SLEEP_START_AWST = 21.5;                  // 21:30 in decimal hours
-    const SLEEP_END_AWST   = 7.5;                   // 07:30 in decimal hours
+    const SESSION_LOCK_MS  = 5 * 60 * 60 * 1000;
+    const SLEEP_START_AWST = 21.5;
+    const SLEEP_END_AWST   = 7.5;
 
     // ─── Time helpers ─────────────────────────────────────────────────────────
     function getCycleStartUTC() {
@@ -703,15 +685,6 @@
       return parts.join(" ");
     }
 
-    function formatAsAWST(utcMs) {
-      return new Date(utcMs).toLocaleString("en-AU", {
-        timeZone: "Australia/Perth",
-        weekday: "short", month: "short", day: "numeric",
-        hour: "2-digit", minute: "2-digit", second: "2-digit",
-        hour12: false,
-      });
-    }
-
     function formatShortDate(utcMs) {
       return new Date(utcMs).toLocaleString("en-AU", {
         timeZone: "Australia/Perth",
@@ -721,7 +694,6 @@
       });
     }
 
-    // Returns the next two check-in times (07:30 and 19:30 AWST) within 24h
     function getNextCheckIns() {
       const nowMs        = Date.now();
       const cycleStartMs = getCycleStartUTC();
@@ -765,7 +737,6 @@
     }
 
     // ─── Pacing helpers ───────────────────────────────────────────────────────
-
     function isAsleepAtAWST(awstHour) {
       return awstHour >= SLEEP_START_AWST || awstHour < SLEEP_END_AWST;
     }
@@ -832,7 +803,7 @@
 
       const availableSlots = countAvailableSlots(nextSlotUtcMs, cycleEndMs);
 
-      const avgData  = calcAvg(trackerData.sessions);
+      const avgData   = calcAvg(trackerData.sessions);
       const weeklyPct = trackerData.spotWeekly !== null ? trackerData.spotWeekly.value : null;
 
       let sessionsRemaining = null;
@@ -933,18 +904,20 @@
         <div class="sub">of this week's cycle elapsed</div>
       </div>
 
-      <div class="main-bar-wrap" id="mainBarWrap">
-        <div class="main-bar-inner">
-          <div class="main-bar-fill" id="mainBarFill"></div>
-          <div class="main-bar-tick" style="left:25%"></div>
-          <div class="main-bar-tick" style="left:50%"></div>
-          <div class="main-bar-tick" style="left:75%"></div>
+      <div class="main-bar-section">
+        <div class="main-bar-wrap" id="mainBarWrap">
+          <div class="main-bar-inner">
+            <div class="main-bar-fill" id="mainBarFill"></div>
+            <div class="main-bar-tick" style="left:25%"></div>
+            <div class="main-bar-tick" style="left:50%"></div>
+            <div class="main-bar-tick" style="left:75%"></div>
+          </div>
+          <div class="main-bar-weekly-marker" id="mainBarWeeklyMarker" style="display:none"></div>
+          <div class="main-bar-weekly-label" id="mainBarWeeklyLabel" style="display:none"></div>
         </div>
-        <div class="main-bar-weekly-marker" id="mainBarWeeklyMarker" style="display:none"></div>
-        <div class="main-bar-weekly-label" id="mainBarWeeklyLabel" style="display:none"></div>
-      </div>
-      <div class="main-bar-labels">
-        <span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span>
+        <div class="main-bar-labels">
+          <span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span>
+        </div>
       </div>
 
       <div class="day-grid" id="dayGrid"></div>
@@ -973,7 +946,6 @@
           <div class="checkins-list" id="checkInsList">—</div>
         </div>
       </div>
-
 
       <!-- ── Layer 2 ──────────────────────────────────────────────────────── -->
       <button class="tracker-toggle" id="trackerToggle">
@@ -1006,7 +978,6 @@
               </div>
             </div>
             <div class="drift-gap-label" id="driftGapLabel">Enter your current weekly % below to see drift</div>
-            <!-- Spot check -->
             <div class="spot-check-row">
               <input type="number" id="spotInput" min="0" max="100" step="0.1" placeholder="Current weekly % (e.g. 34)" />
               <button class="spot-btn" id="spotBtn">Check Drift</button>
@@ -1083,28 +1054,31 @@
     // ─── Layer 2 state ────────────────────────────────────────────────────────
     let trackerData = loadData();
 
-    // Restore panel open state
+    // Restore panel open state — also sync body class
     const trackerToggle = document.getElementById("trackerToggle");
     const trackerPanel  = document.getElementById("trackerPanel");
-    if (trackerData.trackerOpen) {
-      trackerToggle.classList.add("open");
-      trackerPanel.classList.add("open");
+
+    function applyTrackerOpenState(isOpen) {
+      trackerToggle.classList.toggle("open", isOpen);
+      trackerPanel.classList.toggle("open", isOpen);
+      document.body.classList.toggle("tracker-open", isOpen);
     }
 
+    applyTrackerOpenState(trackerData.trackerOpen);
+
     trackerToggle.addEventListener("click", () => {
-      const isOpen = trackerPanel.classList.toggle("open");
-      trackerToggle.classList.toggle("open", isOpen);
+      const isOpen = !trackerPanel.classList.contains("open");
+      applyTrackerOpenState(isOpen);
       trackerData.trackerOpen = isOpen;
       saveData(trackerData);
       if (isOpen) {
-        // Wait for the CSS transition to start, then scroll toggle into view at the top
         setTimeout(() => {
           trackerToggle.scrollIntoView({ behavior: "smooth", block: "start" });
         }, 50);
       }
     });
 
-    // ─── Log inputs: live preview ──────────────────────────────────────────────
+    // ─── Log inputs: live preview ─────────────────────────────────────────────
     const logBefore  = document.getElementById("logBefore");
     const logSession = document.getElementById("logSession");
     const logAfter   = document.getElementById("logAfter");
@@ -1158,7 +1132,7 @@
       renderLayer2();
     });
 
-    // ─── Spot check ──────────────────────────────────────────────────────────
+    // ─── Spot check ───────────────────────────────────────────────────────────
     const spotInput = document.getElementById("spotInput");
     const spotBtn   = document.getElementById("spotBtn");
 
@@ -1190,7 +1164,6 @@
     function renderLayer2() {
       const nowMs        = Date.now();
       const cycleStartMs = getCycleStartUTC();
-      const cycleEndMs   = cycleStartMs + CYCLE_MS;
       const elapsedMs    = nowMs - cycleStartMs;
       const timePct      = Math.min(100, Math.max(0, (elapsedMs / CYCLE_MS) * 100));
 
@@ -1209,7 +1182,7 @@
       driftTimeVal.textContent      = timePct.toFixed(1) + "%";
 
       const status = getDriftStatus(weeklyPct, timePct);
-      driftBadge.className = "drift-badge " + status;
+      driftBadge.className   = "drift-badge " + status;
       driftBadge.textContent = getDriftLabel(status);
 
       if (weeklyPct !== null && weeklyPct !== undefined) {
@@ -1223,14 +1196,14 @@
 
         const gap = weeklyPct - timePct;
         if (gap > 0) {
-          driftGapLabel.textContent = `You're ${gap.toFixed(1)}% over target`;
-          driftGapLabel.style.color = status === "on-track" ? "#22c55e" : status === "drifting" ? "#eab308" : status === "at-risk" ? "#f97316" : "#ef4444";
+          driftGapLabel.textContent  = `You're ${gap.toFixed(1)}% over target`;
+          driftGapLabel.style.color  = status === "on-track" ? "#22c55e" : status === "drifting" ? "#eab308" : status === "at-risk" ? "#f97316" : "#ef4444";
         } else if (gap < 0) {
-          driftGapLabel.textContent = `You're ${Math.abs(gap).toFixed(1)}% under target`;
-          driftGapLabel.style.color = status === "on-track" ? "#22c55e" : status === "drifting" ? "#eab308" : status === "at-risk" ? "#f97316" : "#ef4444";
+          driftGapLabel.textContent  = `You're ${Math.abs(gap).toFixed(1)}% under target`;
+          driftGapLabel.style.color  = status === "on-track" ? "#22c55e" : status === "drifting" ? "#eab308" : status === "at-risk" ? "#f97316" : "#ef4444";
         } else {
-          driftGapLabel.textContent = "Perfectly on target";
-          driftGapLabel.style.color = "#22c55e";
+          driftGapLabel.textContent  = "Perfectly on target";
+          driftGapLabel.style.color  = "#22c55e";
         }
       } else {
         driftWeeklyBar.style.width = "0%";
@@ -1260,8 +1233,8 @@
           sessionsLeftSub.textContent = "set weekly % to calculate";
         }
       } else {
-        avgSessionVal.textContent = "—";
-        avgSessionSub.textContent = "no sessions logged yet";
+        avgSessionVal.textContent   = "—";
+        avgSessionSub.textContent   = "no sessions logged yet";
         sessionsLeftEl.textContent  = "—";
         sessionsLeftSub.textContent = "log sessions to calculate";
       }
@@ -1301,7 +1274,7 @@
       `;
     }
 
-    // ─── Render Pacing card (called from update()) ────────────────────────────
+    // ─── Render Pacing card ───────────────────────────────────────────────────
     function renderPacing() {
       const pacing = calcPacing(trackerData);
 
@@ -1311,10 +1284,8 @@
       const pacingBadgeWrap    = document.getElementById("pacingBadgeWrap");
       const pacingConfidenceEl = document.getElementById("pacingConfidence");
 
-      // Slots left
       pacingSlotsEl.textContent = pacing.availableSlots;
 
-      // Sessions needed
       if (pacing.sessionsRemaining !== null) {
         pacingNeededEl.textContent = pacing.sessionsRemaining.toFixed(1);
         const avgData = calcAvg(trackerData.sessions);
@@ -1322,15 +1293,13 @@
           ? `at ${avgData.avg.toFixed(1)}% avg/session`
           : "log sessions to calculate";
       } else {
-        pacingNeededEl.textContent = "—";
+        pacingNeededEl.textContent  = "—";
         pacingNeededSub.textContent = "log sessions to calculate";
       }
 
-      // Badge
       pacingBadgeWrap.innerHTML =
         `<span class="pacing-badge ${pacing.badge}">${pacing.badgeLabel}</span>`;
 
-      // Confidence + forfeit warning
       let confText = "";
       if (pacing.forfeited > 0.1 && isFinite(pacing.forfeited)) {
         confText = `~${pacing.forfeited.toFixed(1)} sessions at risk`;
@@ -1420,7 +1389,6 @@
         const wPct = Math.min(100, Math.max(0, sw.value));
         weeklyMarker.style.display = "";
         weeklyMarker.style.left    = wPct + "%";
-        // Label sits just left of the marker, min 24px from left edge
         const labelOffset = Math.max(wPct - 1, 2);
         weeklyLabel.style.display  = "";
         weeklyLabel.style.left     = labelOffset + "%";
