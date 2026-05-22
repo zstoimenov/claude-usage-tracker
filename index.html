@@ -23,6 +23,7 @@
     body {
       min-height: 100vh;
       min-height: 100dvh;
+      overflow: hidden;             /* no scroll when Session Tracker is collapsed */
       background: #0f172a;
       display: flex;
       flex-direction: column;
@@ -879,6 +880,7 @@
     if (trackerData.trackerOpen) {
       trackerToggle.classList.add("open");
       trackerPanel.classList.add("open");
+      document.body.style.overflow = "auto";
     }
 
     trackerToggle.addEventListener("click", () => {
@@ -887,10 +889,18 @@
       trackerData.trackerOpen = isOpen;
       saveData(trackerData);
       if (isOpen) {
-        // Let the panel start expanding, then scroll it into view
+        // Enable scroll first, then jump so toggle sits exactly at the top
+        document.body.style.overflow = "auto";
         setTimeout(() => {
-          trackerToggle.scrollIntoView({ behavior: "smooth", block: "start" });
-        }, 50);
+          const top = trackerToggle.getBoundingClientRect().top + window.scrollY;
+          window.scrollTo({ top, behavior: "smooth" });
+        }, 20);
+      } else {
+        // Scroll back to top, then lock overflow once animation settles
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        setTimeout(() => {
+          document.body.style.overflow = "hidden";
+        }, 380);  // matches panel transition duration (0.35s)
       }
     });
 
