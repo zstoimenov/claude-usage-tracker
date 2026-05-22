@@ -20,61 +20,37 @@
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-    /*
-     * PERMANENT VIEWPORT LAYOUT
-     * ─────────────────────────────────────────────────────────────────────────
-     * body fills the full dynamic viewport height (100dvh).
-     * #app is a flex column that stretches to fill body, then uses
-     * space-between to distribute its direct children across the available
-     * height — no fixed margins between sections, so any content change
-     * automatically re-distributes spacing.
-     *
-     * Safe-area insets handle notches / home-indicator bars on iOS.
-     * The horizontal padding is kept; only vertical distribution is changed.
-     * ─────────────────────────────────────────────────────────────────────────
-     */
-
-    html, body {
-      height: 100%;
-    }
-
     body {
-      height: 100dvh;
-      overflow: hidden;           /* Layer 1 screen: no scroll */
+      min-height: 100vh;
+      min-height: 100dvh;
       background: #0f172a;
       display: flex;
       flex-direction: column;
       align-items: center;
+      justify-content: center;
       font-family: -apple-system, 'Inter', 'Helvetica Neue', sans-serif;
-      /* horizontal + safe-area padding only; NO vertical padding on body */
-      padding-left:  max(16px, env(safe-area-inset-left));
-      padding-right: max(16px, env(safe-area-inset-right));
+      padding: 24px;
+      padding-top: max(24px, env(safe-area-inset-top));
+      padding-bottom: max(24px, env(safe-area-inset-bottom));
       color: #e2e8f0;
     }
 
     #app {
       width: 100%;
       max-width: 560px;
-      /* Fill the full body height, accounting for safe areas */
-      height: 100%;
-      padding-top:    max(12px, env(safe-area-inset-top));
-      padding-bottom: max(12px, env(safe-area-inset-bottom));
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;  /* ← THE KEY: distributes children */
     }
 
-    /* ── Header ─────────────────────────────────────────────────────────── */
+    /* ── Header ──────────────────────────────────────────────────────────── */
     .header {
       text-align: center;
-      /* no margin — space-between handles gaps */
+      margin-bottom: 32px;
     }
     .header-label {
       font-size: 13px;
       letter-spacing: 3px;
       color: #94a3b8;
       text-transform: uppercase;
-      margin-bottom: 4px;
+      margin-bottom: 8px;
     }
     .header-sub {
       font-size: 13px;
@@ -86,12 +62,13 @@
       margin-left: 6px;
     }
 
-    /* ── Big % ──────────────────────────────────────────────────────────── */
+    /* ── Big % ───────────────────────────────────────────────────────────── */
     .big-pct {
       text-align: center;
+      margin-bottom: 28px;
     }
     .big-pct .number {
-      font-size: clamp(52px, 14vw, 88px);
+      font-size: clamp(64px, 16vw, 88px);
       font-weight: 700;
       letter-spacing: -4px;
       line-height: 1;
@@ -105,19 +82,16 @@
     .big-pct .sub {
       font-size: 14px;
       color: #94a3b8;
-      margin-top: 4px;
+      margin-top: 6px;
     }
 
-    /* ── Main bar ───────────────────────────────────────────────────────── */
-    .main-bar-section {
-      /* groups bar + labels so space-between treats them as one unit */
-    }
+    /* ── Main bar ────────────────────────────────────────────────────────── */
     .main-bar-wrap {
       background: #1e293b;
       border-radius: 12px;
       overflow: visible;
       height: 20px;
-      margin-bottom: 6px;
+      margin-bottom: 8px;
       position: relative;
     }
     .main-bar-inner {
@@ -168,13 +142,15 @@
       justify-content: space-between;
       font-size: 11px;
       color: #64748b;
+      margin-bottom: 28px;
     }
 
-    /* ── Day grid ───────────────────────────────────────────────────────── */
+    /* ── Day grid ────────────────────────────────────────────────────────── */
     .day-grid {
       display: grid;
       grid-template-columns: repeat(7, 1fr);
       gap: 6px;
+      margin-bottom: 28px;
     }
     .day-cell {
       text-align: center;
@@ -215,16 +191,17 @@
       margin-top: 1px;
     }
 
-    /* ── Stats grid ─────────────────────────────────────────────────────── */
+    /* ── Stats grid ──────────────────────────────────────────────────────── */
     .stats-grid {
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 12px;
+      margin-bottom: 20px;
     }
     .stat-card {
       background: #1e293b;
       border-radius: 10px;
-      padding: clamp(12px, 1.8vh, 18px);
+      padding: 20px;
     }
     .stat-label {
       font-size: 11px;
@@ -294,7 +271,6 @@
     .checkin-row {
       display: flex;
       align-items: baseline;
-      gap: 0;
     }
     .checkin-time {
       font-size: 13px;
@@ -315,7 +291,7 @@
       flex-shrink: 0;
     }
 
-    /* ── Session Tracker toggle (anchored at bottom of Layer 1 view) ─── */
+    /* ── Session Tracker toggle ──────────────────────────────────────────── */
     .tracker-toggle {
       width: 100%;
       background: none;
@@ -332,7 +308,6 @@
       justify-content: center;
       gap: 8px;
       transition: border-color 0.2s, color 0.2s;
-      flex-shrink: 0;
     }
     .tracker-toggle:hover {
       border-color: #334155;
@@ -347,17 +322,11 @@
       transform: rotate(180deg);
     }
 
-    /* ── Layer 2 panel — scrollable overlay ─────────────────────────────
-     * When open, the panel renders BELOW the toggle button in normal
-     * document flow. The body gets overflow: auto so Layer 2 is scrollable
-     * but Layer 1 still fits without scroll when collapsed.
-     * ─────────────────────────────────────────────────────────────────── */
-    body.tracker-open {
-      overflow: auto;
-      height: auto;
-      min-height: 100dvh;
-    }
-
+    /*
+     * Layer 2 panel — expands below the toggle in normal document flow.
+     * body is always min-height + scrollable, so opening the panel simply
+     * grows the page and the browser scrolls — Layer 1 blocks never move.
+     */
     .tracker-panel {
       overflow: hidden;
       max-height: 0;
@@ -365,7 +334,7 @@
       opacity: 0;
     }
     .tracker-panel.open {
-      max-height: 1200px;
+      max-height: 1400px;
       opacity: 1;
     }
 
@@ -377,7 +346,7 @@
       gap: 14px;
     }
 
-    /* Drift indicator */
+    /* ── Drift card ──────────────────────────────────────────────────────── */
     .drift-card {
       background: #1e293b;
       border-radius: 10px;
@@ -408,225 +377,110 @@
     .drift-badge.critical  { background: #450a0a; color: #ef4444; }
     .drift-badge.no-data   { background: #1e293b; color: #475569; border: 1px solid #334155; }
 
-    .drift-bars {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-    .drift-bar-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
+    .drift-bars { display: flex; flex-direction: column; gap: 6px; }
+    .drift-bar-row { display: flex; align-items: center; gap: 8px; }
     .drift-bar-row-label {
-      font-size: 10px;
-      color: #64748b;
-      width: 44px;
-      flex-shrink: 0;
-      text-align: right;
+      font-size: 10px; color: #64748b;
+      width: 44px; flex-shrink: 0; text-align: right;
     }
     .drift-bar-track {
-      flex: 1;
-      background: #0f172a;
-      border-radius: 4px;
-      height: 8px;
-      position: relative;
-      overflow: hidden;
+      flex: 1; background: #0f172a;
+      border-radius: 4px; height: 8px;
+      position: relative; overflow: hidden;
     }
-    .drift-bar-fill {
-      height: 100%;
-      border-radius: 4px;
-      transition: width 0.5s;
-    }
-    .drift-bar-value {
-      font-size: 10px;
-      color: #94a3b8;
-      width: 36px;
-      flex-shrink: 0;
-    }
+    .drift-bar-fill { height: 100%; border-radius: 4px; transition: width 0.5s; }
+    .drift-bar-value { font-size: 10px; color: #94a3b8; width: 36px; flex-shrink: 0; }
     .drift-gap-label {
-      text-align: center;
-      font-size: 11px;
-      color: #64748b;
-      margin-top: 8px;
+      text-align: center; font-size: 11px;
+      color: #64748b; margin-top: 8px;
     }
 
-    .spot-check-row {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-      margin-top: 10px;
-    }
+    .spot-check-row { display: flex; gap: 8px; align-items: center; margin-top: 10px; }
     .spot-check-row input {
-      flex: 1;
-      background: #0f172a;
-      border: 1px solid #334155;
-      border-radius: 8px;
-      color: #e2e8f0;
-      font-size: 13px;
-      padding: 8px 12px;
-      outline: none;
-      transition: border-color 0.2s;
+      flex: 1; background: #0f172a; border: 1px solid #334155;
+      border-radius: 8px; color: #e2e8f0; font-size: 13px;
+      padding: 8px 12px; outline: none; transition: border-color 0.2s;
     }
     .spot-check-row input:focus { border-color: #475569; }
     .spot-check-row input::placeholder { color: #334155; }
     .spot-btn {
-      background: #1e293b;
-      border: 1px solid #334155;
-      border-radius: 8px;
-      color: #94a3b8;
-      font-size: 12px;
-      padding: 8px 14px;
-      cursor: pointer;
-      white-space: nowrap;
-      transition: background 0.2s, color 0.2s;
+      background: #1e293b; border: 1px solid #334155; border-radius: 8px;
+      color: #94a3b8; font-size: 12px; padding: 8px 14px;
+      cursor: pointer; white-space: nowrap; transition: background 0.2s, color 0.2s;
     }
     .spot-btn:hover { background: #334155; color: #e2e8f0; }
 
+    /* ── Sessions card ───────────────────────────────────────────────────── */
     .sessions-card {
-      background: #1e293b;
-      border-radius: 10px;
-      padding: 16px;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
+      background: #1e293b; border-radius: 10px; padding: 16px;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
     }
     .sessions-stat-label {
-      font-size: 11px;
-      color: #475569;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      margin-bottom: 4px;
+      font-size: 11px; color: #475569;
+      text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;
     }
-    .sessions-stat-value {
-      font-size: 22px;
-      font-weight: 700;
-      color: #e2e8f0;
-    }
-    .sessions-stat-sub {
-      font-size: 10px;
-      color: #475569;
-      margin-top: 2px;
-    }
+    .sessions-stat-value { font-size: 22px; font-weight: 700; color: #e2e8f0; }
+    .sessions-stat-sub { font-size: 10px; color: #475569; margin-top: 2px; }
 
-    .log-card {
-      background: #1e293b;
-      border-radius: 10px;
-      padding: 16px;
-    }
+    /* ── Log card ────────────────────────────────────────────────────────── */
+    .log-card { background: #1e293b; border-radius: 10px; padding: 16px; }
     .log-card-title {
-      font-size: 11px;
-      color: #64748b;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      margin-bottom: 12px;
+      font-size: 11px; color: #64748b;
+      text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px;
     }
     .log-inputs {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 8px;
-      margin-bottom: 10px;
+      display: grid; grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px; margin-bottom: 10px;
     }
     .log-field label {
-      display: block;
-      font-size: 10px;
-      color: #64748b;
-      margin-bottom: 4px;
-      letter-spacing: 0.5px;
+      display: block; font-size: 10px; color: #64748b;
+      margin-bottom: 4px; letter-spacing: 0.5px;
     }
     .log-field input {
-      width: 100%;
-      background: #0f172a;
-      border: 1px solid #334155;
-      border-radius: 8px;
-      color: #e2e8f0;
-      font-size: 14px;
-      padding: 8px 10px;
-      outline: none;
-      transition: border-color 0.2s;
+      width: 100%; background: #0f172a; border: 1px solid #334155;
+      border-radius: 8px; color: #e2e8f0; font-size: 14px;
+      padding: 8px 10px; outline: none; transition: border-color 0.2s;
     }
     .log-field input:focus { border-color: #475569; }
     .log-field input::placeholder { color: #334155; }
-    .log-row {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-    }
-    .log-delta-preview {
-      font-size: 11px;
-      color: #475569;
-      flex: 1;
-    }
+    .log-row { display: flex; gap: 8px; align-items: center; }
+    .log-delta-preview { font-size: 11px; color: #475569; flex: 1; }
     .log-delta-preview span { color: #22c55e; font-weight: 600; }
     .log-btn {
-      background: #0f4c81;
-      border: none;
-      border-radius: 8px;
-      color: #bfdbfe;
-      font-size: 12px;
-      font-weight: 600;
-      padding: 9px 16px;
-      cursor: pointer;
-      transition: background 0.2s;
-      white-space: nowrap;
+      background: #0f4c81; border: none; border-radius: 8px;
+      color: #bfdbfe; font-size: 12px; font-weight: 600;
+      padding: 9px 16px; cursor: pointer; transition: background 0.2s; white-space: nowrap;
     }
     .log-btn:hover { background: #1e5f9a; }
     .log-btn:disabled { background: #1e293b; color: #334155; cursor: not-allowed; }
 
-    .history-card {
-      background: #1e293b;
-      border-radius: 10px;
-      padding: 16px;
-    }
+    /* ── History card ────────────────────────────────────────────────────── */
+    .history-card { background: #1e293b; border-radius: 10px; padding: 16px; }
     .history-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 12px;
+      display: flex; justify-content: space-between;
+      align-items: center; margin-bottom: 12px;
     }
     .history-title {
-      font-size: 11px;
-      color: #64748b;
-      text-transform: uppercase;
-      letter-spacing: 1px;
+      font-size: 11px; color: #64748b;
+      text-transform: uppercase; letter-spacing: 1px;
     }
     .clear-btn {
-      background: none;
-      border: 1px solid #334155;
-      border-radius: 6px;
-      color: #475569;
-      font-size: 10px;
-      padding: 3px 8px;
-      cursor: pointer;
-      transition: color 0.2s, border-color 0.2s;
+      background: none; border: 1px solid #334155; border-radius: 6px;
+      color: #475569; font-size: 10px; padding: 3px 8px;
+      cursor: pointer; transition: color 0.2s, border-color 0.2s;
     }
     .clear-btn:hover { color: #f87171; border-color: #f87171; }
-
-    .history-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 11px;
-    }
+    .history-table { width: 100%; border-collapse: collapse; font-size: 11px; }
     .history-table th {
-      color: #64748b;
-      font-weight: 500;
-      text-align: left;
-      padding: 0 4px 6px;
-      letter-spacing: 0.5px;
-      font-size: 10px;
+      color: #64748b; font-weight: 500; text-align: left;
+      padding: 0 4px 6px; letter-spacing: 0.5px; font-size: 10px;
     }
-    .history-table td {
-      color: #94a3b8;
-      padding: 5px 4px;
-      border-top: 1px solid #0f172a;
-    }
+    .history-table td { color: #94a3b8; padding: 5px 4px; border-top: 1px solid #0f172a; }
     .history-table td.delta-pos { color: #4ade80; font-weight: 600; }
     .history-table td.delta-neg { color: #f87171; font-weight: 600; }
     .history-empty {
-      text-align: center;
-      color: #475569;
-      font-size: 12px;
-      padding: 16px 0 4px;
+      text-align: center; color: #475569;
+      font-size: 12px; padding: 16px 0 4px;
     }
   </style>
 </head>
@@ -643,7 +497,6 @@
     const WED_WINDOW     = 100 - MARKER_PCT;
     const STORAGE_KEY    = "claude-tracker-v1";
 
-    // ─── Pacing constants ─────────────────────────────────────────────────────
     const SESSION_LOCK_MS  = 5 * 60 * 60 * 1000;
     const SLEEP_START_AWST = 21.5;
     const SLEEP_END_AWST   = 7.5;
@@ -662,8 +515,8 @@
       const elapsedTodayMs =
         hourAWST * 3600000 + minAWST * 60000 +
         secAWST * 1000     + awstDate.getUTCMilliseconds();
-      const midnightWedAWST  = awstMs - elapsedTodayMs - daysSinceWed * 24 * 3600000;
-      const cycleStartAWST   = midnightWedAWST + 13 * 3600000;
+      const midnightWedAWST = awstMs - elapsedTodayMs - daysSinceWed * 24 * 3600000;
+      const cycleStartAWST  = midnightWedAWST + 13 * 3600000;
       return cycleStartAWST - AWST_OFFSET_MS;
     }
 
@@ -702,22 +555,17 @@
 
       for (let dayOffset = 0; dayOffset <= 1 && results.length < 2; dayOffset++) {
         for (let ci = 0; ci < checkTimes.length && results.length < 2; ci++) {
-          const awstNow     = new Date(nowMs + AWST_OFFSET_MS);
+          const awstNow      = new Date(nowMs + AWST_OFFSET_MS);
           const awstMidnight = Date.UTC(
-            awstNow.getUTCFullYear(),
-            awstNow.getUTCMonth(),
-            awstNow.getUTCDate()
+            awstNow.getUTCFullYear(), awstNow.getUTCMonth(), awstNow.getUTCDate()
           ) + dayOffset * 86400000;
           const candidateUtcMs = awstMidnight + checkTimes[ci] * 3600000 - AWST_OFFSET_MS;
-
           if (candidateUtcMs > nowMs && candidateUtcMs <= nowMs + 86400000) {
             const elapsed = candidateUtcMs - cycleStartMs;
             const pct     = Math.min(100, Math.max(0, (elapsed / CYCLE_MS) * 100));
             const label   = new Date(candidateUtcMs).toLocaleString("en-AU", {
               timeZone: "Australia/Perth",
-              weekday: "short",
-              hour: "2-digit", minute: "2-digit",
-              hour12: false,
+              weekday: "short", hour: "2-digit", minute: "2-digit", hour12: false,
             });
             results.push({ label, pct });
           }
@@ -747,9 +595,7 @@
       while (cursor < toUtcMs) {
         const awstDate = new Date(cursor + AWST_OFFSET_MS);
         const awstHour = awstDate.getUTCHours() + awstDate.getUTCMinutes() / 60;
-        if (!isAsleepAtAWST(awstHour)) {
-          slots++;
-        }
+        if (!isAsleepAtAWST(awstHour)) slots++;
         cursor += SESSION_LOCK_MS;
       }
       return slots;
@@ -757,17 +603,13 @@
 
     function estimateNextSlot(trackerData) {
       const nowMs = Date.now();
-      let bestTs   = 0;
-      let source   = "none";
+      let bestTs = 0;
+      let source = "none";
 
       const sw = trackerData.spotWeekly;
-      if (sw && sw.ts && sw.ts > bestTs) {
-        bestTs = sw.ts;
-        source = "spot-check";
-      }
+      if (sw && sw.ts && sw.ts > bestTs) { bestTs = sw.ts; source = "spot-check"; }
       if (trackerData.sessions.length > 0 && trackerData.sessions[0].ts > bestTs) {
-        bestTs = trackerData.sessions[0].ts;
-        source = "session log";
+        bestTs = trackerData.sessions[0].ts; source = "session log";
       }
 
       if (bestTs === 0) {
@@ -775,16 +617,15 @@
       }
 
       const signalAgeMs   = nowMs - bestTs;
-      const nextSlotUtcMs = bestTs + SESSION_LOCK_MS;
-      const effectiveSlot = Math.max(nextSlotUtcMs, nowMs);
+      const nextSlotUtcMs = Math.max(bestTs + SESSION_LOCK_MS, nowMs);
 
       let confidencePct;
-      if      (signalAgeMs < 1  * 3600000) confidencePct = 90;
-      else if (signalAgeMs < 3  * 3600000) confidencePct = 70;
-      else if (signalAgeMs < 5  * 3600000) confidencePct = 50;
-      else                                  confidencePct = 30;
+      if      (signalAgeMs < 1 * 3600000) confidencePct = 90;
+      else if (signalAgeMs < 3 * 3600000) confidencePct = 70;
+      else if (signalAgeMs < 5 * 3600000) confidencePct = 50;
+      else                                 confidencePct = 30;
 
-      return { nextSlotUtcMs: effectiveSlot, confidencePct, signalAgeMs, signalSource: source };
+      return { nextSlotUtcMs, confidencePct, signalAgeMs, signalSource: source };
     }
 
     function calcPacing(trackerData) {
@@ -798,43 +639,28 @@
                  confidencePct: null, signalSource: "none", forfeited: 0 };
       }
 
-      const { nextSlotUtcMs, confidencePct, signalAgeMs, signalSource } =
-        estimateNextSlot(trackerData);
-
+      const { nextSlotUtcMs, confidencePct, signalAgeMs, signalSource } = estimateNextSlot(trackerData);
       const availableSlots = countAvailableSlots(nextSlotUtcMs, cycleEndMs);
+      const avgData        = calcAvg(trackerData.sessions);
+      const weeklyPct      = trackerData.spotWeekly !== null ? trackerData.spotWeekly.value : null;
 
-      const avgData   = calcAvg(trackerData.sessions);
-      const weeklyPct = trackerData.spotWeekly !== null ? trackerData.spotWeekly.value : null;
-
-      let sessionsRemaining = null;
-      let ratio = null;
-      let forfeited = 0;
+      let sessionsRemaining = null, ratio = null, forfeited = 0;
 
       if (avgData && weeklyPct !== null) {
         const usageRemaining = 100 - weeklyPct;
         sessionsRemaining    = usageRemaining / avgData.avg;
-        if (availableSlots > 0) {
-          ratio = sessionsRemaining / availableSlots;
-        } else {
-          ratio = sessionsRemaining > 0 ? Infinity : 0;
-        }
+        ratio = availableSlots > 0 ? sessionsRemaining / availableSlots
+                                   : (sessionsRemaining > 0 ? Infinity : 0);
         forfeited = Math.max(0, sessionsRemaining - availableSlots);
       }
 
       let badge, badgeLabel;
-      if (ratio === null) {
-        badge = "no-data"; badgeLabel = "No Usage Data";
-      } else if (!isFinite(ratio) && ratio > 0) {
-        badge = "forfeit"; badgeLabel = "Forfeit Certain";
-      } else if (ratio <= 0.60) {
-        badge = "comfortable"; badgeLabel = "Comfortable";
-      } else if (ratio <= 0.85) {
-        badge = "moderate"; badgeLabel = "Moderate";
-      } else if (ratio <= 1.0) {
-        badge = "tight"; badgeLabel = "Tight";
-      } else {
-        badge = "forfeit"; badgeLabel = "Forfeit Risk";
-      }
+      if (ratio === null)                    { badge = "no-data";    badgeLabel = "No Usage Data"; }
+      else if (!isFinite(ratio) && ratio > 0){ badge = "forfeit";    badgeLabel = "Forfeit Certain"; }
+      else if (ratio <= 0.60)                { badge = "comfortable";badgeLabel = "Comfortable"; }
+      else if (ratio <= 0.85)                { badge = "moderate";   badgeLabel = "Moderate"; }
+      else if (ratio <= 1.0)                 { badge = "tight";      badgeLabel = "Tight"; }
+      else                                   { badge = "forfeit";    badgeLabel = "Forfeit Risk"; }
 
       return { availableSlots, sessionsRemaining, ratio, badge, badgeLabel,
                confidencePct, signalAgeMs, signalSource, forfeited };
@@ -844,8 +670,7 @@
       if (ms === null) return "no signal";
       const h = Math.floor(ms / 3600000);
       const m = Math.floor((ms % 3600000) / 60000);
-      if (h > 0) return `${h}h ${m}m ago`;
-      return `${m}m ago`;
+      return h > 0 ? `${h}h ${m}m ago` : `${m}m ago`;
     }
 
     // ─── Storage ──────────────────────────────────────────────────────────────
@@ -872,9 +697,7 @@
       if (!sessions.length) return null;
       const normalized = sessions.map(s => s.normalizedDelta);
       const avg = normalized.reduce((a, b) => a + b, 0) / normalized.length;
-      const min = Math.min(...normalized);
-      const max = Math.max(...normalized);
-      return { avg, min, max, n: sessions.length };
+      return { avg, min: Math.min(...normalized), max: Math.max(...normalized), n: sessions.length };
     }
 
     function getDriftStatus(weeklyPct, timePct) {
@@ -887,7 +710,8 @@
     }
 
     function getDriftLabel(status) {
-      return { "on-track": "On Track", "drifting": "Drifting", "at-risk": "At Risk", "critical": "Critical", "no-data": "No Data" }[status];
+      return { "on-track": "On Track", "drifting": "Drifting", "at-risk": "At Risk",
+               "critical": "Critical", "no-data": "No Data" }[status];
     }
 
     // ─── Build DOM (once) ─────────────────────────────────────────────────────
@@ -904,20 +728,18 @@
         <div class="sub">of this week's cycle elapsed</div>
       </div>
 
-      <div class="main-bar-section">
-        <div class="main-bar-wrap" id="mainBarWrap">
-          <div class="main-bar-inner">
-            <div class="main-bar-fill" id="mainBarFill"></div>
-            <div class="main-bar-tick" style="left:25%"></div>
-            <div class="main-bar-tick" style="left:50%"></div>
-            <div class="main-bar-tick" style="left:75%"></div>
-          </div>
-          <div class="main-bar-weekly-marker" id="mainBarWeeklyMarker" style="display:none"></div>
-          <div class="main-bar-weekly-label" id="mainBarWeeklyLabel" style="display:none"></div>
+      <div class="main-bar-wrap" id="mainBarWrap">
+        <div class="main-bar-inner">
+          <div class="main-bar-fill" id="mainBarFill"></div>
+          <div class="main-bar-tick" style="left:25%"></div>
+          <div class="main-bar-tick" style="left:50%"></div>
+          <div class="main-bar-tick" style="left:75%"></div>
         </div>
-        <div class="main-bar-labels">
-          <span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span>
-        </div>
+        <div class="main-bar-weekly-marker" id="mainBarWeeklyMarker" style="display:none"></div>
+        <div class="main-bar-weekly-label"  id="mainBarWeeklyLabel"  style="display:none"></div>
+      </div>
+      <div class="main-bar-labels">
+        <span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span>
       </div>
 
       <div class="day-grid" id="dayGrid"></div>
@@ -955,7 +777,6 @@
       <div class="tracker-panel" id="trackerPanel">
         <div class="tracker-inner">
 
-          <!-- Drift Indicator -->
           <div class="drift-card">
             <div class="drift-card-header">
               <span class="drift-card-title">Weekly Usage vs Time Elapsed</span>
@@ -984,8 +805,7 @@
             </div>
           </div>
 
-          <!-- Sessions remaining + avg -->
-          <div class="sessions-card" id="sessionsCard">
+          <div class="sessions-card">
             <div class="sessions-stat">
               <div class="sessions-stat-label">Sessions Left</div>
               <div class="sessions-stat-value" id="sessionsLeft">—</div>
@@ -998,7 +818,6 @@
             </div>
           </div>
 
-          <!-- Log a session -->
           <div class="log-card">
             <div class="log-card-title">Log a Session</div>
             <div class="log-inputs">
@@ -1021,7 +840,6 @@
             </div>
           </div>
 
-          <!-- History -->
           <div class="history-card">
             <div class="history-header">
               <span class="history-title">Session History</span>
@@ -1054,24 +872,22 @@
     // ─── Layer 2 state ────────────────────────────────────────────────────────
     let trackerData = loadData();
 
-    // Restore panel open state — also sync body class
     const trackerToggle = document.getElementById("trackerToggle");
     const trackerPanel  = document.getElementById("trackerPanel");
 
-    function applyTrackerOpenState(isOpen) {
-      trackerToggle.classList.toggle("open", isOpen);
-      trackerPanel.classList.toggle("open", isOpen);
-      document.body.classList.toggle("tracker-open", isOpen);
+    // Restore saved open state
+    if (trackerData.trackerOpen) {
+      trackerToggle.classList.add("open");
+      trackerPanel.classList.add("open");
     }
 
-    applyTrackerOpenState(trackerData.trackerOpen);
-
     trackerToggle.addEventListener("click", () => {
-      const isOpen = !trackerPanel.classList.contains("open");
-      applyTrackerOpenState(isOpen);
+      const isOpen = trackerPanel.classList.toggle("open");
+      trackerToggle.classList.toggle("open", isOpen);
       trackerData.trackerOpen = isOpen;
       saveData(trackerData);
       if (isOpen) {
+        // Let the panel start expanding, then scroll it into view
         setTimeout(() => {
           trackerToggle.scrollIntoView({ behavior: "smooth", block: "start" });
         }, 50);
@@ -1115,19 +931,14 @@
       const delta = a - b;
       const norm  = delta / (s / 100);
       trackerData.sessions.unshift({
-        ts: Date.now(),
-        weekBefore: b,
-        sessionUsed: s,
-        weekAfter: a,
+        ts: Date.now(), weekBefore: b, sessionUsed: s, weekAfter: a,
         delta: parseFloat(delta.toFixed(2)),
         normalizedDelta: parseFloat(norm.toFixed(3))
       });
       trackerData.spotWeekly = { value: a, ts: Date.now() };
       saveData(trackerData);
-      logBefore.value  = "";
-      logSession.value = "";
-      logAfter.value   = "";
-      logBtn.disabled  = true;
+      logBefore.value = ""; logSession.value = ""; logAfter.value = "";
+      logBtn.disabled = true;
       logPreview.textContent = "Fill in all three fields to preview";
       renderLayer2();
     });
@@ -1136,9 +947,7 @@
     const spotInput = document.getElementById("spotInput");
     const spotBtn   = document.getElementById("spotBtn");
 
-    if (trackerData.spotWeekly !== null) {
-      spotInput.value = trackerData.spotWeekly.value;
-    }
+    if (trackerData.spotWeekly !== null) spotInput.value = trackerData.spotWeekly.value;
 
     spotBtn.addEventListener("click", () => {
       const v = parseFloat(spotInput.value);
@@ -1153,8 +962,8 @@
     // ─── Clear history ────────────────────────────────────────────────────────
     document.getElementById("clearBtn").addEventListener("click", () => {
       if (!confirm("Clear all session history?")) return;
-      trackerData.sessions    = [];
-      trackerData.spotWeekly  = null;
+      trackerData.sessions   = [];
+      trackerData.spotWeekly = null;
       spotInput.value = "";
       saveData(trackerData);
       renderLayer2();
@@ -1166,16 +975,15 @@
       const cycleStartMs = getCycleStartUTC();
       const elapsedMs    = nowMs - cycleStartMs;
       const timePct      = Math.min(100, Math.max(0, (elapsedMs / CYCLE_MS) * 100));
+      const weeklyPct    = trackerData.spotWeekly !== null ? trackerData.spotWeekly.value : null;
 
-      const weeklyPct = trackerData.spotWeekly !== null ? trackerData.spotWeekly.value : null;
-
-      // ── Drift bars ──
-      const driftTimeBar    = document.getElementById("driftTimeBar");
-      const driftWeeklyBar  = document.getElementById("driftWeeklyBar");
-      const driftTimeVal    = document.getElementById("driftTimeVal");
-      const driftWeeklyVal  = document.getElementById("driftWeeklyVal");
-      const driftBadge      = document.getElementById("driftBadge");
-      const driftGapLabel   = document.getElementById("driftGapLabel");
+      // Drift bars
+      const driftTimeBar   = document.getElementById("driftTimeBar");
+      const driftWeeklyBar = document.getElementById("driftWeeklyBar");
+      const driftTimeVal   = document.getElementById("driftTimeVal");
+      const driftWeeklyVal = document.getElementById("driftWeeklyVal");
+      const driftBadge     = document.getElementById("driftBadge");
+      const driftGapLabel  = document.getElementById("driftGapLabel");
 
       driftTimeBar.style.width      = timePct + "%";
       driftTimeBar.style.background = "#475569";
@@ -1185,26 +993,17 @@
       driftBadge.className   = "drift-badge " + status;
       driftBadge.textContent = getDriftLabel(status);
 
-      if (weeklyPct !== null && weeklyPct !== undefined) {
-        const weekColour = status === "on-track" ? "#22c55e"
-                         : status === "drifting"  ? "#eab308"
-                         : status === "at-risk"   ? "#f97316"
-                         : "#ef4444";
+      if (weeklyPct !== null) {
+        const wc = status === "on-track" ? "#22c55e" : status === "drifting" ? "#eab308"
+                 : status === "at-risk"  ? "#f97316" : "#ef4444";
         driftWeeklyBar.style.width      = Math.min(100, weeklyPct) + "%";
-        driftWeeklyBar.style.background = weekColour;
+        driftWeeklyBar.style.background = wc;
         driftWeeklyVal.textContent      = weeklyPct.toFixed(1) + "%";
-
         const gap = weeklyPct - timePct;
-        if (gap > 0) {
-          driftGapLabel.textContent  = `You're ${gap.toFixed(1)}% over target`;
-          driftGapLabel.style.color  = status === "on-track" ? "#22c55e" : status === "drifting" ? "#eab308" : status === "at-risk" ? "#f97316" : "#ef4444";
-        } else if (gap < 0) {
-          driftGapLabel.textContent  = `You're ${Math.abs(gap).toFixed(1)}% under target`;
-          driftGapLabel.style.color  = status === "on-track" ? "#22c55e" : status === "drifting" ? "#eab308" : status === "at-risk" ? "#f97316" : "#ef4444";
-        } else {
-          driftGapLabel.textContent  = "Perfectly on target";
-          driftGapLabel.style.color  = "#22c55e";
-        }
+        driftGapLabel.style.color = wc;
+        driftGapLabel.textContent = gap > 0 ? `You're ${gap.toFixed(1)}% over target`
+                                  : gap < 0 ? `You're ${Math.abs(gap).toFixed(1)}% under target`
+                                  : "Perfectly on target";
       } else {
         driftWeeklyBar.style.width = "0%";
         driftWeeklyVal.textContent = "—";
@@ -1212,8 +1011,8 @@
         driftGapLabel.style.color  = "#475569";
       }
 
-      // ── Sessions remaining ──
-      const avgData = calcAvg(trackerData.sessions);
+      // Sessions remaining
+      const avgData        = calcAvg(trackerData.sessions);
       const sessionsLeftEl  = document.getElementById("sessionsLeft");
       const sessionsLeftSub = document.getElementById("sessionsLeftSub");
       const avgSessionVal   = document.getElementById("avgSessionVal");
@@ -1222,11 +1021,8 @@
       if (avgData) {
         avgSessionVal.textContent = avgData.avg.toFixed(2) + "%";
         avgSessionSub.textContent = `based on ${avgData.n} session${avgData.n > 1 ? "s" : ""}`;
-
-        if (weeklyPct !== null && weeklyPct !== undefined) {
-          const remaining    = 100 - weeklyPct;
-          const sessionsLeft = remaining / avgData.avg;
-          sessionsLeftEl.textContent  = sessionsLeft.toFixed(1);
+        if (weeklyPct !== null) {
+          sessionsLeftEl.textContent  = ((100 - weeklyPct) / avgData.avg).toFixed(1);
           sessionsLeftSub.textContent = `at ${avgData.avg.toFixed(2)}% avg per session`;
         } else {
           sessionsLeftEl.textContent  = "—";
@@ -1239,55 +1035,41 @@
         sessionsLeftSub.textContent = "log sessions to calculate";
       }
 
-      // ── History table ──
+      // History table
       const historyBody = document.getElementById("historyBody");
       const sessions    = trackerData.sessions.slice(0, 10);
-
       if (!sessions.length) {
         historyBody.innerHTML = `<div class="history-empty">No sessions logged yet</div>`;
         return;
       }
-
-      const rows = sessions.map(s => `
-        <tr>
-          <td>${formatShortDate(s.ts)}</td>
-          <td>${s.weekBefore}%→${s.weekAfter}%</td>
-          <td>${s.sessionUsed}%</td>
-          <td class="delta-pos">+${s.delta.toFixed(1)}%</td>
-          <td>${s.normalizedDelta.toFixed(2)}%</td>
-        </tr>
-      `).join("");
-
       historyBody.innerHTML = `
         <table class="history-table">
-          <thead>
+          <thead><tr>
+            <th>Date</th><th>Week Before→After</th>
+            <th>Session</th><th>Δ</th><th>Per 100%</th>
+          </tr></thead>
+          <tbody>${sessions.map(s => `
             <tr>
-              <th>Date</th>
-              <th>Week Before→After</th>
-              <th>Session</th>
-              <th>Δ</th>
-              <th>Per 100%</th>
-            </tr>
-          </thead>
-          <tbody>${rows}</tbody>
-        </table>
-      `;
+              <td>${formatShortDate(s.ts)}</td>
+              <td>${s.weekBefore}%→${s.weekAfter}%</td>
+              <td>${s.sessionUsed}%</td>
+              <td class="delta-pos">+${s.delta.toFixed(1)}%</td>
+              <td>${s.normalizedDelta.toFixed(2)}%</td>
+            </tr>`).join("")}
+          </tbody>
+        </table>`;
     }
 
     // ─── Render Pacing card ───────────────────────────────────────────────────
     function renderPacing() {
       const pacing = calcPacing(trackerData);
 
-      const pacingSlotsEl      = document.getElementById("pacingSlots");
-      const pacingNeededEl     = document.getElementById("pacingNeeded");
-      const pacingNeededSub    = document.getElementById("pacingNeededSub");
-      const pacingBadgeWrap    = document.getElementById("pacingBadgeWrap");
-      const pacingConfidenceEl = document.getElementById("pacingConfidence");
+      document.getElementById("pacingSlots").textContent = pacing.availableSlots;
 
-      pacingSlotsEl.textContent = pacing.availableSlots;
-
+      const pacingNeededEl  = document.getElementById("pacingNeeded");
+      const pacingNeededSub = document.getElementById("pacingNeededSub");
       if (pacing.sessionsRemaining !== null) {
-        pacingNeededEl.textContent = pacing.sessionsRemaining.toFixed(1);
+        pacingNeededEl.textContent  = pacing.sessionsRemaining.toFixed(1);
         const avgData = calcAvg(trackerData.sessions);
         pacingNeededSub.textContent = avgData
           ? `at ${avgData.avg.toFixed(1)}% avg/session`
@@ -1297,21 +1079,18 @@
         pacingNeededSub.textContent = "log sessions to calculate";
       }
 
-      pacingBadgeWrap.innerHTML =
+      document.getElementById("pacingBadgeWrap").innerHTML =
         `<span class="pacing-badge ${pacing.badge}">${pacing.badgeLabel}</span>`;
 
       let confText = "";
-      if (pacing.forfeited > 0.1 && isFinite(pacing.forfeited)) {
+      if (pacing.forfeited > 0.1 && isFinite(pacing.forfeited))
         confText = `~${pacing.forfeited.toFixed(1)} sessions at risk`;
-      }
       if (pacing.confidencePct !== null) {
-        const ageStr = pacing.signalAgeMs !== null
-          ? ` · signal ${formatSignalAge(pacing.signalAgeMs)}`
-          : "";
+        const ageStr = pacing.signalAgeMs !== null ? ` · signal ${formatSignalAge(pacing.signalAgeMs)}` : "";
         const confLine = `${pacing.confidencePct}% confidence${ageStr}`;
         confText = confText ? `${confText} · ${confLine}` : confLine;
       }
-      pacingConfidenceEl.textContent = confText;
+      document.getElementById("pacingConfidence").textContent = confText;
     }
 
     // ─── Layer 1 Update loop ──────────────────────────────────────────────────
@@ -1327,11 +1106,7 @@
       const colour       = barColour(driftStatus);
       const activeDayIdx = getActiveDayIndex();
 
-      // ── Subtitle countdown ──
-      const headerCountdown = document.getElementById("headerCountdown");
-      if (headerCountdown) {
-        headerCountdown.textContent = "· " + formatDuration(remainingMs) + " left";
-      }
+      document.getElementById("headerCountdown").textContent = "· " + formatDuration(remainingMs) + " left";
 
       const pctEl = document.getElementById("pctNumber");
       pctEl.style.color = colour;
@@ -1342,14 +1117,14 @@
       fill.style.background = `linear-gradient(90deg, ${colour}88, ${colour})`;
 
       DAY_LABELS.forEach((_, i) => {
-        const done   = i < activeDayIdx;
-        const active = i === activeDayIdx;
-        const bar    = document.getElementById("daybar-" + i);
-        const fillEl = document.getElementById("dayfill-" + i);
-        const labelEl= document.getElementById("daylabel-" + i);
+        const done    = i < activeDayIdx;
+        const active  = i === activeDayIdx;
+        const bar     = document.getElementById("daybar-"  + i);
+        const fillEl  = document.getElementById("dayfill-" + i);
+        const labelEl = document.getElementById("daylabel-"+ i);
 
-        bar.style.border       = active ? `1px solid ${colour}` : "1px solid transparent";
-        labelEl.style.color    = active ? "#e2e8f0" : done ? "#64748b" : "#475569";
+        bar.style.border         = active ? `1px solid ${colour}` : "1px solid transparent";
+        labelEl.style.color      = active ? "#e2e8f0" : done ? "#64748b" : "#475569";
         labelEl.style.fontWeight = active ? "700" : "400";
 
         if (i === 0) {
@@ -1358,12 +1133,14 @@
             const msIntoDay = awstDate.getUTCHours() * 3600000 + awstDate.getUTCMinutes() * 60000 + awstDate.getUTCSeconds() * 1000;
             const dayPct    = (msIntoDay / (24 * 3600000)) * 100;
             if (dayPct < MARKER_PCT) {
-              fillEl.style.left = "0%"; fillEl.style.width = dayPct + "%"; fillEl.style.background = colour;
+              fillEl.style.left = "0%"; fillEl.style.width = dayPct + "%";
             } else {
-              fillEl.style.left = MARKER_PCT + "%"; fillEl.style.width = (dayPct - MARKER_PCT) + "%"; fillEl.style.background = colour;
+              fillEl.style.left = MARKER_PCT + "%"; fillEl.style.width = (dayPct - MARKER_PCT) + "%";
             }
+            fillEl.style.background = colour;
           } else if (done) {
-            fillEl.style.left = MARKER_PCT + "%"; fillEl.style.width = WED_WINDOW + "%"; fillEl.style.background = "#334155";
+            fillEl.style.left = MARKER_PCT + "%"; fillEl.style.width = WED_WINDOW + "%";
+            fillEl.style.background = "#334155";
           } else {
             fillEl.style.left = "0%"; fillEl.style.width = "0%";
           }
@@ -1374,14 +1151,15 @@
           } else if (active) {
             const awstDate  = new Date(nowMs + AWST_OFFSET_MS);
             const msIntoDay = awstDate.getUTCHours() * 3600000 + awstDate.getUTCMinutes() * 60000 + awstDate.getUTCSeconds() * 1000;
-            fillEl.style.width = ((msIntoDay / (24 * 3600000)) * 100) + "%"; fillEl.style.background = colour;
+            fillEl.style.width = ((msIntoDay / (24 * 3600000)) * 100) + "%";
+            fillEl.style.background = colour;
           } else {
             fillEl.style.width = "0%";
           }
         }
       });
 
-      // ── Weekly usage marker on main bar ──
+      // Weekly usage marker on main bar
       const weeklyMarker = document.getElementById("mainBarWeeklyMarker");
       const weeklyLabel  = document.getElementById("mainBarWeeklyLabel");
       const sw = trackerData.spotWeekly;
@@ -1389,9 +1167,8 @@
         const wPct = Math.min(100, Math.max(0, sw.value));
         weeklyMarker.style.display = "";
         weeklyMarker.style.left    = wPct + "%";
-        const labelOffset = Math.max(wPct - 1, 2);
         weeklyLabel.style.display  = "";
-        weeklyLabel.style.left     = labelOffset + "%";
+        weeklyLabel.style.left     = Math.max(wPct - 1, 2) + "%";
         weeklyLabel.style.transform = "translate(-100%, -50%)";
         weeklyLabel.textContent    = sw.value.toFixed(1) + "%";
       } else {
@@ -1399,22 +1176,18 @@
         weeklyLabel.style.display  = "none";
       }
 
-      // ── Check-ins projection ──
-      const checkIns    = getNextCheckIns();
+      // Check-ins
+      const checkIns = getNextCheckIns();
       const checkInsList = document.getElementById("checkInsList");
-      if (checkIns.length) {
-        checkInsList.innerHTML = checkIns.map(c => `
-          <div class="checkin-row">
-            <span class="checkin-time">${c.label}</span>
-            <span class="checkin-dots"></span>
-            <span class="checkin-pct">${c.pct.toFixed(1)}%</span>
-          </div>
-        `).join("");
-      } else {
-        checkInsList.innerHTML = `<span style="color:#475569;font-size:12px">—</span>`;
-      }
+      checkInsList.innerHTML = checkIns.length
+        ? checkIns.map(c => `
+            <div class="checkin-row">
+              <span class="checkin-time">${c.label}</span>
+              <span class="checkin-dots"></span>
+              <span class="checkin-pct">${c.pct.toFixed(1)}%</span>
+            </div>`).join("")
+        : `<span style="color:#475569;font-size:12px">—</span>`;
 
-      // ── Pacing card ──
       renderPacing();
     }
 
