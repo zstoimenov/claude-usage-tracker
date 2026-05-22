@@ -28,9 +28,9 @@
       align-items: center;
       justify-content: center;
       font-family: -apple-system, 'Inter', 'Helvetica Neue', sans-serif;
-      padding: 24px;
-      padding-top: max(24px, env(safe-area-inset-top));
-      padding-bottom: max(24px, env(safe-area-inset-bottom));
+      padding: clamp(12px, 2.5vh, 24px);
+      padding-top: max(clamp(12px, 2.5vh, 24px), env(safe-area-inset-top));
+      padding-bottom: max(clamp(12px, 2.5vh, 24px), env(safe-area-inset-bottom));
       color: #e2e8f0;
     }
 
@@ -41,7 +41,7 @@
 
     .header {
       text-align: center;
-      margin-bottom: 32px;
+      margin-bottom: clamp(16px, 3vh, 32px);
     }
     .header-label {
       font-size: 13px;
@@ -62,10 +62,10 @@
 
     .big-pct {
       text-align: center;
-      margin-bottom: 28px;
+      margin-bottom: clamp(12px, 2.5vh, 28px);
     }
     .big-pct .number {
-      font-size: clamp(64px, 16vw, 88px);
+      font-size: clamp(52px, 14vw, 88px);
       font-weight: 700;
       letter-spacing: -4px;
       line-height: 1;
@@ -85,10 +85,42 @@
     .main-bar-wrap {
       background: #1e293b;
       border-radius: 12px;
-      overflow: hidden;
+      overflow: visible;
       height: 20px;
       margin-bottom: 8px;
       position: relative;
+    }
+    /* Clip only the fill bar, not the marker */
+    .main-bar-inner {
+      position: absolute;
+      inset: 0;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .main-bar-weekly-marker {
+      position: absolute;
+      top: 50%;
+      width: 2px;
+      height: 28px;
+      background: #f8fafc;
+      border-radius: 1px;
+      transform: translate(-50%, -50%);
+      z-index: 3;
+      box-shadow: 0 0 4px rgba(248,250,252,0.53);
+      transition: left 0.5s;
+    }
+    .main-bar-weekly-label {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 10px;
+      font-weight: 700;
+      color: #f8fafc;
+      z-index: 4;
+      pointer-events: none;
+      transition: left 0.5s;
+      text-shadow: 0 0 6px rgba(15,23,42,0.9);
+      white-space: nowrap;
     }
     .main-bar-fill {
       height: 100%;
@@ -107,14 +139,13 @@
       justify-content: space-between;
       font-size: 11px;
       color: #64748b;
-      margin-bottom: 28px;
+      margin-bottom: clamp(12px, 2.5vh, 28px);
     }
-
     .day-grid {
       display: grid;
       grid-template-columns: repeat(7, 1fr);
       gap: 6px;
-      margin-bottom: 28px;
+      margin-bottom: clamp(12px, 2.5vh, 28px);
     }
     .day-cell {
       text-align: center;
@@ -161,13 +192,13 @@
     .stats-grid {
       display: flex;
       flex-direction: column;
-      gap: 12px;
-      margin-bottom: 20px;
+      gap: clamp(8px, 1.2vh, 12px);
+      margin-bottom: clamp(10px, 1.8vh, 20px);
     }
     .stat-card {
       background: #1e293b;
       border-radius: 10px;
-      padding: 20px 20px;
+      padding: clamp(14px, 2vh, 20px);
     }
     .stat-label {
       font-size: 11px;
@@ -179,34 +210,37 @@
     .stat-card-remaining {
       display: flex;
       flex-direction: column;
-      justify-content: center;
+      gap: 12px;
     }
-    .stat-card-inner {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+    .pacing-top-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
     }
-    .stat-card-left {
-      display: flex;
-      flex-direction: column;
+    .pacing-stat { }
+    .pacing-stat-label {
+      font-size: 11px;
+      color: #475569;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 3px;
     }
-    .stat-card-right {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-    }
-    .stat-value {
-      font-weight: 600;
-    }
-    .stat-value.large { font-size: 26px; }
-    .stat-value.small { font-size: 12px; }
-
-    /* ── Pacing stat styles ── */
-    .pacing-value {
-      font-size: 22px;
+    .pacing-stat-value {
+      font-size: 26px;
       font-weight: 700;
       color: #e2e8f0;
-      line-height: 1.5;
+      line-height: 1;
+    }
+    .pacing-stat-sub {
+      font-size: 10px;
+      color: #475569;
+      margin-top: 3px;
+    }
+    .pacing-bottom-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
     }
     .pacing-badge {
       display: inline-block;
@@ -215,7 +249,6 @@
       padding: 2px 7px;
       border-radius: 20px;
       letter-spacing: 0.5px;
-      margin-top: 4px;
     }
     .pacing-badge.comfortable { background: #14532d; color: #4ade80; }
     .pacing-badge.moderate    { background: #422006; color: #eab308; }
@@ -224,8 +257,8 @@
     .pacing-badge.no-data     { background: #1e293b; color: #475569; border: 1px solid #334155; }
     .pacing-confidence {
       font-size: 10px;
-      color: #334155;
-      margin-top: 3px;
+      color: #475569;
+      text-align: right;
     }
 
     .checkins-list {
@@ -900,10 +933,14 @@
       </div>
 
       <div class="main-bar-wrap" id="mainBarWrap">
-        <div class="main-bar-fill" id="mainBarFill"></div>
-        <div class="main-bar-tick" style="left:25%"></div>
-        <div class="main-bar-tick" style="left:50%"></div>
-        <div class="main-bar-tick" style="left:75%"></div>
+        <div class="main-bar-inner">
+          <div class="main-bar-fill" id="mainBarFill"></div>
+          <div class="main-bar-tick" style="left:25%"></div>
+          <div class="main-bar-tick" style="left:50%"></div>
+          <div class="main-bar-tick" style="left:75%"></div>
+        </div>
+        <div class="main-bar-weekly-marker" id="mainBarWeeklyMarker" style="display:none"></div>
+        <div class="main-bar-weekly-label" id="mainBarWeeklyLabel" style="display:none"></div>
       </div>
       <div class="main-bar-labels">
         <span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span>
@@ -913,17 +950,22 @@
 
       <div class="stats-grid">
         <div class="stat-card stat-card-remaining">
-          <div class="stat-card-inner">
-            <div class="stat-card-left">
-              <div class="stat-label">Session Pacing</div>
-              <div class="pacing-value" id="pacingSlots">—</div>
-              <div id="pacingBadgeWrap"></div>
-              <div class="pacing-confidence" id="pacingConfidence"></div>
+          <div class="stat-label">Session Pacing</div>
+          <div class="pacing-top-row">
+            <div class="pacing-stat">
+              <div class="pacing-stat-label">Slots Left</div>
+              <div class="pacing-stat-value" id="pacingSlots">—</div>
+              <div class="pacing-stat-sub">waking 5h windows</div>
             </div>
-            <div class="stat-card-right">
-              <div class="stat-label" id="weeklyBadgeLabel" style="display:none;text-align:right">Weekly Usage</div>
-              <div class="stat-value large" id="weeklyBadge" style="display:none;text-align:right">—</div>
+            <div class="pacing-stat">
+              <div class="pacing-stat-label">Sessions Needed</div>
+              <div class="pacing-stat-value" id="pacingNeeded">—</div>
+              <div class="pacing-stat-sub" id="pacingNeededSub">log sessions to calculate</div>
             </div>
+          </div>
+          <div class="pacing-bottom-row">
+            <div id="pacingBadgeWrap"></div>
+            <div class="pacing-confidence" id="pacingConfidence"></div>
           </div>
         </div>
         <div class="stat-card stat-card-checkins">
@@ -1258,29 +1300,31 @@
       const pacing = calcPacing(trackerData);
 
       const pacingSlotsEl      = document.getElementById("pacingSlots");
+      const pacingNeededEl     = document.getElementById("pacingNeeded");
+      const pacingNeededSub    = document.getElementById("pacingNeededSub");
       const pacingBadgeWrap    = document.getElementById("pacingBadgeWrap");
       const pacingConfidenceEl = document.getElementById("pacingConfidence");
 
-      // Slot count lines — two clearly labelled rows
+      // Slots left
+      pacingSlotsEl.textContent = pacing.availableSlots;
+
+      // Sessions needed
       if (pacing.sessionsRemaining !== null) {
-        const sessStr = pacing.sessionsRemaining.toFixed(1);
-        pacingSlotsEl.innerHTML =
-          `<span style="font-size:22px;font-weight:700">${pacing.availableSlots}</span>` +
-          `<span style="font-size:12px;color:#64748b;font-weight:400;margin-left:5px">time slots left</span>` +
-          `<br>` +
-          `<span style="font-size:22px;font-weight:700">${sessStr}</span>` +
-          `<span style="font-size:12px;color:#64748b;font-weight:400;margin-left:5px">sessions needed</span>`;
+        pacingNeededEl.textContent = pacing.sessionsRemaining.toFixed(1);
+        const avgData = calcAvg(trackerData.sessions);
+        pacingNeededSub.textContent = avgData
+          ? `at ${avgData.avg.toFixed(1)}% avg/session`
+          : "log sessions to calculate";
       } else {
-        pacingSlotsEl.innerHTML =
-          `<span style="font-size:22px;font-weight:700">${pacing.availableSlots}</span>` +
-          `<span style="font-size:12px;color:#64748b;font-weight:400;margin-left:5px">time slots left</span>`;
+        pacingNeededEl.textContent = "—";
+        pacingNeededSub.textContent = "log sessions to calculate";
       }
 
       // Badge
       pacingBadgeWrap.innerHTML =
         `<span class="pacing-badge ${pacing.badge}">${pacing.badgeLabel}</span>`;
 
-      // Forfeit warning + confidence line
+      // Confidence + forfeit warning
       let confText = "";
       if (pacing.forfeited > 0.1 && isFinite(pacing.forfeited)) {
         confText = `~${pacing.forfeited.toFixed(1)} sessions at risk`;
@@ -1362,19 +1406,23 @@
         }
       });
 
-      // ── Weekly usage badge (fresh if logged within 12h) ──
-      const weeklyBadge = document.getElementById("weeklyBadge");
-      const weeklyLabel = document.getElementById("weeklyBadgeLabel");
-      const TWELVE_HOURS = 12 * 60 * 60 * 1000;
+      // ── Weekly usage marker on main bar ──
+      const weeklyMarker = document.getElementById("mainBarWeeklyMarker");
+      const weeklyLabel  = document.getElementById("mainBarWeeklyLabel");
       const sw = trackerData.spotWeekly;
-      if (sw !== null && (Date.now() - sw.ts) < TWELVE_HOURS) {
-        weeklyBadge.textContent = sw.value.toFixed(1) + "%";
-        weeklyBadge.style.color = colour;
-        weeklyLabel.style.display = "";
-        weeklyBadge.style.display = "";
+      if (sw !== null && sw.value !== null) {
+        const wPct = Math.min(100, Math.max(0, sw.value));
+        weeklyMarker.style.display = "";
+        weeklyMarker.style.left    = wPct + "%";
+        // Label sits just left of the marker, min 24px from left edge
+        const labelOffset = Math.max(wPct - 1, 2);
+        weeklyLabel.style.display  = "";
+        weeklyLabel.style.left     = labelOffset + "%";
+        weeklyLabel.style.transform = "translate(-100%, -50%)";
+        weeklyLabel.textContent    = sw.value.toFixed(1) + "%";
       } else {
-        weeklyLabel.style.display = "none";
-        weeklyBadge.style.display = "none";
+        weeklyMarker.style.display = "none";
+        weeklyLabel.style.display  = "none";
       }
 
       // ── Check-ins projection ──
