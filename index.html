@@ -25,8 +25,9 @@
       min-height: 100dvh;
       background: #0f172a;
       display: flex;
+      flex-direction: column;
       align-items: center;
-      justify-content: center;
+      justify-content: flex-start;
       font-family: -apple-system, 'Inter', 'Helvetica Neue', sans-serif;
       padding: clamp(12px, 2.5vh, 24px);
       padding-top: max(clamp(12px, 2.5vh, 24px), env(safe-area-inset-top));
@@ -210,7 +211,7 @@
     .stat-card-remaining {
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 10px;
     }
     .pacing-top-row {
       display: grid;
@@ -950,7 +951,6 @@
 
       <div class="stats-grid">
         <div class="stat-card stat-card-remaining">
-          <div class="stat-label">Session Pacing</div>
           <div class="pacing-top-row">
             <div class="pacing-stat">
               <div class="pacing-stat-label">Slots Left</div>
@@ -1096,6 +1096,12 @@
       trackerToggle.classList.toggle("open", isOpen);
       trackerData.trackerOpen = isOpen;
       saveData(trackerData);
+      if (isOpen) {
+        // Wait for the CSS transition to start, then scroll toggle into view at the top
+        setTimeout(() => {
+          trackerToggle.scrollIntoView({ behavior: "smooth", block: "start" });
+        }, 50);
+      }
     });
 
     // ─── Log inputs: live preview ──────────────────────────────────────────────
