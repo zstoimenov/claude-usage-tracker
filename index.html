@@ -205,81 +205,85 @@
       padding: 20px;
     }
 
-    /* ── Pacing card (redesigned) ────────────────────────────────────────── */
-    .stat-card-remaining {
+    /* ── Pacing card (velocity reframe) ──────────────────────────────────── */
+    .stat-card-pace {
       display: flex;
       flex-direction: column;
       gap: 10px;
       padding: 16px 20px;
+      transition: opacity 0.3s;
     }
-    .pacing-label {
+    .stat-card-pace.stale .pace-primary,
+    .stat-card-pace.stale .pace-secondary {
+      opacity: 0.4;
+    }
+    .pace-label {
       font-size: 11px;
       color: #64748b;
       text-transform: uppercase;
       letter-spacing: 1px;
     }
-    .pacing-slots-lockup {
+    .pace-top-row {
       display: flex;
       align-items: baseline;
-      gap: 6px;
+      justify-content: space-between;
+      gap: 12px;
     }
-    .pacing-slots-needed {
+    .pace-primary {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      transition: opacity 0.3s;
+    }
+    .pace-required {
       font-size: 28px;
       font-weight: 700;
       color: #e2e8f0;
       line-height: 1;
     }
-    .pacing-slots-sep {
-      font-size: 16px;
-      color: #475569;
+    .pace-required-unit {
+      font-size: 13px;
+      color: #94a3b8;
       font-weight: 400;
     }
-    .pacing-slots-total {
-      font-size: 28px;
-      font-weight: 700;
-      color: #475569;
-      line-height: 1;
-    }
-    .pacing-slots-unit {
-      font-size: 11px;
-      color: #475569;
-      margin-left: 2px;
-    }
-    .pacing-ratio-bar-track {
-      background: #0f172a;
-      border-radius: 4px;
-      height: 6px;
-      overflow: hidden;
-    }
-    .pacing-ratio-bar-fill {
-      height: 100%;
-      border-radius: 4px;
-      transition: width 0.5s, background 0.5s;
-    }
-    .pacing-bottom-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-    }
-    .pacing-badge {
+    .pace-badge {
       display: inline-block;
       font-size: 10px;
       font-weight: 700;
-      padding: 2px 7px;
+      padding: 3px 8px;
       border-radius: 20px;
       letter-spacing: 0.5px;
+      white-space: nowrap;
     }
-    .pacing-badge.comfortable { background: #14532d; color: #4ade80; }
-    .pacing-badge.moderate    { background: #422006; color: #eab308; }
-    .pacing-badge.tight       { background: #431407; color: #f97316; }
-    .pacing-badge.forfeit     { background: #450a0a; color: #ef4444; }
-    .pacing-badge.no-data     { background: #1e293b; color: #475569; border: 1px solid #334155; }
-    .pacing-confidence {
+    .pace-badge.slow-down      { background: #0c2d4a; color: #60a5fa; }
+    .pace-badge.on-pace        { background: #14532d; color: #4ade80; }
+    .pace-badge.behind         { background: #422006; color: #eab308; }
+    .pace-badge.falling-behind { background: #450a0a; color: #ef4444; }
+    .pace-badge.stale          { background: #1e293b; color: #64748b; border: 1px solid #334155; }
+    .pace-badge.empty          { background: #1e293b; color: #475569; border: 1px solid #334155; }
+    .pace-secondary {
+      font-size: 11px;
+      color: #64748b;
+      transition: opacity 0.3s;
+    }
+    .pace-empty {
+      font-size: 12px;
+      color: #64748b;
+      font-style: italic;
+    }
+    .pace-stale-caption {
       font-size: 10px;
-      color: #475569;
-      text-align: right;
+      color: #f59e0b;
+      margin-top: 2px;
     }
+    .pace-capacity-row {
+      font-size: 11px;
+      color: #94a3b8;
+      padding-top: 8px;
+      border-top: 1px solid #0f172a;
+      margin-top: 2px;
+    }
+    .pace-capacity-row.forfeit { color: #f87171; }
 
     .checkins-list {
       display: flex;
@@ -683,9 +687,13 @@
     const WED_WINDOW     = 100 - MARKER_PCT;
     const STORAGE_KEY    = "claude-tracker-v1";
 
-    const SESSION_LOCK_MS  = 5 * 60 * 60 * 1000;
-    const SLEEP_START_AWST = 21.5;
-    const SLEEP_END_AWST   = 7.5;
+    // ─── Pacing constants (velocity model) ────────────────────────────────────
+    const WAKING_HOURS_PER_DAY = 14;             // 07:30–21:30 AWST
+    const SESSION_LOCK_HOURS   = 5;
+    const SLOTS_PER_DAY_MAX    = WAKING_HOURS_PER_DAY / SESSION_LOCK_HOURS;  // 2.8
+    const STALE_SIGNAL_MS      = 5 * 3600000;    // 5h
+    const CAPACITY_TRIGGER     = 0.7;
+    const EDGE_WINDOW_MS       = 6 * 3600000;    // 6h start/end edge cases
 
     // ─── Time helpers ─────────────────────────────────────────────────────────
     function getCycleStartUTC() {
@@ -733,6 +741,13 @@
       });
     }
 
+    function formatSignalAge(ms) {
+      if (ms === null || ms === undefined) return "no signal";
+      const h = Math.floor(ms / 3600000);
+      const m = Math.floor((ms % 3600000) / 60000);
+      return h > 0 ? `${h}h ${m}m old` : `${m}m old`;
+    }
+
     function getNextCheckIns() {
       const nowMs        = Date.now();
       const cycleStartMs = getCycleStartUTC();
@@ -770,99 +785,78 @@
       }
     }
 
-    // ─── Pacing helpers ───────────────────────────────────────────────────────
-    function isAsleepAtAWST(awstHour) {
-      return awstHour >= SLEEP_START_AWST || awstHour < SLEEP_END_AWST;
-    }
-
-    function countAvailableSlots(firstSlotUtcMs, toUtcMs) {
-      let slots = 0;
-      let cursor = firstSlotUtcMs;
-      while (cursor < toUtcMs) {
-        const awstDate = new Date(cursor + AWST_OFFSET_MS);
-        const awstHour = awstDate.getUTCHours() + awstDate.getUTCMinutes() / 60;
-        if (!isAsleepAtAWST(awstHour)) slots++;
-        cursor += SESSION_LOCK_MS;
-      }
-      return slots;
-    }
-
-    function estimateNextSlot(trackerData) {
+    // ─── Pacing (velocity model) ──────────────────────────────────────────────
+    function getFreshestSignalAge(trackerData) {
       const nowMs = Date.now();
       let bestTs = 0;
-      let source = "none";
-      let timeLeftMs = null;
-
       const sw = trackerData.spotWeekly;
-      if (sw && sw.ts && sw.ts > bestTs) { bestTs = sw.ts; source = "spot-check"; }
-      if (trackerData.sessions.length > 0 && trackerData.sessions[0].ts > bestTs) {
-        bestTs     = trackerData.sessions[0].ts;
-        source     = "session log";
-        timeLeftMs = trackerData.sessions[0].timeLeftMs ?? null;
-      }
-
-      if (bestTs === 0) {
-        return { nextSlotUtcMs: nowMs, confidencePct: 15, signalAgeMs: null, signalSource: "none" };
-      }
-
-      const signalAgeMs = nowMs - bestTs;
-      // If we have an explicit time-left reading, next slot = log_time + timeLeftMs
-      // Otherwise fall back to log_time + full SESSION_LOCK_MS
-      const lockMs      = (timeLeftMs !== null) ? timeLeftMs : SESSION_LOCK_MS;
-      const nextSlotUtcMs = Math.max(bestTs + lockMs, nowMs);
-
-      let confidencePct;
-      if      (signalAgeMs < 1 * 3600000) confidencePct = timeLeftMs !== null ? 95 : 90;
-      else if (signalAgeMs < 3 * 3600000) confidencePct = timeLeftMs !== null ? 80 : 70;
-      else if (signalAgeMs < 5 * 3600000) confidencePct = 50;
-      else                                 confidencePct = 30;
-
-      return { nextSlotUtcMs, confidencePct, signalAgeMs, signalSource: source };
+      if (sw && sw.ts) bestTs = Math.max(bestTs, sw.ts);
+      if (trackerData.sessions.length > 0) bestTs = Math.max(bestTs, trackerData.sessions[0].ts);
+      if (bestTs === 0) return null;
+      return nowMs - bestTs;
     }
 
     function calcPacing(trackerData) {
       const nowMs        = Date.now();
-      const cycleEndMs   = getCycleStartUTC() + CYCLE_MS;
-      const msUntilReset = cycleEndMs - nowMs;
+      const cycleStartMs = getCycleStartUTC();
+      const cycleEndMs   = cycleStartMs + CYCLE_MS;
+      const daysElapsed  = (nowMs - cycleStartMs) / 86400000;
+      const daysRemaining = (cycleEndMs - nowMs) / 86400000;
+      const weeklyPct    = trackerData.spotWeekly !== null ? trackerData.spotWeekly.value : null;
+      const signalAgeMs  = getFreshestSignalAge(trackerData);
+      const isStale      = signalAgeMs !== null && signalAgeMs > STALE_SIGNAL_MS;
 
-      if (msUntilReset <= 0) {
-        return { availableSlots: 0, sessionsRemaining: null, ratio: null,
-                 badge: "no-data", badgeLabel: "Reset Imminent",
-                 confidencePct: null, signalSource: "none", forfeited: 0 };
+      // Empty state — no weekly % yet
+      if (weeklyPct === null) {
+        return { state: "empty", message: "Set current weekly % to calculate pace" };
       }
 
-      const { nextSlotUtcMs, confidencePct, signalAgeMs, signalSource } = estimateNextSlot(trackerData);
-      const availableSlots = countAvailableSlots(nextSlotUtcMs, cycleEndMs);
-      const avgData        = calcAvg(trackerData.sessions);
-      const weeklyPct      = trackerData.spotWeekly !== null ? trackerData.spotWeekly.value : null;
-
-      let sessionsRemaining = null, ratio = null, forfeited = 0;
-
-      if (avgData && weeklyPct !== null) {
-        const usageRemaining = 100 - weeklyPct;
-        sessionsRemaining    = usageRemaining / avgData.avg;
-        ratio = availableSlots > 0 ? sessionsRemaining / availableSlots
-                                   : (sessionsRemaining > 0 ? Infinity : 0);
-        forfeited = Math.max(0, sessionsRemaining - availableSlots);
+      // Edge: cycle just started
+      if (nowMs - cycleStartMs < EDGE_WINDOW_MS) {
+        return { state: "starting", message: "Cycle just started — log some sessions" };
       }
+
+      // Edge: final stretch
+      if (cycleEndMs - nowMs < EDGE_WINDOW_MS) {
+        const usageLeft = Math.max(0, 100 - weeklyPct);
+        return { state: "final", weeklyPct, usageLeft,
+                 message: `Final stretch — ${usageLeft.toFixed(1)}% left to use`,
+                 isStale, signalAgeMs };
+      }
+
+      // Normal velocity calculation
+      const usageRemaining   = 100 - weeklyPct;
+      const requiredDailyPct = usageRemaining / daysRemaining;
+      const currentDailyPct  = daysElapsed > 0 ? weeklyPct / daysElapsed : 0;
+      const paceRatio        = currentDailyPct > 0 ? requiredDailyPct / currentDailyPct : null;
 
       let badge, badgeLabel;
-      if (ratio === null)                    { badge = "no-data";    badgeLabel = "No Usage Data"; }
-      else if (!isFinite(ratio) && ratio > 0){ badge = "forfeit";    badgeLabel = "Forfeit Certain"; }
-      else if (ratio <= 0.60)                { badge = "comfortable";badgeLabel = "Comfortable"; }
-      else if (ratio <= 0.85)                { badge = "moderate";   badgeLabel = "Moderate"; }
-      else if (ratio <= 1.0)                 { badge = "tight";      badgeLabel = "Tight"; }
-      else                                   { badge = "forfeit";    badgeLabel = "Forfeit Risk"; }
+      if (paceRatio === null)        { badge = "empty";          badgeLabel = "No Pace Data"; }
+      else if (paceRatio < 0.85)     { badge = "slow-down";      badgeLabel = "🔵 Slow Down"; }
+      else if (paceRatio <= 1.15)    { badge = "on-pace";        badgeLabel = "🟢 On Pace"; }
+      else if (paceRatio <= 1.5)     { badge = "behind";         badgeLabel = "🟡 Behind"; }
+      else                           { badge = "falling-behind"; badgeLabel = "🔴 Falling Behind"; }
 
-      return { availableSlots, sessionsRemaining, ratio, badge, badgeLabel,
-               confidencePct, signalAgeMs, signalSource, forfeited };
-    }
+      // Capacity check (secondary, conditional)
+      const avgData = calcAvg(trackerData.sessions);
+      let capacity = null;
+      if (avgData && usageRemaining > 0) {
+        const slotsAvailable = Math.floor(daysRemaining * SLOTS_PER_DAY_MAX);
+        const sessionsNeeded = usageRemaining / avgData.avg;
+        const forfeitPct     = Math.max(0, (sessionsNeeded - slotsAvailable) * avgData.avg);
+        const show           = sessionsNeeded > slotsAvailable * CAPACITY_TRIGGER;
+        capacity = { slotsAvailable, sessionsNeeded, forfeitPct, show,
+                     overCapacity: sessionsNeeded > slotsAvailable };
+      }
 
-    function formatSignalAge(ms) {
-      if (ms === null) return "no signal";
-      const h = Math.floor(ms / 3600000);
-      const m = Math.floor((ms % 3600000) / 60000);
-      return h > 0 ? `${h}h ${m}m ago` : `${m}m ago`;
+      return {
+        state: "normal",
+        weeklyPct, daysElapsed, daysRemaining,
+        requiredDailyPct, currentDailyPct, paceRatio,
+        badge, badgeLabel,
+        isStale, signalAgeMs,
+        capacity
+      };
     }
 
     // ─── Storage ──────────────────────────────────────────────────────────────
@@ -937,24 +931,21 @@
       <div class="day-grid" id="dayGrid"></div>
 
       <div class="stats-grid">
-        <div class="stat-card stat-card-remaining">
-          <div class="pacing-label">Sessions to Use</div>
-          <div class="pacing-slots-lockup">
-            <span class="pacing-slots-needed" id="pacingNeeded">—</span>
-            <span class="pacing-slots-sep" id="pacingSep">of</span>
-            <span class="pacing-slots-total" id="pacingSlots">—</span>
-            <span class="pacing-slots-unit">slots left</span>
+        <div class="stat-card stat-card-pace" id="paceCard">
+          <div class="pace-label">Weekly Pace</div>
+          <div class="pace-top-row">
+            <div class="pace-primary" id="pacePrimary">
+              <span class="pace-required" id="paceRequired">—</span>
+              <span class="pace-required-unit" id="paceRequiredUnit">%/day required</span>
+            </div>
+            <div id="paceBadgeWrap"></div>
           </div>
-          <div class="pacing-ratio-bar-track">
-            <div class="pacing-ratio-bar-fill" id="pacingRatioBar" style="width:0%"></div>
-          </div>
-          <div class="pacing-bottom-row">
-            <div id="pacingBadgeWrap"></div>
-            <div class="pacing-confidence" id="pacingConfidence"></div>
-          </div>
+          <div class="pace-secondary" id="paceSecondary">—</div>
+          <div class="pace-stale-caption" id="paceStaleCaption" style="display:none"></div>
+          <div class="pace-capacity-row" id="paceCapacityRow" style="display:none"></div>
         </div>
         <div class="stat-card stat-card-checkins" style="padding:16px 20px">
-          <div class="pacing-label" style="margin-bottom:10px">Next Check-ins</div>
+          <div class="pace-label" style="margin-bottom:10px">Next Check-ins</div>
           <div class="checkins-list" id="checkInsList">—</div>
         </div>
       </div>
@@ -1377,52 +1368,79 @@
         </table>`;
     }
 
-    // ─── Render Pacing card ───────────────────────────────────────────────────
+    // ─── Render Pacing card (velocity model) ──────────────────────────────────
     function renderPacing() {
       const pacing  = calcPacing(trackerData);
-      const avgData = calcAvg(trackerData.sessions);
+      const card             = document.getElementById("paceCard");
+      const paceRequired     = document.getElementById("paceRequired");
+      const paceRequiredUnit = document.getElementById("paceRequiredUnit");
+      const paceSecondary    = document.getElementById("paceSecondary");
+      const paceBadgeWrap    = document.getElementById("paceBadgeWrap");
+      const staleCaption     = document.getElementById("paceStaleCaption");
+      const capacityRow      = document.getElementById("paceCapacityRow");
 
-      // Slots lockup
-      document.getElementById("pacingSlots").textContent =
-        pacing.availableSlots > 0 ? pacing.availableSlots : "—";
+      // Reset stale state by default
+      card.classList.remove("stale");
+      staleCaption.style.display = "none";
+      capacityRow.style.display  = "none";
 
-      const pacingNeededEl  = document.getElementById("pacingNeeded");
-      const pacingSep       = document.getElementById("pacingSep");
-      if (pacing.sessionsRemaining !== null) {
-        pacingNeededEl.textContent = pacing.sessionsRemaining.toFixed(1);
-        pacingSep.style.display    = "";
-      } else {
-        pacingNeededEl.textContent = "—";
-        pacingSep.style.display    = pacing.availableSlots > 0 ? "" : "none";
+      // Empty state
+      if (pacing.state === "empty") {
+        paceRequired.textContent     = "—";
+        paceRequiredUnit.textContent = "set weekly %";
+        paceSecondary.textContent    = pacing.message;
+        paceBadgeWrap.innerHTML      = `<span class="pace-badge empty">No Data</span>`;
+        return;
       }
 
-      // Ratio bar
-      const ratioBar = document.getElementById("pacingRatioBar");
-      if (pacing.ratio !== null && isFinite(pacing.ratio) && pacing.availableSlots > 0) {
-        const fillPct = Math.min(100, (pacing.ratio * 100));
-        const colour  = pacing.badge === "comfortable" ? "#22c55e"
-                      : pacing.badge === "moderate"    ? "#eab308"
-                      : pacing.badge === "tight"       ? "#f97316"
-                      : pacing.badge === "forfeit"     ? "#ef4444"
-                      : "#334155";
-        ratioBar.style.width      = fillPct + "%";
-        ratioBar.style.background = colour;
-      } else {
-        ratioBar.style.width = "0%";
+      // Cycle just started
+      if (pacing.state === "starting") {
+        paceRequired.textContent     = "—";
+        paceRequiredUnit.textContent = "";
+        paceSecondary.textContent    = pacing.message;
+        paceBadgeWrap.innerHTML      = `<span class="pace-badge empty">Just Started</span>`;
+        return;
       }
 
-      document.getElementById("pacingBadgeWrap").innerHTML =
-        `<span class="pacing-badge ${pacing.badge}">${pacing.badgeLabel}</span>`;
-
-      let confText = "";
-      if (pacing.forfeited > 0.1 && isFinite(pacing.forfeited))
-        confText = `~${pacing.forfeited.toFixed(1)} sessions at risk`;
-      if (pacing.confidencePct !== null) {
-        const ageStr  = pacing.signalAgeMs !== null ? ` · signal ${formatSignalAge(pacing.signalAgeMs)}` : "";
-        const confLine = `${pacing.confidencePct}% confidence${ageStr}`;
-        confText = confText ? `${confText} · ${confLine}` : confLine;
+      // Final stretch
+      if (pacing.state === "final") {
+        paceRequired.textContent     = pacing.usageLeft.toFixed(1) + "%";
+        paceRequiredUnit.textContent = "left to use";
+        paceSecondary.textContent    = pacing.message;
+        paceBadgeWrap.innerHTML      = `<span class="pace-badge ${pacing.usageLeft > 5 ? "behind" : "on-pace"}">Final Stretch</span>`;
+        if (pacing.isStale) {
+          card.classList.add("stale");
+          staleCaption.style.display = "";
+          staleCaption.textContent = `signal ${formatSignalAge(pacing.signalAgeMs)} — refresh below`;
+        }
+        return;
       }
-      document.getElementById("pacingConfidence").textContent = confText;
+
+      // Normal velocity state
+      paceRequired.textContent     = pacing.requiredDailyPct.toFixed(1) + "%";
+      paceRequiredUnit.textContent = "/day required";
+      paceSecondary.textContent    = `current: ${pacing.currentDailyPct.toFixed(1)}%/day · ${pacing.daysRemaining.toFixed(1)} days left`;
+      paceBadgeWrap.innerHTML      = `<span class="pace-badge ${pacing.badge}">${pacing.badgeLabel}</span>`;
+
+      if (pacing.isStale) {
+        card.classList.add("stale");
+        // Override badge to stale grey
+        paceBadgeWrap.innerHTML = `<span class="pace-badge stale">Stale</span>`;
+        staleCaption.style.display = "";
+        staleCaption.textContent = `signal ${formatSignalAge(pacing.signalAgeMs)} — refresh below`;
+      }
+
+      // Capacity row (conditional)
+      if (pacing.capacity && pacing.capacity.show) {
+        capacityRow.style.display = "";
+        if (pacing.capacity.overCapacity) {
+          capacityRow.classList.add("forfeit");
+          capacityRow.textContent = `⚠ ~${pacing.capacity.forfeitPct.toFixed(1)}% allowance may be forfeited (need ${pacing.capacity.sessionsNeeded.toFixed(1)} of ~${pacing.capacity.slotsAvailable} slots)`;
+        } else {
+          capacityRow.classList.remove("forfeit");
+          capacityRow.textContent = `Need ~${pacing.capacity.sessionsNeeded.toFixed(1)} of ~${pacing.capacity.slotsAvailable} slots remaining`;
+        }
+      }
     }
 
     // ─── Layer 1 Update loop ──────────────────────────────────────────────────
