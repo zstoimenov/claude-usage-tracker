@@ -1,4 +1,4 @@
-const CACHE_NAME = "claude-cycle-v14";
+const CACHE_NAME = "claude-cycle-v15";
 const ASSETS = [
   "/claude-usage-tracker/",
   "/claude-usage-tracker/index.html",
