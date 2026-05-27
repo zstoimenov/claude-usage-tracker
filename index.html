@@ -412,22 +412,8 @@
       color: #64748b; margin-top: 8px;
     }
 
-    .spot-check-row { display: flex; gap: 8px; align-items: center; margin-top: 10px; }
-    .spot-check-row input {
-      flex: 1; background: #0f172a; border: 1px solid #334155;
-      border-radius: 8px; color: #e2e8f0; font-size: 13px;
-      padding: 8px 12px; outline: none; transition: border-color 0.2s;
-    }
-    .spot-check-row input:focus { border-color: #475569; }
-    .spot-check-row input::placeholder { color: #334155; }
-    .spot-btn {
-      background: #1e293b; border: 1px solid #334155; border-radius: 8px;
-      color: #94a3b8; font-size: 12px; padding: 8px 14px;
-      cursor: pointer; white-space: nowrap; transition: background 0.2s, color 0.2s;
-    }
-    .spot-btn:hover { background: #334155; color: #e2e8f0; }
 
-    /* ── Sessions card ───────────────────────────────────────────────────── */
+    /* ── History card ────────────────────────────────────────────────────── */
     .sessions-card {
       background: #1e293b; border-radius: 10px; padding: 16px;
       display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
@@ -439,12 +425,6 @@
     .sessions-stat-value { font-size: 22px; font-weight: 700; color: #e2e8f0; }
     .sessions-stat-sub { font-size: 10px; color: #475569; margin-top: 2px; }
 
-    /* ── Log card ────────────────────────────────────────────────────────── */
-    .log-card { background: #1e293b; border-radius: 10px; padding: 16px; }
-    .log-card-title {
-      font-size: 11px; color: #64748b;
-      text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px;
-    }
     .log-inputs {
       display: grid; grid-template-columns: 1fr 1fr 1fr;
       gap: 8px; margin-bottom: 10px;
@@ -629,8 +609,78 @@
     .sheet-close:hover { color: #94a3b8; }
 
     /* Sheet reuses .log-inputs / .log-field / .log-row / .log-btn styles */
+
+    /* ── Sheet tabs ──────────────────────────────────────────────────────── */
+    .sheet-tabs {
+      display: flex;
+      gap: 4px;
+      background: #0f172a;
+      border-radius: 8px;
+      padding: 3px;
+      margin-bottom: 16px;
+    }
+    .sheet-tab {
+      flex: 1;
+      background: none;
+      border: none;
+      border-radius: 6px;
+      color: #475569;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      padding: 7px 0;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+    }
+    .sheet-tab.active {
+      background: #1e293b;
+      color: #e2e8f0;
+    }
+    .sheet-pane { display: none; }
+    .sheet-pane.active { display: block; }
+
+    /* ── Spot check pane ─────────────────────────────────────────────────── */
+    .spot-pane-field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 14px;
+    }
+    .spot-pane-label {
+      font-size: 10px;
+      color: #64748b;
+      letter-spacing: 0.5px;
+    }
+    .spot-pane-input {
+      width: 100%;
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      color: #e2e8f0;
+      font-size: 20px;
+      font-weight: 600;
+      padding: 10px 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .spot-pane-input:focus { border-color: #475569; }
+    .spot-pane-input::placeholder { color: #334155; font-weight: 400; font-size: 16px; }
+    .spot-save-btn {
+      width: 100%;
+      background: #0f4c81;
+      border: none;
+      border-radius: 8px;
+      color: #bfdbfe;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 11px 0;
+      cursor: pointer;
+      transition: background 0.2s;
+      margin-bottom: 4px;
+    }
+    .spot-save-btn:hover { background: #1e5f9a; }
+    .spot-save-btn:disabled { background: #1e293b; color: #334155; cursor: not-allowed; }
   </style>
-</head>
 <body>
   <div id="app"></div>
 
@@ -641,39 +691,56 @@
   <div class="sheet-backdrop" id="sheetBackdrop"></div>
 
   <!-- Bottom sheet -->
-  <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="Log a Session">
+  <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="Quick Entry">
     <div class="sheet-handle-row"><div class="sheet-handle"></div></div>
     <div class="sheet-header">
-      <span class="sheet-title">Log a Session</span>
+      <span class="sheet-title">Quick Entry</span>
       <button class="sheet-close" id="sheetClose" aria-label="Close">✕</button>
     </div>
-    <div class="log-inputs">
-      <div class="log-field">
-        <label>Week % Before</label>
-        <input type="number" id="sheetBefore" min="0" max="100" step="0.1" placeholder="e.g. 23" inputmode="decimal" />
+    <div class="sheet-tabs">
+      <button class="sheet-tab active" id="tabLog" data-tab="log">Log Session</button>
+      <button class="sheet-tab" id="tabSpot" data-tab="spot">Spot Check</button>
+    </div>
+
+    <!-- Log Session pane -->
+    <div class="sheet-pane active" id="paneLog">
+      <div class="log-inputs">
+        <div class="log-field">
+          <label>Week % Before</label>
+          <input type="number" id="sheetBefore" min="0" max="100" step="0.1" placeholder="e.g. 23" inputmode="decimal" />
+        </div>
+        <div class="log-field">
+          <label>Session % Used</label>
+          <input type="number" id="sheetSession" min="1" max="100" step="1" placeholder="e.g. 80" inputmode="decimal" />
+        </div>
+        <div class="log-field">
+          <label>Week % After</label>
+          <input type="number" id="sheetAfter" min="0" max="100" step="0.1" placeholder="e.g. 28" inputmode="decimal" />
+        </div>
       </div>
-      <div class="log-field">
-        <label>Session % Used</label>
-        <input type="number" id="sheetSession" min="1" max="100" step="1" placeholder="e.g. 80" inputmode="decimal" />
+      <div class="time-left-row">
+        <div class="time-left-label">Time left in session (optional)</div>
+        <div class="time-left-pills" id="sheetTimePills">
+          <button class="time-pill" data-ms="14400000">~4h</button>
+          <button class="time-pill" data-ms="10800000">~3h</button>
+          <button class="time-pill" data-ms="7200000">~2h</button>
+          <button class="time-pill" data-ms="3600000">~1h</button>
+          <button class="time-pill" data-ms="1800000">&lt;30m</button>
+        </div>
       </div>
-      <div class="log-field">
-        <label>Week % After</label>
-        <input type="number" id="sheetAfter" min="0" max="100" step="0.1" placeholder="e.g. 28" inputmode="decimal" />
+      <div class="log-row">
+        <div class="log-delta-preview" id="sheetPreview">Fill in all three fields to preview</div>
+        <button class="log-btn" id="sheetLogBtn" disabled>+ Log Session</button>
       </div>
     </div>
-    <div class="time-left-row">
-      <div class="time-left-label">Time left in session (optional)</div>
-      <div class="time-left-pills" id="sheetTimePills">
-        <button class="time-pill" data-ms="14400000">~4h</button>
-        <button class="time-pill" data-ms="10800000">~3h</button>
-        <button class="time-pill" data-ms="7200000">~2h</button>
-        <button class="time-pill" data-ms="3600000">~1h</button>
-        <button class="time-pill" data-ms="1800000">&lt;30m</button>
+
+    <!-- Spot Check pane -->
+    <div class="sheet-pane" id="paneSpot">
+      <div class="spot-pane-field">
+        <div class="spot-pane-label">Current weekly usage %</div>
+        <input type="number" class="spot-pane-input" id="sheetSpotInput" min="0" max="100" step="0.1" placeholder="e.g. 34" inputmode="decimal" />
       </div>
-    </div>
-    <div class="log-row">
-      <div class="log-delta-preview" id="sheetPreview">Fill in all three fields to preview</div>
-      <button class="log-btn" id="sheetLogBtn" disabled>+ Log Session</button>
+      <button class="spot-save-btn" id="sheetSpotBtn" disabled>Save &amp; Check Drift</button>
     </div>
   </div>
 
@@ -982,11 +1049,7 @@
                 <div class="drift-bar-value" id="driftWeeklyVal">—</div>
               </div>
             </div>
-            <div class="drift-gap-label" id="driftGapLabel">Enter your current weekly % below to see drift</div>
-            <div class="spot-check-row">
-              <input type="number" id="spotInput" min="0" max="100" step="0.1" placeholder="Current weekly % (e.g. 34)" />
-              <button class="spot-btn" id="spotBtn">Check Drift</button>
-            </div>
+            <div class="drift-gap-label" id="driftGapLabel">Use + to set your current weekly %</div>
           </div>
 
           <div class="sessions-card">
@@ -999,38 +1062,6 @@
               <div class="sessions-stat-label">Avg Session Value</div>
               <div class="sessions-stat-value" id="avgSessionVal">—</div>
               <div class="sessions-stat-sub" id="avgSessionSub">no data yet</div>
-            </div>
-          </div>
-
-          <div class="log-card">
-            <div class="log-card-title">Log a Session</div>
-            <div class="log-inputs">
-              <div class="log-field">
-                <label>Week % Before</label>
-                <input type="number" id="logBefore" min="0" max="100" step="0.1" placeholder="e.g. 23" />
-              </div>
-              <div class="log-field">
-                <label>Session % Used</label>
-                <input type="number" id="logSession" min="1" max="100" step="1" placeholder="e.g. 80" />
-              </div>
-              <div class="log-field">
-                <label>Week % After</label>
-                <input type="number" id="logAfter" min="0" max="100" step="0.1" placeholder="e.g. 28" />
-              </div>
-            </div>
-            <div class="time-left-row">
-              <div class="time-left-label">Time left in session (optional)</div>
-              <div class="time-left-pills" id="panelTimePills">
-                <button class="time-pill" data-ms="14400000">~4h</button>
-                <button class="time-pill" data-ms="10800000">~3h</button>
-                <button class="time-pill" data-ms="7200000">~2h</button>
-                <button class="time-pill" data-ms="3600000">~1h</button>
-                <button class="time-pill" data-ms="1800000">&lt;30m</button>
-              </div>
-            </div>
-            <div class="log-row">
-              <div class="log-delta-preview" id="logPreview">Fill in all three fields to preview</div>
-              <button class="log-btn" id="logBtn" disabled>+ Log Session</button>
             </div>
           </div>
 
@@ -1115,9 +1146,30 @@
     const sheetAfter    = document.getElementById("sheetAfter");
     const sheetPreview  = document.getElementById("sheetPreview");
     const sheetLogBtn   = document.getElementById("sheetLogBtn");
+    const sheetSpotInput = document.getElementById("sheetSpotInput");
+    const sheetSpotBtn   = document.getElementById("sheetSpotBtn");
+    const tabLog        = document.getElementById("tabLog");
+    const tabSpot       = document.getElementById("tabSpot");
+    const paneLog       = document.getElementById("paneLog");
+    const paneSpot      = document.getElementById("paneSpot");
 
     let sheetTimeLeftMs = null;
-    let panelTimeLeftMs = null;
+
+    // ── Tab switching ─────────────────────────────────────────────────────────
+    function switchTab(tab) {
+      const isLog = tab === "log";
+      tabLog.classList.toggle("active", isLog);
+      tabSpot.classList.toggle("active", !isLog);
+      paneLog.classList.toggle("active", isLog);
+      paneSpot.classList.toggle("active", !isLog);
+      trackerData.lastSheetTab = tab;
+      saveData(trackerData);
+      if (isLog) sheetBefore.focus();
+      else { sheetSpotInput.focus(); sheetSpotInput.select(); }
+    }
+
+    tabLog.addEventListener("click",  () => switchTab("log"));
+    tabSpot.addEventListener("click", () => switchTab("spot"));
 
     // ── Pill wiring helper ────────────────────────────────────────────────────
     function wirePills(containerId, onSelect) {
@@ -1128,7 +1180,7 @@
         const alreadySelected = pill.classList.contains("selected");
         container.querySelectorAll(".time-pill").forEach(p => p.classList.remove("selected"));
         if (alreadySelected) {
-          onSelect(null);   // tap again to deselect
+          onSelect(null);
         } else {
           pill.classList.add("selected");
           onSelect(parseInt(pill.dataset.ms, 10));
@@ -1136,13 +1188,18 @@
       });
     }
 
-    wirePills("sheetTimePills",  ms => { sheetTimeLeftMs = ms; });
-    wirePills("panelTimePills",  ms => { panelTimeLeftMs = ms; });
+    wirePills("sheetTimePills", ms => { sheetTimeLeftMs = ms; });
 
     function openSheet() {
+      // Restore last tab
+      const lastTab = trackerData.lastSheetTab || "log";
+      switchTab(lastTab);
+      // Pre-fill spot input with current value
+      if (trackerData.spotWeekly !== null) {
+        sheetSpotInput.value = trackerData.spotWeekly.value;
+      }
       sheet.classList.add("open");
       sheetBackdrop.classList.add("open");
-      sheetBefore.focus();
     }
 
     function closeSheet() {
@@ -1154,6 +1211,7 @@
     sheetClose.addEventListener("click", closeSheet);
     sheetBackdrop.addEventListener("click", closeSheet);
 
+    // ── Log Session pane ──────────────────────────────────────────────────────
     function updateSheetPreview() {
       const b = parseFloat(sheetBefore.value);
       const s = parseFloat(sheetSession.value);
@@ -1191,7 +1249,6 @@
       });
       trackerData.spotWeekly = { value: a, ts: Date.now() };
       saveData(trackerData);
-      // Reset sheet inputs and pills
       sheetBefore.value = ""; sheetSession.value = ""; sheetAfter.value = "";
       sheetLogBtn.disabled = true;
       sheetPreview.textContent = "Fill in all three fields to preview";
@@ -1202,80 +1259,30 @@
       update();
     });
 
-    // ─── Panel log inputs: live preview ──────────────────────────────────────
-    const logBefore  = document.getElementById("logBefore");
-    const logSession = document.getElementById("logSession");
-    const logAfter   = document.getElementById("logAfter");
-    const logPreview = document.getElementById("logPreview");
-    const logBtn     = document.getElementById("logBtn");
-
-    function updateLogPreview() {
-      const b = parseFloat(logBefore.value);
-      const s = parseFloat(logSession.value);
-      const a = parseFloat(logAfter.value);
-      if (!isNaN(b) && !isNaN(s) && !isNaN(a) && s > 0) {
-        const delta = a - b;
-        const norm  = delta / (s / 100);
-        if (delta < 0) {
-          logPreview.innerHTML = `<span style="color:#f87171">⚠ Week % after is less than before</span>`;
-          logBtn.disabled = true;
-        } else {
-          logPreview.innerHTML = `Δ <span>+${delta.toFixed(1)}%</span> weekly &nbsp;·&nbsp; <span>${norm.toFixed(2)}%</span> per full session`;
-          logBtn.disabled = false;
-        }
-      } else {
-        logPreview.textContent = "Fill in all three fields to preview";
-        logBtn.disabled = true;
-      }
+    // ── Spot Check pane ───────────────────────────────────────────────────────
+    function updateSpotBtn() {
+      const v = parseFloat(sheetSpotInput.value);
+      sheetSpotBtn.disabled = isNaN(v) || v < 0 || v > 100;
     }
 
-    [logBefore, logSession, logAfter].forEach(el => el.addEventListener("input", updateLogPreview));
+    sheetSpotInput.addEventListener("input", updateSpotBtn);
+    sheetSpotInput.addEventListener("keydown", e => { if (e.key === "Enter") sheetSpotBtn.click(); });
 
-    logBtn.addEventListener("click", () => {
-      const b = parseFloat(logBefore.value);
-      const s = parseFloat(logSession.value);
-      const a = parseFloat(logAfter.value);
-      if (isNaN(b) || isNaN(s) || isNaN(a) || s <= 0 || a < b) return;
-      const delta = a - b;
-      const norm  = delta / (s / 100);
-      trackerData.sessions.unshift({
-        ts: Date.now(), weekBefore: b, sessionUsed: s, weekAfter: a,
-        delta: parseFloat(delta.toFixed(2)),
-        normalizedDelta: parseFloat(norm.toFixed(3)),
-        timeLeftMs: panelTimeLeftMs
-      });
-      trackerData.spotWeekly = { value: a, ts: Date.now() };
-      saveData(trackerData);
-      logBefore.value = ""; logSession.value = ""; logAfter.value = "";
-      logBtn.disabled = true;
-      logPreview.textContent = "Fill in all three fields to preview";
-      panelTimeLeftMs = null;
-      document.querySelectorAll("#panelTimePills .time-pill").forEach(p => p.classList.remove("selected"));
-      renderLayer2();
-    });
-
-    // ─── Spot check ───────────────────────────────────────────────────────────
-    const spotInput = document.getElementById("spotInput");
-    const spotBtn   = document.getElementById("spotBtn");
-
-    if (trackerData.spotWeekly !== null) spotInput.value = trackerData.spotWeekly.value;
-
-    spotBtn.addEventListener("click", () => {
-      const v = parseFloat(spotInput.value);
+    sheetSpotBtn.addEventListener("click", () => {
+      const v = parseFloat(sheetSpotInput.value);
       if (isNaN(v) || v < 0 || v > 100) return;
       trackerData.spotWeekly = { value: v, ts: Date.now() };
       saveData(trackerData);
+      closeSheet();
       renderLayer2();
+      update();
     });
-
-    spotInput.addEventListener("keydown", e => { if (e.key === "Enter") spotBtn.click(); });
 
     // ─── Clear history ────────────────────────────────────────────────────────
     document.getElementById("clearBtn").addEventListener("click", () => {
       if (!confirm("Clear all session history?")) return;
       trackerData.sessions   = [];
       trackerData.spotWeekly = null;
-      spotInput.value = "";
       saveData(trackerData);
       renderLayer2();
     });
@@ -1318,7 +1325,7 @@
       } else {
         driftWeeklyBar.style.width = "0%";
         driftWeeklyVal.textContent = "—";
-        driftGapLabel.textContent  = "Enter your current weekly % below to see drift";
+        driftGapLabel.textContent  = "Use + to set your current weekly %";
         driftGapLabel.style.color  = "#475569";
       }
 
