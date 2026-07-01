@@ -284,6 +284,13 @@
       margin-top: 2px;
     }
     .pace-capacity-row.forfeit { color: #f87171; }
+    .pace-recovery-row {
+      font-size: 11px;
+      color: #60a5fa;
+      padding-top: 8px;
+      border-top: 1px solid #0f172a;
+      margin-top: 2px;
+    }
 
     .checkins-list {
       display: flex;
@@ -900,6 +907,17 @@
       const currentDailyPct  = daysElapsed > 0 ? weeklyPct / daysElapsed : 0;
       const paceRatio        = currentDailyPct > 0 ? requiredDailyPct / currentDailyPct : null;
 
+      // Recovery point — if usage is ahead of time elapsed, when would time
+      // elapsed catch up to current usage if no more Claude is used?
+      const timePct = (daysElapsed / 7) * 100;
+      let recovery  = null;
+      if (weeklyPct > timePct) {
+        const recoveryMs = cycleStartMs + (weeklyPct / 100) * CYCLE_MS;
+        recovery = recoveryMs >= cycleEndMs
+          ? { resetsFirst: true, recoveryMs: cycleEndMs }
+          : { resetsFirst: false, recoveryMs };
+      }
+
       let badge, badgeLabel;
       if (paceRatio === null)        { badge = "empty";          badgeLabel = "No Pace Data"; }
       else if (paceRatio < 0.85)     { badge = "slow-down";      badgeLabel = "🔵 Slow Down"; }
@@ -925,7 +943,7 @@
         requiredDailyPct, currentDailyPct, paceRatio,
         badge, badgeLabel,
         isStale, signalAgeMs,
-        capacity
+        capacity, recovery
       };
     }
 
@@ -1012,6 +1030,7 @@
           </div>
           <div class="pace-secondary" id="paceSecondary">—</div>
           <div class="pace-stale-caption" id="paceStaleCaption" style="display:none"></div>
+          <div class="pace-recovery-row" id="paceRecoveryRow" style="display:none"></div>
           <div class="pace-capacity-row" id="paceCapacityRow" style="display:none"></div>
         </div>
         <div class="stat-card stat-card-checkins" style="padding:16px 20px">
@@ -1388,11 +1407,13 @@
       const paceBadgeWrap    = document.getElementById("paceBadgeWrap");
       const staleCaption     = document.getElementById("paceStaleCaption");
       const capacityRow      = document.getElementById("paceCapacityRow");
+      const recoveryRow      = document.getElementById("paceRecoveryRow");
 
       // Reset stale state by default
       card.classList.remove("stale");
       staleCaption.style.display = "none";
       capacityRow.style.display  = "none";
+      recoveryRow.style.display  = "none";
 
       // Empty state
       if (pacing.state === "empty") {
@@ -1438,6 +1459,18 @@
         paceBadgeWrap.innerHTML = `<span class="pace-badge stale">Stale</span>`;
         staleCaption.style.display = "";
         staleCaption.textContent = `signal ${formatSignalAge(pacing.signalAgeMs)} — refresh below`;
+      }
+
+      // Recovery row (conditional) — how long a break is needed to get back on pace
+      if (pacing.recovery) {
+        recoveryRow.style.display = "";
+        if (pacing.recovery.resetsFirst) {
+          recoveryRow.textContent = "⏱ Cycle resets before time catches up — no break needed";
+        } else {
+          const dateStr  = formatShortDate(pacing.recovery.recoveryMs);
+          const breakLeft = formatDuration(pacing.recovery.recoveryMs - Date.now());
+          recoveryRow.textContent = `⏱ Stop now → back on pace ${dateStr} AWST (${breakLeft} break)`;
+        }
       }
 
       // Capacity row (conditional)
