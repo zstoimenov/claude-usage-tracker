@@ -28,7 +28,9 @@
     .log-btn:focus-visible,
     .spot-save-btn:focus-visible,
     .clear-btn:focus-visible,
-    .sheet-close:focus-visible {
+    .sheet-close:focus-visible,
+    .session-timer-card:focus-visible,
+    .timer-cancel-btn:focus-visible {
       outline: 2px solid #60a5fa;
       outline-offset: 2px;
     }
@@ -720,6 +722,76 @@
     }
     .spot-save-btn:hover { background: #1e5f9a; }
     .spot-save-btn:disabled { background: #1e293b; color: #64748b; cursor: not-allowed; }
+
+    /* ── Active-session timer card (main screen) ─────────────────────────────── */
+    .session-timer-card {
+      display: block;
+      width: 100%;
+      text-align: left;
+      font-family: inherit;
+      background: #12233b;
+      border: 1px solid #1d4e7a;
+      border-radius: 12px;
+      padding: 14px 18px;
+      margin-bottom: 20px;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .session-timer-card:hover { border-color: #2b6aa5; background: #142842; }
+    .session-timer-card.ended { border-color: #b45309; background: #2a1c0c; }
+    .stc-top {
+      display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+      margin-bottom: 10px;
+    }
+    .stc-label {
+      font-size: 11px; letter-spacing: 1px; text-transform: uppercase;
+      color: #60a5fa; font-weight: 600; display: flex; align-items: center; gap: 6px;
+    }
+    .session-timer-card.ended .stc-label { color: #fb923c; }
+    .stc-dot {
+      width: 7px; height: 7px; border-radius: 50%; background: #60a5fa;
+      box-shadow: 0 0 0 0 rgba(96,165,250,0.6); animation: stc-pulse 2s infinite;
+    }
+    .session-timer-card.ended .stc-dot { background: #fb923c; animation: none; }
+    @keyframes stc-pulse {
+      0%   { box-shadow: 0 0 0 0 rgba(96,165,250,0.5); }
+      70%  { box-shadow: 0 0 0 6px rgba(96,165,250,0); }
+      100% { box-shadow: 0 0 0 0 rgba(96,165,250,0); }
+    }
+    .stc-time {
+      font-size: 24px; font-weight: 700; color: #e2e8f0; line-height: 1;
+      font-variant-numeric: tabular-nums; letter-spacing: 0.5px;
+    }
+    .stc-track {
+      background: #0f172a; border-radius: 4px; height: 6px; overflow: hidden; margin-bottom: 8px;
+    }
+    .stc-fill {
+      height: 100%; border-radius: 4px; background: #3b82f6; transition: width 1s linear;
+    }
+    .session-timer-card.ended .stc-fill { background: #f97316; }
+    .stc-sub { font-size: 11px; color: #94a3b8; }
+
+    /* ── Timer pane (in sheet) ───────────────────────────────────────────────── */
+    .timer-hint { font-size: 11px; color: #94a3b8; margin-top: 10px; line-height: 1.5; }
+    .timer-active-display {
+      background: #0f172a; border: 1px solid #1d4e7a; border-radius: 10px;
+      padding: 16px; text-align: center; margin-bottom: 12px;
+    }
+    .ta-time {
+      font-size: 40px; font-weight: 700; color: #e2e8f0; line-height: 1;
+      font-variant-numeric: tabular-nums; letter-spacing: 1px;
+    }
+    .ta-time.ended { color: #fb923c; font-size: 22px; }
+    .ta-sub { font-size: 11px; color: #94a3b8; margin-top: 8px; }
+    .timer-cancel-btn {
+      width: 100%; background: none; border: none; color: #64748b;
+      font-size: 12px; padding: 8px 0 2px; cursor: pointer; transition: color 0.2s;
+    }
+    .timer-cancel-btn:hover { color: #f87171; }
+    .complete-banner {
+      font-size: 12px; color: #fb923c; background: #2a1c0c; border: 1px solid #7c3d0f;
+      border-radius: 8px; padding: 9px 12px; margin-bottom: 14px;
+    }
   </style>
 <body>
   <div id="app"></div>
@@ -737,13 +809,34 @@
       <span class="sheet-title">Quick Entry</span>
       <button class="sheet-close" id="sheetClose" aria-label="Close">✕</button>
     </div>
-    <div class="sheet-tabs">
-      <button class="sheet-tab active" id="tabLog" data-tab="log">Log Session</button>
-      <button class="sheet-tab" id="tabSpot" data-tab="spot">Spot Check</button>
+    <div class="sheet-tabs" id="sheetTabs">
+      <button class="sheet-tab active" id="tabTimer" data-tab="timer">Timer</button>
+      <button class="sheet-tab" id="tabLog" data-tab="log">Log</button>
+      <button class="sheet-tab" id="tabSpot" data-tab="spot">Spot</button>
+    </div>
+
+    <!-- Timer pane -->
+    <div class="sheet-pane active" id="paneTimer">
+      <div id="timerIdle">
+        <div class="spot-pane-field">
+          <div class="spot-pane-label">Current weekly usage %</div>
+          <input type="number" class="spot-pane-input" id="sessionStartInput" min="0" max="100" step="0.1" placeholder="e.g. 34" inputmode="decimal" />
+        </div>
+        <button class="spot-save-btn" id="sessionStartBtn" disabled>Start 5-hour session</button>
+        <p class="timer-hint">A 5-hour timer starts now. When it ends, you'll enter the session usage and your new weekly % — it's logged to your history automatically.</p>
+      </div>
+      <div id="timerActive" style="display:none">
+        <div class="timer-active-display">
+          <div class="ta-time" id="paneTimeLeft">5:00:00</div>
+          <div class="ta-sub" id="paneTimerSub">—</div>
+        </div>
+        <button class="spot-save-btn" id="sessionCompleteBtn">End &amp; log now</button>
+        <button class="timer-cancel-btn" id="sessionCancelBtn">Cancel without logging</button>
+      </div>
     </div>
 
     <!-- Log Session pane -->
-    <div class="sheet-pane active" id="paneLog">
+    <div class="sheet-pane" id="paneLog">
       <div class="log-inputs">
         <div class="log-field">
           <label>Week % Before</label>
@@ -782,6 +875,21 @@
       </div>
       <button class="spot-save-btn" id="sheetSpotBtn" disabled>Save &amp; Check Drift</button>
     </div>
+
+    <!-- Complete Session pane (opened when a timed session ends) -->
+    <div class="sheet-pane" id="paneComplete">
+      <div class="complete-banner" id="completeBanner">Session ended — enter what you used.</div>
+      <div class="spot-pane-field">
+        <div class="spot-pane-label">Session % used</div>
+        <input type="number" class="spot-pane-input" id="completeSession" min="1" max="100" step="1" placeholder="e.g. 80" inputmode="decimal" />
+      </div>
+      <div class="spot-pane-field">
+        <div class="spot-pane-label">Current weekly usage %</div>
+        <input type="number" class="spot-pane-input" id="completeAfter" min="0" max="100" step="0.1" placeholder="e.g. 40" inputmode="decimal" />
+      </div>
+      <div class="log-delta-preview" id="completePreview" style="margin-bottom:12px">Enter both to preview</div>
+      <button class="spot-save-btn" id="completeBtn" disabled>Log session</button>
+    </div>
   </div>
 
   <script>
@@ -797,6 +905,7 @@
     // ─── Pacing constants (velocity model) ────────────────────────────────────
     const WAKING_HOURS_PER_DAY = 14;             // 07:30–21:30 AWST
     const SESSION_LOCK_HOURS   = 5;
+    const SESSION_MS           = SESSION_LOCK_HOURS * 3600000;   // full 5h window
     const SLOTS_PER_DAY_MAX    = WAKING_HOURS_PER_DAY / SESSION_LOCK_HOURS;  // 2.8
     const STALE_SIGNAL_MS      = 5 * 3600000;    // 5h
     const CAPACITY_TRIGGER     = 0.7;
@@ -837,6 +946,21 @@
       if (h) parts.push(h + "h");
       if (m || (!d && !h)) parts.push(m + "m");
       return parts.join(" ");
+    }
+
+    function formatClock(ms) {
+      if (ms < 0) ms = 0;
+      const totalSec = Math.floor(ms / 1000);
+      const h = Math.floor(totalSec / 3600);
+      const m = Math.floor((totalSec % 3600) / 60);
+      const s = totalSec % 60;
+      return h + ":" + String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
+    }
+
+    function formatClockTime(utcMs) {
+      return new Date(utcMs).toLocaleString("en-AU", {
+        timeZone: "Australia/Perth", hour: "2-digit", minute: "2-digit", hour12: false,
+      });
     }
 
     function formatShortDate(utcMs) {
@@ -984,14 +1108,15 @@
     function loadData() {
       try {
         const raw = localStorage.getItem(STORAGE_KEY);
-        if (!raw) return { sessions: [], trackerOpen: false, spotWeekly: null };
+        if (!raw) return { sessions: [], trackerOpen: false, spotWeekly: null, activeSession: null };
         const data = JSON.parse(raw);
         if (typeof data.spotWeekly === "number") {
           data.spotWeekly = { value: data.spotWeekly, ts: 0 };
         }
+        if (!("activeSession" in data)) data.activeSession = null;
         return data;
       } catch(e) {
-        return { sessions: [], trackerOpen: false, spotWeekly: null };
+        return { sessions: [], trackerOpen: false, spotWeekly: null, activeSession: null };
       }
     }
 
@@ -1050,6 +1175,15 @@
       </div>
 
       <div class="day-grid" id="dayGrid"></div>
+
+      <button class="session-timer-card" id="sessionTimerCard" style="display:none" aria-label="Active session — tap to manage">
+        <div class="stc-top">
+          <span class="stc-label"><span class="stc-dot"></span><span id="stcLabelText">Active Session</span></span>
+          <span class="stc-time" id="sessionTimeLeft">5:00:00</span>
+        </div>
+        <div class="stc-track"><div class="stc-fill" id="sessionFill" style="width:100%"></div></div>
+        <div class="stc-sub" id="sessionCardSub">—</div>
+      </button>
 
       <div class="stats-grid">
         <div class="stat-card stat-card-pace" id="paceCard">
@@ -1202,28 +1336,50 @@
     const sheetLogBtn   = document.getElementById("sheetLogBtn");
     const sheetSpotInput = document.getElementById("sheetSpotInput");
     const sheetSpotBtn   = document.getElementById("sheetSpotBtn");
+    const tabTimer      = document.getElementById("tabTimer");
     const tabLog        = document.getElementById("tabLog");
     const tabSpot       = document.getElementById("tabSpot");
+    const sheetTabs     = document.getElementById("sheetTabs");
+    const paneTimer     = document.getElementById("paneTimer");
     const paneLog       = document.getElementById("paneLog");
     const paneSpot      = document.getElementById("paneSpot");
+    const paneComplete  = document.getElementById("paneComplete");
+    const sessionStartInput = document.getElementById("sessionStartInput");
+    const sessionStartBtn   = document.getElementById("sessionStartBtn");
+    const sessionCompleteBtn = document.getElementById("sessionCompleteBtn");
+    const sessionCancelBtn   = document.getElementById("sessionCancelBtn");
+    const paneTimeLeft  = document.getElementById("paneTimeLeft");
+    const paneTimerSub  = document.getElementById("paneTimerSub");
+    const completeBanner  = document.getElementById("completeBanner");
+    const completeSession = document.getElementById("completeSession");
+    const completeAfter   = document.getElementById("completeAfter");
+    const completePreview = document.getElementById("completePreview");
+    const completeBtn     = document.getElementById("completeBtn");
+    const sessionTimerCard = document.getElementById("sessionTimerCard");
 
     let sheetTimeLeftMs = null;
+    let autoPromptedFor = null;   // startTs we've already auto-opened completion for
 
     // ── Tab switching ─────────────────────────────────────────────────────────
     function switchTab(tab) {
-      const isLog = tab === "log";
-      tabLog.classList.toggle("active", isLog);
-      tabSpot.classList.toggle("active", !isLog);
-      paneLog.classList.toggle("active", isLog);
-      paneSpot.classList.toggle("active", !isLog);
+      sheetTabs.style.display = "";
+      paneComplete.classList.remove("active");
+      tabTimer.classList.toggle("active", tab === "timer");
+      tabLog.classList.toggle("active",   tab === "log");
+      tabSpot.classList.toggle("active",  tab === "spot");
+      paneTimer.classList.toggle("active", tab === "timer");
+      paneLog.classList.toggle("active",   tab === "log");
+      paneSpot.classList.toggle("active",  tab === "spot");
       trackerData.lastSheetTab = tab;
       saveData(trackerData);
-      if (isLog) sheetBefore.focus();
-      else { sheetSpotInput.focus(); sheetSpotInput.select(); }
+      if (tab === "timer")      { renderTimerPane(); if (!trackerData.activeSession) sessionStartInput.focus(); }
+      else if (tab === "log")   sheetBefore.focus();
+      else                      { sheetSpotInput.focus(); sheetSpotInput.select(); }
     }
 
-    tabLog.addEventListener("click",  () => switchTab("log"));
-    tabSpot.addEventListener("click", () => switchTab("spot"));
+    tabTimer.addEventListener("click", () => switchTab("timer"));
+    tabLog.addEventListener("click",   () => switchTab("log"));
+    tabSpot.addEventListener("click",  () => switchTab("spot"));
 
     // ── Pill wiring helper ────────────────────────────────────────────────────
     function wirePills(containerId, onSelect) {
@@ -1244,10 +1400,10 @@
 
     wirePills("sheetTimePills", ms => { sheetTimeLeftMs = ms; });
 
-    function openSheet() {
-      // Restore last tab
-      const lastTab = trackerData.lastSheetTab || "log";
-      switchTab(lastTab);
+    function openSheet(forceTab) {
+      const tab = forceTab
+        || (trackerData.activeSession ? "timer" : (trackerData.lastSheetTab || "timer"));
+      switchTab(tab);
       // Pre-fill spot input with current value
       if (trackerData.spotWeekly !== null) {
         sheetSpotInput.value = trackerData.spotWeekly.value;
@@ -1265,7 +1421,7 @@
 
     function sheetIsOpen() { return sheet.classList.contains("open"); }
 
-    fab.addEventListener("click", openSheet);
+    fab.addEventListener("click", () => openSheet());
     sheetClose.addEventListener("click", closeSheet);
     sheetBackdrop.addEventListener("click", closeSheet);
 
@@ -1375,6 +1531,158 @@
       closeSheet();
       renderLayer2();
       update();
+    });
+
+    // ── Session timer ─────────────────────────────────────────────────────────
+    function updateStartBtn() {
+      const v = parseFloat(sessionStartInput.value);
+      sessionStartBtn.disabled = isNaN(v) || v < 0 || v > 100;
+    }
+    sessionStartInput.addEventListener("input", updateStartBtn);
+    sessionStartInput.addEventListener("keydown", e => {
+      if (e.key === "Enter" && !sessionStartBtn.disabled) sessionStartBtn.click();
+    });
+
+    sessionStartBtn.addEventListener("click", () => {
+      const v = parseFloat(sessionStartInput.value);
+      if (isNaN(v) || v < 0 || v > 100) return;
+      trackerData.activeSession = { startTs: Date.now(), weekBefore: v };
+      trackerData.spotWeekly    = { value: v, ts: Date.now() };
+      saveData(trackerData);
+      autoPromptedFor = null;
+      sessionStartInput.value = "";
+      sessionStartBtn.disabled = true;
+      closeSheet();
+      renderSessionTimer();
+      renderLayer2();
+      update();
+    });
+
+    // Toggle the Timer pane between "start a session" and "session running"
+    function renderTimerPane() {
+      const as = trackerData.activeSession;
+      document.getElementById("timerIdle").style.display   = as ? "none" : "";
+      document.getElementById("timerActive").style.display = as ? "" : "none";
+      if (as) {
+        const remaining = as.startTs + SESSION_MS - Date.now();
+        const ended = remaining <= 0;
+        paneTimeLeft.classList.toggle("ended", ended);
+        paneTimeLeft.textContent = ended ? "Session ended" : formatClock(remaining);
+        paneTimerSub.textContent =
+          `weekly was ${as.weekBefore}% · started ${formatClockTime(as.startTs)} · ends ${formatClockTime(as.startTs + SESSION_MS)}`;
+      } else if (trackerData.spotWeekly !== null && !sessionStartInput.value) {
+        sessionStartInput.value = trackerData.spotWeekly.value;
+        updateStartBtn();
+      }
+    }
+
+    sessionCompleteBtn.addEventListener("click", () => openCompletion());
+
+    sessionCancelBtn.addEventListener("click", () => {
+      if (!confirm("Cancel this session without logging it?")) return;
+      trackerData.activeSession = null;
+      saveData(trackerData);
+      autoPromptedFor = null;
+      closeSheet();
+      renderSessionTimer();
+    });
+
+    // ── Complete a session (asks for session % used + new weekly %) ─────────────
+    function openCompletion() {
+      const as = trackerData.activeSession;
+      if (!as) return;
+      sheetTabs.style.display = "none";
+      [paneTimer, paneLog, paneSpot].forEach(p => p.classList.remove("active"));
+      paneComplete.classList.add("active");
+      completeBanner.textContent = `Session ended — weekly was ${as.weekBefore}% at the start. Enter what you used.`;
+      completeSession.value = "";
+      completeAfter.value   = as.weekBefore;
+      updateCompletePreview();
+      if (!sheet.classList.contains("open")) {
+        sheet.classList.add("open");
+        sheetBackdrop.classList.add("open");
+      }
+      setTimeout(() => completeSession.focus(), 60);
+    }
+
+    function updateCompletePreview() {
+      const as = trackerData.activeSession;
+      if (!as) return;
+      const b = as.weekBefore;
+      const s = parseFloat(completeSession.value);
+      const a = parseFloat(completeAfter.value);
+      if (!isNaN(s) && !isNaN(a) && s > 0) {
+        const delta = a - b;
+        if (delta < 0) {
+          completePreview.innerHTML = `<span style="color:#f87171">⚠ Weekly % is below the ${b}% you started at</span>`;
+          completeBtn.disabled = true;
+        } else {
+          const norm = delta / (s / 100);
+          completePreview.innerHTML = `Δ <span>+${delta.toFixed(1)}%</span> · <span>${norm.toFixed(2)}%</span>/full session`;
+          completeBtn.disabled = false;
+        }
+      } else {
+        completePreview.textContent = "Enter both to preview";
+        completeBtn.disabled = true;
+      }
+    }
+
+    [completeSession, completeAfter].forEach(el => el.addEventListener("input", updateCompletePreview));
+    completeAfter.addEventListener("keydown", e => {
+      if (e.key === "Enter" && !completeBtn.disabled) completeBtn.click();
+    });
+
+    completeBtn.addEventListener("click", () => {
+      const as = trackerData.activeSession;
+      if (!as) return;
+      const b = as.weekBefore;
+      const s = parseFloat(completeSession.value);
+      const a = parseFloat(completeAfter.value);
+      if (isNaN(s) || isNaN(a) || s <= 0 || a < b) return;
+      const delta = a - b;
+      const norm  = delta / (s / 100);
+      trackerData.sessions.unshift({
+        ts: Date.now(), weekBefore: b, sessionUsed: s, weekAfter: a,
+        delta: parseFloat(delta.toFixed(2)),
+        normalizedDelta: parseFloat(norm.toFixed(3)),
+        timeLeftMs: 0, fromTimer: true
+      });
+      trackerData.spotWeekly    = { value: a, ts: Date.now() };
+      trackerData.activeSession = null;
+      saveData(trackerData);
+      autoPromptedFor = null;
+      closeSheet();
+      renderSessionTimer();
+      renderLayer2();
+      update();
+    });
+
+    // Main-screen card + live tick; auto-prompts completion when the 5h elapses
+    function renderSessionTimer() {
+      const as = trackerData.activeSession;
+      if (!as) { sessionTimerCard.style.display = "none"; return; }
+      const endTs     = as.startTs + SESSION_MS;
+      const remaining = endTs - Date.now();
+      const ended     = remaining <= 0;
+      sessionTimerCard.style.display = "";
+      sessionTimerCard.classList.toggle("ended", ended);
+      document.getElementById("stcLabelText").textContent  = ended ? "Session ended" : "Active Session";
+      document.getElementById("sessionTimeLeft").textContent = ended ? "Tap to log" : formatClock(remaining);
+      const pctLeft = Math.max(0, Math.min(100, (remaining / SESSION_MS) * 100));
+      document.getElementById("sessionFill").style.width = (ended ? 100 : pctLeft) + "%";
+      document.getElementById("sessionCardSub").textContent =
+        `weekly was ${as.weekBefore}% · ${ended ? "ended" : "ends"} ${formatClockTime(endTs)}`;
+      if (sheet.classList.contains("open") && paneTimer.classList.contains("active")) renderTimerPane();
+      if (ended && autoPromptedFor !== as.startTs) {
+        autoPromptedFor = as.startTs;
+        openCompletion();
+      }
+    }
+
+    sessionTimerCard.addEventListener("click", () => {
+      const as = trackerData.activeSession;
+      if (as && Date.now() >= as.startTs + SESSION_MS) openCompletion();
+      else openSheet("timer");
     });
 
     // ─── Clear history ────────────────────────────────────────────────────────
@@ -1663,8 +1971,10 @@
 
     update();
     renderLayer2();
+    renderSessionTimer();
     setInterval(update, 10000);
     setInterval(renderLayer2, 60000);
+    setInterval(renderSessionTimer, 1000);
 
     // ─── Service Worker ───────────────────────────────────────────────────────
     if ("serviceWorker" in navigator) {
