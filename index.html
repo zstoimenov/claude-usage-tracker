@@ -810,13 +810,13 @@
       <button class="sheet-close" id="sheetClose" aria-label="Close">✕</button>
     </div>
     <div class="sheet-tabs" id="sheetTabs">
-      <button class="sheet-tab active" id="tabTimer" data-tab="timer">Timer</button>
+      <button class="sheet-tab active" id="tabSpot" data-tab="spot">Spot</button>
+      <button class="sheet-tab" id="tabTimer" data-tab="timer">Timer</button>
       <button class="sheet-tab" id="tabLog" data-tab="log">Log</button>
-      <button class="sheet-tab" id="tabSpot" data-tab="spot">Spot</button>
     </div>
 
     <!-- Timer pane -->
-    <div class="sheet-pane active" id="paneTimer">
+    <div class="sheet-pane" id="paneTimer">
       <div id="timerIdle">
         <div class="spot-pane-field">
           <div class="spot-pane-label">Current weekly usage %</div>
@@ -868,7 +868,7 @@
     </div>
 
     <!-- Spot Check pane -->
-    <div class="sheet-pane" id="paneSpot">
+    <div class="sheet-pane active" id="paneSpot">
       <div class="spot-pane-field">
         <div class="spot-pane-label">Current weekly usage %</div>
         <input type="number" class="spot-pane-input" id="sheetSpotInput" min="0" max="100" step="0.1" placeholder="e.g. 34" inputmode="decimal" />
@@ -1295,13 +1295,8 @@
       }
     }
 
-    // Restore saved open state
-    if (trackerData.trackerOpen) {
-      trackerToggle.classList.add("open");
-      trackerPanel.classList.add("open");
-      trackerToggle.setAttribute("aria-expanded", "true");
-      document.body.style.overflow = "auto";
-    }
+    // Session Tracker always starts collapsed on load
+    trackerData.trackerOpen = false;
     updateFabVisibility();
 
     trackerToggle.addEventListener("click", () => {
@@ -1401,8 +1396,7 @@
     wirePills("sheetTimePills", ms => { sheetTimeLeftMs = ms; });
 
     function openSheet(forceTab) {
-      const tab = forceTab
-        || (trackerData.activeSession ? "timer" : (trackerData.lastSheetTab || "timer"));
+      const tab = forceTab || (trackerData.lastSheetTab || "spot");
       switchTab(tab);
       // Pre-fill spot input with current value
       if (trackerData.spotWeekly !== null) {
