@@ -1540,7 +1540,7 @@
     sessionStartBtn.addEventListener("click", () => {
       const v = parseFloat(sessionStartInput.value);
       if (isNaN(v) || v < 0 || v > 100) return;
-      trackerData.activeSession = { startTs: Date.now(), weekBefore: v };
+      trackerData.activeSession = { startTs: Date.now(), weekBefore: v, notified: false };
       trackerData.spotWeekly    = { value: v, ts: Date.now() };
       saveData(trackerData);
       autoPromptedFor = null;
@@ -1550,6 +1550,7 @@
       renderSessionTimer();
       renderLayer2();
       update();
+      requestNotifyPermission().finally(scheduleSessionNotification);
     });
 
     // Toggle the Timer pane between "start a session" and "session running"
@@ -1574,6 +1575,7 @@
 
     sessionCancelBtn.addEventListener("click", () => {
       if (!confirm("Cancel this session without logging it?")) return;
+      clearSessionNotifyTimer();
       trackerData.activeSession = null;
       saveData(trackerData);
       autoPromptedFor = null;
@@ -1643,6 +1645,7 @@
       });
       trackerData.spotWeekly    = { value: a, ts: Date.now() };
       trackerData.activeSession = null;
+      clearSessionNotifyTimer();
       saveData(trackerData);
       autoPromptedFor = null;
       closeSheet();
@@ -1980,10 +1983,73 @@
       renderSessionTimer();
       renderLayer2();
       update();
+      maybeNotifySessionEnd();
     }
     document.addEventListener("visibilitychange", resyncOnResume);
     window.addEventListener("focus", resyncOnResume);
     window.addEventListener("pageshow", resyncOnResume);
+
+    // ─── Session-end notifications ────────────────────────────────────────────
+    // Local (client-only) notifications — no push server. Two paths give
+    // best-effort coverage: (1) a setTimeout scheduled while the app is alive
+    // fires at the exact end time if the process survives in the background;
+    // (2) resyncOnResume fires it the instant you reopen the app, guaranteeing
+    // you always get the notification at the latest on next interaction.
+    let sessionNotifyTimer = null;
+
+    function requestNotifyPermission() {
+      if (!("Notification" in window)) return Promise.resolve("unsupported");
+      if (Notification.permission === "granted" || Notification.permission === "denied")
+        return Promise.resolve(Notification.permission);
+      return Notification.requestPermission();
+    }
+
+    function showSessionEndNotification() {
+      const title = "Session ended";
+      const body  = "Your 5-hour session is up — tap to log your usage.";
+      const opts  = {
+        body,
+        tag: "session-end",
+        renotify: true,
+        requireInteraction: true,
+        icon: "icons/icon-192.png",
+        badge: "icons/icon-192.png"
+      };
+      if (navigator.serviceWorker && navigator.serviceWorker.ready) {
+        navigator.serviceWorker.ready
+          .then(reg => reg.showNotification(title, opts))
+          .catch(() => { try { new Notification(title, opts); } catch (e) {} });
+      } else {
+        try { new Notification(title, opts); } catch (e) {}
+      }
+    }
+
+    // Fire once per session (persisted on the session so a reload won't repeat it)
+    function maybeNotifySessionEnd() {
+      const as = trackerData.activeSession;
+      if (!as || as.notified) return;
+      if (Date.now() < as.startTs + SESSION_MS) return;
+      if (!("Notification" in window) || Notification.permission !== "granted") return;
+      as.notified = true;
+      saveData(trackerData);
+      showSessionEndNotification();
+    }
+
+    function clearSessionNotifyTimer() {
+      if (sessionNotifyTimer) { clearTimeout(sessionNotifyTimer); sessionNotifyTimer = null; }
+    }
+
+    function scheduleSessionNotification() {
+      clearSessionNotifyTimer();
+      const as = trackerData.activeSession;
+      if (!as || as.notified) return;
+      const remaining = as.startTs + SESSION_MS - Date.now();
+      if (remaining <= 0) { maybeNotifySessionEnd(); return; }
+      sessionNotifyTimer = setTimeout(maybeNotifySessionEnd, remaining);
+    }
+
+    // Start scheduling for any session already active on load
+    scheduleSessionNotification();
 
     // ─── Service Worker ───────────────────────────────────────────────────────
     if ("serviceWorker" in navigator) {

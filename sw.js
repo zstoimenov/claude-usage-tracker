@@ -1,4 +1,4 @@
-const CACHE_NAME = "claude-cycle-v22";
+const CACHE_NAME = "claude-cycle-v23";
 const ASSETS = [
   "/claude-usage-tracker/",
   "/claude-usage-tracker/index.html",
@@ -25,6 +25,20 @@ self.addEventListener("activate", (event) => {
     )
   );
   self.clients.claim();
+});
+
+// Clicking the "session ended" notification focuses (or opens) the app
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const url = "/claude-usage-tracker/";
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
+      for (const client of clients) {
+        if (client.url.includes("/claude-usage-tracker/") && "focus" in client) return client.focus();
+      }
+      if (self.clients.openWindow) return self.clients.openWindow(url);
+    })
+  );
 });
 
 // Fetch: cache-first for local assets, network-first for everything else
