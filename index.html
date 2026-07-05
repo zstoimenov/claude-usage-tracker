@@ -498,16 +498,22 @@
       cursor: pointer; transition: color 0.2s, border-color 0.2s;
     }
     .clear-btn:hover { color: #f87171; border-color: #f87171; }
-    .history-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-    .history-table { width: 100%; border-collapse: collapse; font-size: 11px; }
-    .history-table th, .history-table td { white-space: nowrap; }
-    .history-table th {
-      color: #64748b; font-weight: 500; text-align: left;
-      padding: 0 4px 6px; letter-spacing: 0.5px; font-size: 10px;
+    /* Compact stacked rows — fit any width, never scroll horizontally */
+    .hist-list { display: flex; flex-direction: column; }
+    .hist-row {
+      display: flex; flex-direction: column; gap: 2px;
+      padding: 9px 0; border-top: 1px solid #0f172a;
     }
-    .history-table td { color: #94a3b8; padding: 5px 4px; border-top: 1px solid #0f172a; }
-    .history-table td.delta-pos { color: #4ade80; font-weight: 600; }
-    .history-table td.delta-neg { color: #f87171; font-weight: 600; }
+    .hist-row:first-child { border-top: none; padding-top: 2px; }
+    .hist-row-top {
+      display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
+    }
+    .hist-date { font-size: 12px; color: #cbd5e1; font-weight: 600; }
+    .hist-delta { font-size: 14px; font-weight: 700; flex-shrink: 0; }
+    .hist-delta.pos { color: #4ade80; }
+    .hist-delta.neg { color: #f87171; }
+    .hist-detail { font-size: 11px; color: #94a3b8; }
+    .hist-detail .sep { color: #475569; margin: 0 2px; }
     .history-empty {
       text-align: center; color: #94a3b8;
       font-size: 12px; padding: 16px 0 4px;
@@ -1446,7 +1452,7 @@
         sessionsLeftSub.textContent = "log sessions to calculate";
       }
 
-      // History table
+      // History — compact stacked rows (no horizontal scroll on any width)
       const historyBody = document.getElementById("historyBody");
       const sessions    = trackerData.sessions.slice(0, 10);
       if (!sessions.length) {
@@ -1454,23 +1460,18 @@
         return;
       }
       historyBody.innerHTML = `
-        <div class="history-scroll">
-        <table class="history-table">
-          <thead><tr>
-            <th>Date</th><th>Week Before→After</th>
-            <th>Session</th><th>Δ</th><th>Per 100%</th>
-          </tr></thead>
-          <tbody>${sessions.map(s => `
-            <tr>
-              <td>${formatShortDate(s.ts)}</td>
-              <td>${s.weekBefore}%→${s.weekAfter}%</td>
-              <td>${s.sessionUsed}%</td>
-              <td class="delta-pos">+${s.delta.toFixed(1)}%</td>
-              <td>${s.normalizedDelta.toFixed(2)}%</td>
-            </tr>`).join("")}
-          </tbody>
-        </table>
-        </div>`;
+        <div class="hist-list">${sessions.map(s => {
+          const sign = s.delta < 0 ? "neg" : "pos";
+          const deltaStr = (s.delta >= 0 ? "+" : "") + s.delta.toFixed(1) + "%";
+          return `
+            <div class="hist-row">
+              <div class="hist-row-top">
+                <span class="hist-date">${formatShortDate(s.ts)}</span>
+                <span class="hist-delta ${sign}">${deltaStr}</span>
+              </div>
+              <div class="hist-detail">${s.weekBefore}%→${s.weekAfter}%<span class="sep">·</span>${s.sessionUsed}% session<span class="sep">·</span>${s.normalizedDelta.toFixed(2)}%/100%</div>
+            </div>`;
+        }).join("")}</div>`;
     }
 
     // ─── Render Pacing card (velocity model) ──────────────────────────────────
