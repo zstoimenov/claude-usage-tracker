@@ -20,6 +20,28 @@
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+    /* Keyboard focus ring — visible for keyboard users only, not on mouse click */
+    .fab:focus-visible,
+    .tracker-toggle:focus-visible,
+    .sheet-tab:focus-visible,
+    .time-pill:focus-visible,
+    .log-btn:focus-visible,
+    .spot-save-btn:focus-visible,
+    .clear-btn:focus-visible,
+    .sheet-close:focus-visible {
+      outline: 2px solid #60a5fa;
+      outline-offset: 2px;
+    }
+
+    /* Respect reduced-motion preference */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+      }
+    }
+
     body {
       min-height: 100vh;
       min-height: 100dvh;
@@ -39,6 +61,8 @@
     #app {
       width: 100%;
       max-width: 560px;
+      /* Reserve room so the floating + button never covers the last control */
+      padding-bottom: 72px;
     }
 
     /* ── Header ──────────────────────────────────────────────────────────── */
@@ -59,7 +83,7 @@
     }
     .header-countdown {
       font-size: 11px;
-      color: #475569;
+      color: #94a3b8;
       margin-left: 6px;
     }
 
@@ -260,7 +284,7 @@
     .pace-badge.behind         { background: #422006; color: #eab308; }
     .pace-badge.falling-behind { background: #450a0a; color: #ef4444; }
     .pace-badge.stale          { background: #1e293b; color: #64748b; border: 1px solid #334155; }
-    .pace-badge.empty          { background: #1e293b; color: #475569; border: 1px solid #334155; }
+    .pace-badge.empty          { background: #1e293b; color: #94a3b8; border: 1px solid #334155; }
     .pace-secondary {
       font-size: 11px;
       color: #64748b;
@@ -326,7 +350,7 @@
       background: none;
       border: 1px solid #1e293b;
       border-radius: 10px;
-      color: #475569;
+      color: #94a3b8;
       font-size: 12px;
       letter-spacing: 2px;
       text-transform: uppercase;
@@ -399,7 +423,7 @@
     .drift-badge.drifting  { background: #422006; color: #eab308; }
     .drift-badge.at-risk   { background: #431407; color: #f97316; }
     .drift-badge.critical  { background: #450a0a; color: #ef4444; }
-    .drift-badge.no-data   { background: #1e293b; color: #475569; border: 1px solid #334155; }
+    .drift-badge.no-data   { background: #1e293b; color: #94a3b8; border: 1px solid #334155; }
 
     .drift-bars { display: flex; flex-direction: column; gap: 6px; }
     .drift-bar-row { display: flex; align-items: center; gap: 8px; }
@@ -426,11 +450,11 @@
       display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
     }
     .sessions-stat-label {
-      font-size: 11px; color: #475569;
+      font-size: 11px; color: #94a3b8;
       text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;
     }
     .sessions-stat-value { font-size: 22px; font-weight: 700; color: #e2e8f0; }
-    .sessions-stat-sub { font-size: 10px; color: #475569; margin-top: 2px; }
+    .sessions-stat-sub { font-size: 10px; color: #94a3b8; margin-top: 2px; }
 
     .log-inputs {
       display: grid; grid-template-columns: 1fr 1fr 1fr;
@@ -446,9 +470,9 @@
       padding: 8px 10px; outline: none; transition: border-color 0.2s;
     }
     .log-field input:focus { border-color: #475569; }
-    .log-field input::placeholder { color: #334155; }
+    .log-field input::placeholder { color: #64748b; }
     .log-row { display: flex; gap: 8px; align-items: center; }
-    .log-delta-preview { font-size: 11px; color: #475569; flex: 1; }
+    .log-delta-preview { font-size: 11px; color: #94a3b8; flex: 1; }
     .log-delta-preview span { color: #22c55e; font-weight: 600; }
     .log-btn {
       background: #0f4c81; border: none; border-radius: 8px;
@@ -456,7 +480,7 @@
       padding: 9px 16px; cursor: pointer; transition: background 0.2s; white-space: nowrap;
     }
     .log-btn:hover { background: #1e5f9a; }
-    .log-btn:disabled { background: #1e293b; color: #334155; cursor: not-allowed; }
+    .log-btn:disabled { background: #1e293b; color: #64748b; cursor: not-allowed; }
 
     /* ── History card ────────────────────────────────────────────────────── */
     .history-card { background: #1e293b; border-radius: 10px; padding: 16px; }
@@ -470,11 +494,13 @@
     }
     .clear-btn {
       background: none; border: 1px solid #334155; border-radius: 6px;
-      color: #475569; font-size: 10px; padding: 3px 8px;
+      color: #94a3b8; font-size: 10px; padding: 5px 10px;
       cursor: pointer; transition: color 0.2s, border-color 0.2s;
     }
     .clear-btn:hover { color: #f87171; border-color: #f87171; }
+    .history-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
     .history-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+    .history-table th, .history-table td { white-space: nowrap; }
     .history-table th {
       color: #64748b; font-weight: 500; text-align: left;
       padding: 0 4px 6px; letter-spacing: 0.5px; font-size: 10px;
@@ -483,7 +509,7 @@
     .history-table td.delta-pos { color: #4ade80; font-weight: 600; }
     .history-table td.delta-neg { color: #f87171; font-weight: 600; }
     .history-empty {
-      text-align: center; color: #475569;
+      text-align: center; color: #94a3b8;
       font-size: 12px; padding: 16px 0 4px;
     }
 
@@ -508,16 +534,16 @@
       background: #0f172a;
       border: 1px solid #334155;
       border-radius: 6px;
-      color: #475569;
+      color: #94a3b8;
       font-size: 11px;
       font-weight: 500;
-      padding: 6px 0;
+      padding: 9px 0;
       text-align: center;
       cursor: pointer;
       transition: background 0.15s, color 0.15s, border-color 0.15s;
       user-select: none;
     }
-    .time-pill:hover { border-color: #475569; color: #94a3b8; }
+    .time-pill:hover { border-color: #475569; color: #e2e8f0; }
     .time-pill.selected {
       background: #0f4c81;
       border-color: #1d6fa8;
@@ -606,10 +632,11 @@
     .sheet-close {
       background: none;
       border: none;
-      color: #475569;
+      color: #94a3b8;
       font-size: 20px;
       cursor: pointer;
-      padding: 0 2px;
+      padding: 6px 8px;
+      margin: -6px -8px;
       line-height: 1;
       transition: color 0.2s;
     }
@@ -631,11 +658,11 @@
       background: none;
       border: none;
       border-radius: 6px;
-      color: #475569;
+      color: #94a3b8;
       font-size: 12px;
       font-weight: 600;
       letter-spacing: 0.5px;
-      padding: 7px 0;
+      padding: 9px 0;
       cursor: pointer;
       transition: background 0.15s, color 0.15s;
     }
@@ -671,7 +698,7 @@
       transition: border-color 0.2s;
     }
     .spot-pane-input:focus { border-color: #475569; }
-    .spot-pane-input::placeholder { color: #334155; font-weight: 400; font-size: 16px; }
+    .spot-pane-input::placeholder { color: #64748b; font-weight: 400; font-size: 16px; }
     .spot-save-btn {
       width: 100%;
       background: #0f4c81;
@@ -686,7 +713,7 @@
       margin-bottom: 4px;
     }
     .spot-save-btn:hover { background: #1e5f9a; }
-    .spot-save-btn:disabled { background: #1e293b; color: #334155; cursor: not-allowed; }
+    .spot-save-btn:disabled { background: #1e293b; color: #64748b; cursor: not-allowed; }
   </style>
 <body>
   <div id="app"></div>
@@ -1040,7 +1067,7 @@
       </div>
 
       <!-- ── Layer 2 ──────────────────────────────────────────────────────── -->
-      <button class="tracker-toggle" id="trackerToggle">
+      <button class="tracker-toggle" id="trackerToggle" aria-expanded="false" aria-controls="trackerPanel">
         Session Tracker <i class="arrow">▾</i>
       </button>
 
@@ -1132,6 +1159,7 @@
     if (trackerData.trackerOpen) {
       trackerToggle.classList.add("open");
       trackerPanel.classList.add("open");
+      trackerToggle.setAttribute("aria-expanded", "true");
       document.body.style.overflow = "auto";
     }
     updateFabVisibility();
@@ -1139,6 +1167,7 @@
     trackerToggle.addEventListener("click", () => {
       const isOpen = trackerPanel.classList.toggle("open");
       trackerToggle.classList.toggle("open", isOpen);
+      trackerToggle.setAttribute("aria-expanded", String(isOpen));
       trackerData.trackerOpen = isOpen;
       saveData(trackerData);
       updateFabVisibility();
@@ -1224,11 +1253,56 @@
     function closeSheet() {
       sheet.classList.remove("open");
       sheetBackdrop.classList.remove("open");
+      sheet.style.transform = "";
+      if (fab && !fab.classList.contains("hidden")) fab.focus();
     }
+
+    function sheetIsOpen() { return sheet.classList.contains("open"); }
 
     fab.addEventListener("click", openSheet);
     sheetClose.addEventListener("click", closeSheet);
     sheetBackdrop.addEventListener("click", closeSheet);
+
+    // Escape closes the sheet; Tab is trapped inside while it's open (dialog a11y)
+    document.addEventListener("keydown", e => {
+      if (!sheetIsOpen()) return;
+      if (e.key === "Escape") { e.preventDefault(); closeSheet(); return; }
+      if (e.key === "Tab") {
+        const focusable = sheet.querySelectorAll(
+          'button, input, [href], [tabindex]:not([tabindex="-1"])'
+        );
+        const visible = Array.from(focusable).filter(el => !el.disabled && el.offsetParent !== null);
+        if (!visible.length) return;
+        const first = visible[0], last = visible[visible.length - 1];
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+      }
+    });
+
+    // ── Swipe-to-dismiss (the drag handle implies the sheet is draggable) ───────
+    (function enableSheetDrag() {
+      let startY = null, dragY = 0;
+      const THRESHOLD = 90;
+      sheet.addEventListener("touchstart", e => {
+        if (!sheetIsOpen()) return;
+        startY = e.touches[0].clientY;
+        dragY = 0;
+        sheet.style.transition = "none";
+      }, { passive: true });
+      sheet.addEventListener("touchmove", e => {
+        if (startY === null) return;
+        dragY = e.touches[0].clientY - startY;
+        if (dragY < 0) dragY = 0;                 // only drag downward
+        sheet.style.transform = `translateY(${dragY}px)`;
+      }, { passive: true });
+      sheet.addEventListener("touchend", () => {
+        if (startY === null) return;
+        sheet.style.transition = "";
+        if (dragY > THRESHOLD) { closeSheet(); }
+        else { sheet.style.transform = ""; }
+        startY = null; dragY = 0;
+      });
+    })();
 
     // ── Log Session pane ──────────────────────────────────────────────────────
     function updateSheetPreview() {
@@ -1345,7 +1419,7 @@
         driftWeeklyBar.style.width = "0%";
         driftWeeklyVal.textContent = "—";
         driftGapLabel.textContent  = "Use + to set your current weekly %";
-        driftGapLabel.style.color  = "#475569";
+        driftGapLabel.style.color  = "#94a3b8";
       }
 
       // Sessions remaining
@@ -1380,6 +1454,7 @@
         return;
       }
       historyBody.innerHTML = `
+        <div class="history-scroll">
         <table class="history-table">
           <thead><tr>
             <th>Date</th><th>Week Before→After</th>
@@ -1394,7 +1469,8 @@
               <td>${s.normalizedDelta.toFixed(2)}%</td>
             </tr>`).join("")}
           </tbody>
-        </table>`;
+        </table>
+        </div>`;
     }
 
     // ─── Render Pacing card (velocity model) ──────────────────────────────────
@@ -1517,7 +1593,7 @@
         const labelEl = document.getElementById("daylabel-"+ i);
 
         bar.style.border         = active ? `1px solid ${colour}` : "1px solid transparent";
-        labelEl.style.color      = active ? "#e2e8f0" : done ? "#64748b" : "#475569";
+        labelEl.style.color      = active ? "#e2e8f0" : done ? "#94a3b8" : "#64748b";
         labelEl.style.fontWeight = active ? "700" : "400";
 
         if (i === 0) {
@@ -1579,7 +1655,7 @@
               <span class="checkin-dots"></span>
               <span class="checkin-pct">${c.pct.toFixed(1)}%</span>
             </div>`).join("")
-        : `<span style="color:#475569;font-size:12px">—</span>`;
+        : `<span style="color:#94a3b8;font-size:12px">—</span>`;
 
       renderPacing();
     }
