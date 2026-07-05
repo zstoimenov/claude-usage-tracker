@@ -1970,6 +1970,21 @@
     setInterval(renderLayer2, 60000);
     setInterval(renderSessionTimer, 1000);
 
+    // The session clock is wall-clock based (derived from startTs vs Date.now),
+    // so it never actually pauses. But mobile browsers suspend setInterval when
+    // the app is backgrounded or the phone is locked, freezing the *display*.
+    // Re-render immediately whenever the app returns to the foreground so the
+    // clock snaps back to the true elapsed time instead of appearing paused.
+    function resyncOnResume() {
+      if (document.visibilityState === "hidden") return;
+      renderSessionTimer();
+      renderLayer2();
+      update();
+    }
+    document.addEventListener("visibilitychange", resyncOnResume);
+    window.addEventListener("focus", resyncOnResume);
+    window.addEventListener("pageshow", resyncOnResume);
+
     // ─── Service Worker ───────────────────────────────────────────────────────
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", () => {
