@@ -2,15 +2,29 @@
 
 A Progressive Web App (PWA) that tracks your Claude weekly usage cycle.
 
-**Resets every Wednesday at 13:00 AWST (UTC+8)**
+**Default reset: Wednesday 13:00 AWST (UTC+8).** Change it in Settings (⚙).
 
 ## Features
 
-- Live second-by-second countdown
-- Colour-coded progress (green → amber → red)
-- Day-by-day breakdown with Wednesday 13:00 marker
-- Works offline once installed
-- Installable on iOS and Android home screen
+- Live countdown; all times shown in your device's time zone
+- Colour-coded pace, tuned for using the whole allowance (blue = ahead, green = on track, amber/orange/red = under-using)
+- Day-by-day breakdown with a reset marker
+- 5-hour session timer, with notifications and calendar reminders
+- Delete any logged session (with Undo)
+- Past cycles: how much of each week's allowance you used
+- Sync between devices (free Supabase backend, no account: a private sync code)
+- JSON export / import backup
+- Works offline once installed; installable on iOS and Android
+
+## Sync
+
+Settings → *Turn on sync* creates a private code. On each other device, open
+Settings and paste the code. Anyone holding the code can read and change that
+data, so keep it to yourself. On iPhone the home-screen app has its own
+storage apart from Safari, so paste the code inside the installed app.
+
+Backend: table `usage_tracker_sync` in Supabase project `xlhqigvzwavidsiwojiy`,
+reached only through the `tracker_pull` / `tracker_push` RPC functions.
 
 ## Files
 
@@ -43,7 +57,6 @@ icons/
 
 ## Updating
 
-To update the app after making changes, bump the cache version in `sw.js`:
-```js
-const CACHE_NAME = "claude-cycle-v2"; // increment this
-```
+The service worker serves the cached app instantly and fetches the new version
+in the background, so a deploy shows up on the next launch. Bump `CACHE_NAME`
+in `sw.js` only when you want old caches cleared.

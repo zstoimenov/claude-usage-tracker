@@ -1,4 +1,4 @@
-const CACHE_NAME = "claude-cycle-v23";
+const CACHE_NAME = "claude-cycle-v24";
 const ASSETS = [
   "/claude-usage-tracker/",
   "/claude-usage-tracker/index.html",
@@ -41,11 +41,27 @@ self.addEventListener("notificationclick", (event) => {
   );
 });
 
-// Fetch: cache-first for local assets, network-first for everything else
+// Fetch: stale-while-revalidate for this app's own files, so updates arrive
+// on the next launch without bumping CACHE_NAME. Cross-origin requests (the
+// sync server, the QR library) go straight to the network and are never cached.
 self.addEventListener("fetch", (event) => {
+  const req = event.request;
+  if (req.method !== "GET" || new URL(req.url).origin !== self.location.origin) return;
   event.respondWith(
-    caches.match(event.request).then((cached) => {
-      return cached || fetch(event.request);
-    })
+    caches.open(CACHE_NAME).then((cache) =>
+      cache.match(req, { ignoreSearch: true }).then((cached) => {
+        const network = fetch(req)
+          .then((res) => {
+            if (res && res.ok) cache.put(req, res.clone());
+            return res;
+          })
+          .catch(() => cached);
+        if (cached) {
+          event.waitUntil(network);
+          return cached;
+        }
+        return network;
+      })
+    )
   );
 });

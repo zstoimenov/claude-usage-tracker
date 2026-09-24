@@ -47,7 +47,6 @@
     body {
       min-height: 100vh;
       min-height: 100dvh;
-      overflow: hidden;
       background: #0f172a;
       display: flex;
       flex-direction: column;
@@ -61,6 +60,7 @@
     }
 
     #app {
+      position: relative;
       width: 100%;
       max-width: 560px;
       /* Reserve room so the floating + button never covers the last control */
@@ -425,6 +425,7 @@
     .drift-badge.drifting  { background: #422006; color: #eab308; }
     .drift-badge.at-risk   { background: #431407; color: #f97316; }
     .drift-badge.critical  { background: #450a0a; color: #ef4444; }
+    .drift-badge.ahead     { background: #0c2d4a; color: #60a5fa; }
     .drift-badge.no-data   { background: #1e293b; color: #94a3b8; border: 1px solid #334155; }
 
     .drift-bars { display: flex; flex-direction: column; gap: 6px; }
@@ -609,6 +610,10 @@
       transition: transform 0.32s cubic-bezier(0.32, 0.72, 0, 1);
       max-width: 560px;
       margin: 0 auto;
+      max-height: 88vh;
+      max-height: 88dvh;
+      overflow-y: auto;
+      overscroll-behavior: contain;
     }
     .sheet.open {
       transform: translateY(0);
@@ -792,6 +797,100 @@
       font-size: 12px; color: #fb923c; background: #2a1c0c; border: 1px solid #7c3d0f;
       border-radius: 8px; padding: 9px 12px; margin-bottom: 14px;
     }
+
+    /* ── Settings button ─────────────────────────────────────────────────── */
+    .settings-btn {
+      position: absolute; top: -6px; right: -6px;
+      background: none; border: none; color: #64748b;
+      font-size: 20px; line-height: 1; padding: 8px; cursor: pointer;
+      border-radius: 8px; transition: color 0.2s;
+    }
+    .settings-btn:hover { color: #cbd5e1; }
+    .sync-dot {
+      position: absolute; top: 8px; right: 7px; width: 7px; height: 7px;
+      border-radius: 50%; background: transparent; pointer-events: none;
+    }
+    .sync-dot.ok { background: #22c55e; }
+    .sync-dot.syncing { background: #60a5fa; }
+    .sync-dot.error { background: #f59e0b; }
+
+    /* ── History delete + show more ──────────────────────────────────────── */
+    .hist-row-top .hist-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+    .hist-del {
+      background: none; border: 1px solid transparent; border-radius: 6px;
+      color: #64748b; font-size: 13px; line-height: 1; padding: 5px 7px;
+      cursor: pointer; transition: color 0.2s, border-color 0.2s;
+    }
+    .hist-del:hover, .hist-del:focus-visible { color: #f87171; border-color: #7f1d1d; outline: none; }
+    .hist-more {
+      width: 100%; background: none; border: none; color: #60a5fa;
+      font-size: 11px; padding: 10px 0 2px; cursor: pointer;
+    }
+
+    /* ── Past cycles card ────────────────────────────────────────────────── */
+    .cycles-card { background: #1e293b; border-radius: 10px; padding: 16px; }
+    .cycle-row {
+      display: flex; justify-content: space-between; align-items: baseline;
+      font-size: 12px; color: #cbd5e1; padding: 6px 0; border-top: 1px solid #0f172a;
+    }
+    .cycle-row:first-of-type { border-top: none; }
+    .cycle-val { font-weight: 700; }
+    .cycle-val.good { color: #4ade80; }
+    .cycle-val.ok   { color: #eab308; }
+    .cycle-val.bad  { color: #f87171; }
+    .cycle-sub { font-size: 10px; color: #64748b; margin-left: 6px; font-weight: 400; }
+
+    /* ── Toast ───────────────────────────────────────────────────────────── */
+    .toast {
+      position: fixed; left: 50%; bottom: max(88px, calc(env(safe-area-inset-bottom) + 64px));
+      transform: translate(-50%, 20px); opacity: 0; pointer-events: none;
+      background: #334155; color: #e2e8f0; font-size: 13px;
+      border-radius: 10px; padding: 10px 14px; z-index: 300;
+      display: flex; align-items: center; gap: 14px;
+      box-shadow: 0 6px 24px rgba(0,0,0,0.5);
+      transition: opacity 0.2s, transform 0.2s; max-width: calc(100vw - 32px);
+    }
+    .toast.show { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
+    .toast button {
+      background: none; border: none; color: #60a5fa; font-weight: 700;
+      font-size: 13px; cursor: pointer; padding: 2px 4px;
+    }
+
+    /* ── Settings pane ───────────────────────────────────────────────────── */
+    .set-section { padding: 4px 0 18px; border-bottom: 1px solid #0f172a; margin-bottom: 16px; }
+    .set-section:last-child { border-bottom: none; margin-bottom: 0; }
+    .set-title {
+      font-size: 11px; color: #94a3b8; text-transform: uppercase;
+      letter-spacing: 1px; margin-bottom: 10px; font-weight: 600;
+    }
+    .set-row { display: flex; gap: 8px; margin-bottom: 10px; }
+    .set-row > * { flex: 1; }
+    .set-input, .set-select {
+      width: 100%; background: #0f172a; border: 1px solid #334155; border-radius: 8px;
+      color: #e2e8f0; font-size: 14px; padding: 9px 10px; outline: none; font-family: inherit;
+    }
+    .set-input:focus, .set-select:focus { border-color: #475569; }
+    .set-btn {
+      background: #0f4c81; border: none; border-radius: 8px; color: #bfdbfe;
+      font-size: 12px; font-weight: 600; padding: 10px 12px; cursor: pointer;
+      transition: background 0.2s; font-family: inherit;
+    }
+    .set-btn:hover { background: #1e5f9a; }
+    .set-btn:disabled { background: #1e293b; color: #64748b; cursor: not-allowed; }
+    .set-btn.ghost { background: none; border: 1px solid #334155; color: #cbd5e1; }
+    .set-btn.ghost:hover { border-color: #475569; }
+    .set-btn.danger { background: none; border: 1px solid #334155; color: #f87171; }
+    .set-hint { font-size: 11px; color: #94a3b8; line-height: 1.5; margin-bottom: 10px; }
+    .set-status { font-size: 12px; color: #cbd5e1; margin-bottom: 10px; }
+    .set-status .err { color: #f59e0b; }
+    .set-code {
+      font-family: ui-monospace, Menlo, monospace; font-size: 11px; color: #94a3b8;
+      word-break: break-all; background: #0f172a; border-radius: 8px; padding: 8px 10px; margin-bottom: 10px;
+    }
+    .qr-box { display: flex; justify-content: center; margin: 4px 0 12px; }
+    .qr-box svg { background: #fff; border-radius: 8px; width: 200px; height: 200px; }
+    .reminder-row { display: flex; gap: 8px; margin-top: 10px; }
+    .reminder-row .set-btn { flex: 1; }
   </style>
 <body>
   <div id="app"></div>
@@ -806,7 +905,7 @@
   <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="Quick Entry">
     <div class="sheet-handle-row"><div class="sheet-handle"></div></div>
     <div class="sheet-header">
-      <span class="sheet-title">Quick Entry</span>
+      <span class="sheet-title" id="sheetTitle">Quick Entry</span>
       <button class="sheet-close" id="sheetClose" aria-label="Close">✕</button>
     </div>
     <div class="sheet-tabs" id="sheetTabs">
@@ -823,7 +922,7 @@
           <input type="number" class="spot-pane-input" id="sessionStartInput" min="0" max="100" step="0.1" placeholder="e.g. 34" inputmode="decimal" />
         </div>
         <button class="spot-save-btn" id="sessionStartBtn" disabled>Start 5-hour session</button>
-        <p class="timer-hint">A 5-hour timer starts now. When it ends, you'll enter the session usage and your new weekly % — it's logged to your history automatically.</p>
+        <p class="timer-hint">A 5-hour timer starts now. When it ends, you'll enter the session usage and your new weekly %, and it's logged to your history automatically.</p>
       </div>
       <div id="timerActive" style="display:none">
         <div class="timer-active-display">
@@ -831,6 +930,11 @@
           <div class="ta-sub" id="paneTimerSub">—</div>
         </div>
         <button class="spot-save-btn" id="sessionCompleteBtn">End &amp; log now</button>
+        <div class="reminder-row">
+          <button class="set-btn ghost" id="remindGoogleBtn">+ Google Calendar</button>
+          <button class="set-btn ghost" id="remindIcsBtn">+ Apple / other (.ics)</button>
+        </div>
+        <p class="timer-hint">Phones can pause the app in the background, so the end-of-session notification may be late. A calendar reminder always goes off on time.</p>
         <button class="timer-cancel-btn" id="sessionCancelBtn">Cancel without logging</button>
       </div>
     </div>
@@ -890,51 +994,123 @@
       <div class="log-delta-preview" id="completePreview" style="margin-bottom:12px">Enter both to preview</div>
       <button class="spot-save-btn" id="completeBtn" disabled>Log session</button>
     </div>
+
+    <!-- Settings pane -->
+    <div class="sheet-pane" id="paneSettings">
+      <div class="set-section">
+        <div class="set-title">Weekly reset</div>
+        <div class="set-hint">When your Claude weekly limit resets, in your time zone (<span id="tzName"></span>).</div>
+        <div class="set-row">
+          <select class="set-select" id="resetDay" aria-label="Reset day">
+            <option value="1">Monday</option><option value="2">Tuesday</option><option value="3">Wednesday</option>
+            <option value="4">Thursday</option><option value="5">Friday</option><option value="6">Saturday</option><option value="0">Sunday</option>
+          </select>
+          <input class="set-input" type="time" id="resetTime" aria-label="Reset time" />
+        </div>
+        <button class="set-btn" id="resetSaveBtn">Save reset time</button>
+      </div>
+
+      <div class="set-section">
+        <div class="set-title">Sync between devices</div>
+        <div id="syncOff">
+          <div class="set-hint">Keeps your sessions and weekly % in step across devices. No account needed: a private sync code links them. Anyone with the code can see and change this data, so only share it with your own devices.</div>
+          <button class="set-btn" id="syncEnableBtn" style="width:100%;margin-bottom:12px">Turn on sync on this device</button>
+          <div class="set-hint" style="margin-bottom:6px">Already turned on elsewhere? Paste that device's code or link:</div>
+          <div class="set-row">
+            <input class="set-input" id="syncCodeInput" placeholder="Sync code or link" autocomplete="off" autocapitalize="off" spellcheck="false" />
+            <button class="set-btn" id="syncJoinBtn" style="flex:0 0 auto" disabled>Link</button>
+          </div>
+        </div>
+        <div id="syncOn" style="display:none">
+          <div class="set-status" id="syncStatus">—</div>
+          <div class="set-code" id="syncCodeShow"></div>
+          <div class="set-row">
+            <button class="set-btn ghost" id="syncCopyCodeBtn">Copy code</button>
+            <button class="set-btn ghost" id="syncCopyLinkBtn">Copy link</button>
+            <button class="set-btn ghost" id="syncQrBtn">Show QR</button>
+          </div>
+          <div class="qr-box" id="qrBox" style="display:none"></div>
+          <div class="set-hint">To add another device, open the app there, go to Settings and paste the code. On iPhone, the home-screen app keeps its own storage apart from Safari, so paste the code into the installed app. Opening a link or QR code only links Safari.</div>
+          <div class="set-row">
+            <button class="set-btn" id="syncNowBtn">Sync now</button>
+            <button class="set-btn danger" id="syncOffBtn">Unlink this device</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="set-section">
+        <div class="set-title">Backup</div>
+        <div class="set-hint">Download all data as a file, or merge a backup file back in. Importing adds to your data and never deletes anything.</div>
+        <div class="set-row">
+          <button class="set-btn ghost" id="exportBtn">Export JSON</button>
+          <button class="set-btn ghost" id="importBtn">Import JSON</button>
+        </div>
+        <input type="file" id="importFile" accept="application/json,.json" style="display:none" />
+      </div>
+    </div>
   </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"><span id="toastMsg"></span><button id="toastUndo">Undo</button></div>
 
   <script>
     // ─── Constants ────────────────────────────────────────────────────────────
     const CYCLE_MS       = 7 * 24 * 60 * 60 * 1000;
-    const AWST_OFFSET_MS = 8 * 60 * 60 * 1000;
-    const DAY_LABELS     = ["Wed", "Thu", "Fri", "Sat", "Sun", "Mon", "Tue"];
-    const DAY_ORDER      = [3, 4, 5, 6, 0, 1, 2];
-    const MARKER_PCT     = (13 / 24) * 100;
-    const WED_WINDOW     = 100 - MARKER_PCT;
+    const DAY_MS         = 24 * 3600000;
     const STORAGE_KEY    = "claude-tracker-v1";
+    // Default reset: Wed 23 Sep 2026 13:00 AWST (05:00 UTC). Every cycle is this
+    // instant plus a whole number of weeks, so the reset is time-zone independent.
+    const DEFAULT_RESET_ANCHOR = Date.UTC(2026, 8, 23, 5, 0, 0);
 
     // ─── Pacing constants (velocity model) ────────────────────────────────────
-    const WAKING_HOURS_PER_DAY = 14;             // 07:30–21:30 AWST
+    const WAKE_START_H         = 7.5;            // 07:30 local
+    const WAKE_END_H           = 21.5;           // 21:30 local
+    const CHECKIN_HOURS        = [7.5, 19.5];    // 07:30 and 19:30 local
     const SESSION_LOCK_HOURS   = 5;
     const SESSION_MS           = SESSION_LOCK_HOURS * 3600000;   // full 5h window
-    const SLOTS_PER_DAY_MAX    = WAKING_HOURS_PER_DAY / SESSION_LOCK_HOURS;  // 2.8
+    const MIN_USEFUL_SLOT_MS   = 3600000;        // a partial window under 1h isn't a usable slot
     const STALE_SIGNAL_MS      = 5 * 3600000;    // 5h
     const CAPACITY_TRIGGER     = 0.7;
     const EDGE_WINDOW_MS       = 6 * 3600000;    // 6h start/end edge cases
+    const AVG_WINDOW_MS        = 28 * DAY_MS;    // sessions used for the average
+    const AVG_HALF_LIFE_DAYS   = 14;             // recency weighting
+    const TOMBSTONE_KEEP_MS    = 60 * DAY_MS;
 
-    // ─── Time helpers ─────────────────────────────────────────────────────────
-    function getCycleStartUTC() {
-      const nowMs    = Date.now();
-      const awstMs   = nowMs + AWST_OFFSET_MS;
-      const awstDate = new Date(awstMs);
-      const dayOfWeek = awstDate.getUTCDay();
-      const hourAWST  = awstDate.getUTCHours();
-      const minAWST   = awstDate.getUTCMinutes();
-      const secAWST   = awstDate.getUTCSeconds();
-      let daysSinceWed = (dayOfWeek - 3 + 7) % 7;
-      if (daysSinceWed === 0 && hourAWST < 13) daysSinceWed = 7;
-      const elapsedTodayMs =
-        hourAWST * 3600000 + minAWST * 60000 +
-        secAWST * 1000     + awstDate.getUTCMilliseconds();
-      const midnightWedAWST = awstMs - elapsedTodayMs - daysSinceWed * 24 * 3600000;
-      const cycleStartAWST  = midnightWedAWST + 13 * 3600000;
-      return cycleStartAWST - AWST_OFFSET_MS;
+    // ─── Sync backend (Supabase, free tier) ───────────────────────────────────
+    const SB_URL = "https://xlhqigvzwavidsiwojiy.supabase.co";
+    const SB_KEY = "sb_publishable_2e2eIVRO9BrZA7JF4o2L-w_PF_7lV1f";   // publishable, safe in client
+
+    let trackerData = null;   // loaded below, once the DOM is built
+
+    // ─── Time helpers (all display uses the device's own time zone) ──────────
+    function resetAnchor() {
+      const s = trackerData ? trackerData.settings : null;
+      return s && typeof s.resetAnchor === "number" ? s.resetAnchor : DEFAULT_RESET_ANCHOR;
     }
-
-    function getActiveDayIndex() {
-      const awstDate = new Date(Date.now() + AWST_OFFSET_MS);
-      return DAY_ORDER.indexOf(awstDate.getUTCDay());
+    function cycleStartFor(ms) {
+      const a = resetAnchor();
+      return a + Math.floor((ms - a) / CYCLE_MS) * CYCLE_MS;
     }
-
+    function getCycleStartUTC() { return cycleStartFor(Date.now()); }
+    function localMidnight(ms) {
+      const d = new Date(ms);
+      return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+    }
+    function addLocalDays(midnightMs, n) {
+      const d = new Date(midnightMs);
+      return new Date(d.getFullYear(), d.getMonth(), d.getDate() + n).getTime();
+    }
+    function localAt(midnightMs, hours) {
+      const d = new Date(midnightMs);
+      const h = Math.floor(hours), m = Math.round((hours - h) * 60);
+      return new Date(d.getFullYear(), d.getMonth(), d.getDate(), h, m).getTime();
+    }
+    function tzAbbrev(ms) {
+      try {
+        const part = new Intl.DateTimeFormat("en-AU", { timeZoneName: "short" })
+          .formatToParts(new Date(ms)).find(p => p.type === "timeZoneName");
+        return part ? part.value : "";
+      } catch (e) { return ""; }
+    }
     function formatDuration(ms) {
       if (ms <= 0) return "0m";
       const totalMin = Math.floor(ms / 60000);
@@ -947,7 +1123,6 @@
       if (m || (!d && !h)) parts.push(m + "m");
       return parts.join(" ");
     }
-
     function formatClock(ms) {
       if (ms < 0) ms = 0;
       const totalSec = Math.floor(ms / 1000);
@@ -956,50 +1131,44 @@
       const s = totalSec % 60;
       return h + ":" + String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
     }
-
     function formatClockTime(utcMs) {
-      return new Date(utcMs).toLocaleString("en-AU", {
-        timeZone: "Australia/Perth", hour: "2-digit", minute: "2-digit", hour12: false,
-      });
+      return new Date(utcMs).toLocaleString("en-AU", { hour: "2-digit", minute: "2-digit", hour12: false });
     }
-
     function formatShortDate(utcMs) {
       return new Date(utcMs).toLocaleString("en-AU", {
-        timeZone: "Australia/Perth",
-        month: "short", day: "numeric",
-        hour: "2-digit", minute: "2-digit",
-        hour12: false,
+        month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false,
       });
     }
-
+    function formatDayDate(utcMs) {
+      return new Date(utcMs).toLocaleString("en-AU", { weekday: "short", day: "numeric", month: "short" });
+    }
     function formatSignalAge(ms) {
       if (ms === null || ms === undefined) return "no signal";
       const h = Math.floor(ms / 3600000);
       const m = Math.floor((ms % 3600000) / 60000);
       return h > 0 ? `${h}h ${m}m old` : `${m}m old`;
     }
+    function formatAgo(ms) {
+      const diff = Date.now() - ms;
+      if (diff < 60000) return "just now";
+      return formatDuration(diff) + " ago";
+    }
 
     function getNextCheckIns() {
       const nowMs        = Date.now();
       const cycleStartMs = getCycleStartUTC();
       const cycleEndMs   = cycleStartMs + CYCLE_MS;
-      const checkTimes   = [7.5, 19.5];
       const results      = [];
-
+      const today        = localMidnight(nowMs);
       for (let dayOffset = 0; dayOffset <= 1 && results.length < 2; dayOffset++) {
-        for (let ci = 0; ci < checkTimes.length && results.length < 2; ci++) {
-          const awstNow      = new Date(nowMs + AWST_OFFSET_MS);
-          const awstMidnight = Date.UTC(
-            awstNow.getUTCFullYear(), awstNow.getUTCMonth(), awstNow.getUTCDate()
-          ) + dayOffset * 86400000;
-          const candidateUtcMs = awstMidnight + checkTimes[ci] * 3600000 - AWST_OFFSET_MS;
-          if (candidateUtcMs > nowMs && candidateUtcMs <= nowMs + 86400000) {
+        const mid = addLocalDays(today, dayOffset);
+        for (let ci = 0; ci < CHECKIN_HOURS.length && results.length < 2; ci++) {
+          const candidateMs = localAt(mid, CHECKIN_HOURS[ci]);
+          if (candidateMs > nowMs && candidateMs <= nowMs + DAY_MS) {
             // Use the cycle that owns this candidate time
-            const refCycleStart = candidateUtcMs >= cycleEndMs ? cycleEndMs : cycleStartMs;
-            const elapsed = candidateUtcMs - refCycleStart;
-            const pct     = Math.min(100, Math.max(0, (elapsed / CYCLE_MS) * 100));
-            const label   = new Date(candidateUtcMs).toLocaleString("en-AU", {
-              timeZone: "Australia/Perth",
+            const refCycleStart = candidateMs >= cycleEndMs ? cycleEndMs : cycleStartMs;
+            const pct   = Math.min(100, Math.max(0, ((candidateMs - refCycleStart) / CYCLE_MS) * 100));
+            const label = new Date(candidateMs).toLocaleString("en-AU", {
               weekday: "short", hour: "2-digit", minute: "2-digit", hour12: false,
             });
             results.push({ label, pct });
@@ -1009,8 +1178,25 @@
       return results;
     }
 
+    // ─── Drift (goal: use the whole allowance) ────────────────────────────────
+    // Under-using is the risk (allowance is forfeited at reset). Being ahead is
+    // fine: at worst you hit the cap early, having used everything.
+    function getDriftStatus(weeklyPct, timePct) {
+      if (weeklyPct === null || weeklyPct === undefined) return "no-data";
+      const gap = weeklyPct - timePct;
+      if (gap >= 5)   return "ahead";
+      if (gap > -5)   return "on-track";
+      if (gap > -10)  return "drifting";
+      if (gap > -20)  return "at-risk";
+      return "critical";
+    }
+    function getDriftLabel(status) {
+      return { "ahead": "Ahead", "on-track": "On Track", "drifting": "Behind", "at-risk": "Under-using",
+               "critical": "Critical", "no-data": "No Data" }[status];
+    }
     function barColour(driftStatus) {
       switch (driftStatus) {
+        case "ahead":    return "#60a5fa";
         case "on-track": return "#22c55e";
         case "drifting": return "#eab308";
         case "at-risk":  return "#f97316";
@@ -1019,53 +1205,99 @@
       }
     }
 
-    // ─── Pacing (velocity model) ──────────────────────────────────────────────
-    function getFreshestSignalAge(trackerData) {
-      const nowMs = Date.now();
-      let bestTs = 0;
+    // ─── Current weekly % (C1: resets with the cycle) ─────────────────────────
+    // A reading taken in an earlier cycle means nothing now; after the reset the
+    // true usage is 0%, so report that (timestamped at the reset).
+    function getWeekly() {
       const sw = trackerData.spotWeekly;
-      if (sw && sw.ts) bestTs = Math.max(bestTs, sw.ts);
-      if (trackerData.sessions.length > 0) bestTs = Math.max(bestTs, trackerData.sessions[0].ts);
-      if (bestTs === 0) return null;
-      return nowMs - bestTs;
+      if (!sw) return null;
+      const cs = getCycleStartUTC();
+      if (sw.ts >= cs) return sw;
+      return { value: 0, ts: cs, isReset: true };
+    }
+    function setWeekly(value, ts) {
+      trackerData.spotWeekly = { value, ts };
+      const key = String(cycleStartFor(ts));
+      const cur = trackerData.cycles[key];
+      if (!cur || cur.ts <= ts) trackerData.cycles[key] = { value, ts };
     }
 
-    function calcPacing(trackerData) {
-      const nowMs        = Date.now();
-      const cycleStartMs = getCycleStartUTC();
-      const cycleEndMs   = cycleStartMs + CYCLE_MS;
-      const daysElapsed  = (nowMs - cycleStartMs) / 86400000;
-      const daysRemaining = (cycleEndMs - nowMs) / 86400000;
-      const weeklyPct    = trackerData.spotWeekly !== null ? trackerData.spotWeekly.value : null;
-      const signalAgeMs  = getFreshestSignalAge(trackerData);
-      const isStale      = signalAgeMs !== null && signalAgeMs > STALE_SIGNAL_MS;
+    // ─── Calculations ─────────────────────────────────────────────────────────
+    // C3: ratio of sums (total weekly % gained ÷ total session fraction used),
+    // recency-weighted. A 5% session no longer gets multiplied by 20 on its own.
+    function calcAvg(sessions) {
+      const nowMs = Date.now();
+      let pool = sessions.filter(s => s.sessionUsed > 0 && nowMs - s.ts <= AVG_WINDOW_MS);
+      if (!pool.length) pool = sessions.filter(s => s.sessionUsed > 0).slice(0, 10);
+      if (!pool.length) return null;
+      let num = 0, den = 0;
+      pool.forEach(s => {
+        const w = Math.pow(0.5, ((nowMs - s.ts) / DAY_MS) / AVG_HALF_LIFE_DAYS);
+        num += w * s.delta;
+        den += w * (s.sessionUsed / 100);
+      });
+      if (den <= 0) return null;
+      const normalized = pool.map(s => s.normalizedDelta);
+      return { avg: num / den, min: Math.min(...normalized), max: Math.max(...normalized), n: pool.length };
+    }
 
-      // Empty state — no weekly % yet
+    // C4/C5: real 5h windows left before reset, inside waking hours, starting
+    // after any running session. One shared number for every card.
+    function countSlots(nowMs, cycleEndMs) {
+      const as = trackerData.activeSession;
+      let earliest = nowMs;
+      if (as) earliest = Math.max(earliest, as.startTs + SESSION_MS);
+      let slots = 0;
+      for (let mid = localMidnight(nowMs); mid < cycleEndMs; mid = addLocalDays(mid, 1)) {
+        const ws = Math.max(localAt(mid, WAKE_START_H), earliest);
+        const we = Math.min(localAt(mid, WAKE_END_H), cycleEndMs);
+        if (we <= ws) continue;
+        const len = we - ws;
+        let n = Math.floor(len / SESSION_MS);
+        if (len % SESSION_MS >= MIN_USEFUL_SLOT_MS) n++;
+        slots += n;
+        earliest = ws + n * SESSION_MS;
+      }
+      return slots;
+    }
+
+    function getFreshestSignalAge(weekly) {
+      let bestTs = weekly ? weekly.ts : 0;
+      if (trackerData.sessions.length > 0) bestTs = Math.max(bestTs, trackerData.sessions[0].ts);
+      if (!bestTs) return null;
+      return Date.now() - bestTs;
+    }
+
+    function calcPacing() {
+      const nowMs         = Date.now();
+      const cycleStartMs  = getCycleStartUTC();
+      const cycleEndMs    = cycleStartMs + CYCLE_MS;
+      const daysElapsed   = (nowMs - cycleStartMs) / DAY_MS;
+      const daysRemaining = (cycleEndMs - nowMs) / DAY_MS;
+      const weekly        = getWeekly();
+      const weeklyPct     = weekly ? weekly.value : null;
+      const signalAgeMs   = getFreshestSignalAge(weekly);
+      const isStale       = signalAgeMs !== null && signalAgeMs > STALE_SIGNAL_MS;
+
       if (weeklyPct === null) {
         return { state: "empty", message: "Set current weekly % to calculate pace" };
       }
-
-      // Edge: cycle just started
       if (nowMs - cycleStartMs < EDGE_WINDOW_MS) {
-        return { state: "starting", message: "Cycle just started — log some sessions" };
+        return { state: "starting", message: "Cycle just started. Log some sessions." };
       }
-
-      // Edge: final stretch
       if (cycleEndMs - nowMs < EDGE_WINDOW_MS) {
         const usageLeft = Math.max(0, 100 - weeklyPct);
         return { state: "final", weeklyPct, usageLeft,
-                 message: `Final stretch — ${usageLeft.toFixed(1)}% left to use`,
+                 message: `Final stretch: ${usageLeft.toFixed(1)}% left to use`,
                  isStale, signalAgeMs };
       }
 
-      // Normal velocity calculation
-      const usageRemaining   = 100 - weeklyPct;
+      const usageRemaining   = Math.max(0, 100 - weeklyPct);
       const requiredDailyPct = usageRemaining / daysRemaining;
       const currentDailyPct  = daysElapsed > 0 ? weeklyPct / daysElapsed : 0;
       const paceRatio        = currentDailyPct > 0 ? requiredDailyPct / currentDailyPct : null;
 
-      // Recovery point — if usage is ahead of time elapsed, when would time
-      // elapsed catch up to current usage if no more Claude is used?
+      // Recovery point: if usage is ahead of time, when does time catch up?
       const timePct = (daysElapsed / 7) * 100;
       let recovery  = null;
       if (weeklyPct > timePct) {
@@ -1076,17 +1308,16 @@
       }
 
       let badge, badgeLabel;
-      if (paceRatio === null)        { badge = "empty";          badgeLabel = "No Pace Data"; }
-      else if (paceRatio < 0.85)     { badge = "slow-down";      badgeLabel = "🔵 Slow Down"; }
+      if (paceRatio === null)        { badge = "falling-behind"; badgeLabel = "🔴 Not Started"; }
+      else if (paceRatio < 0.85)     { badge = "slow-down";      badgeLabel = "🔵 Ahead"; }
       else if (paceRatio <= 1.15)    { badge = "on-pace";        badgeLabel = "🟢 On Pace"; }
       else if (paceRatio <= 1.5)     { badge = "behind";         badgeLabel = "🟡 Behind"; }
       else                           { badge = "falling-behind"; badgeLabel = "🔴 Falling Behind"; }
 
-      // Capacity check (secondary, conditional)
       const avgData = calcAvg(trackerData.sessions);
       let capacity = null;
-      if (avgData && usageRemaining > 0) {
-        const slotsAvailable = Math.floor(daysRemaining * SLOTS_PER_DAY_MAX);
+      if (avgData && avgData.avg > 0 && usageRemaining > 0) {
+        const slotsAvailable = countSlots(nowMs, cycleEndMs);
         const sessionsNeeded = usageRemaining / avgData.avg;
         const forfeitPct     = Math.max(0, (sessionsNeeded - slotsAvailable) * avgData.avg);
         const show           = sessionsNeeded > slotsAvailable * CAPACITY_TRIGGER;
@@ -1098,61 +1329,153 @@
         state: "normal",
         weeklyPct, daysElapsed, daysRemaining,
         requiredDailyPct, currentDailyPct, paceRatio,
-        badge, badgeLabel,
-        isStale, signalAgeMs,
+        badge, badgeLabel, isStale, signalAgeMs,
         capacity, recovery
       };
     }
 
-    // ─── Storage ──────────────────────────────────────────────────────────────
+    // ─── Storage & data model ─────────────────────────────────────────────────
+    // Synced fields: sessions, deleted (tombstones), spotWeekly, activeSession(+Ts),
+    // cycles, settings. Everything else is per-device.
+    function newId() {
+      const b = new Uint8Array(8);
+      crypto.getRandomValues(b);
+      return "s" + Array.from(b, x => x.toString(16).padStart(2, "0")).join("");
+    }
+    function num(v) { const n = typeof v === "number" ? v : parseFloat(v); return isFinite(n) ? n : null; }
+    function cleanSession(s) {
+      if (!s || typeof s !== "object") return null;
+      const ts = num(s.ts), b = num(s.weekBefore), u = num(s.sessionUsed), a = num(s.weekAfter);
+      if (ts === null || b === null || u === null || a === null) return null;
+      const delta = num(s.delta) !== null ? num(s.delta) : a - b;
+      const nd = num(s.normalizedDelta) !== null ? num(s.normalizedDelta) : (u > 0 ? delta / (u / 100) : 0);
+      const out = {
+        // Deterministic id for legacy rows so two devices migrating the same
+        // history don't end up with duplicates.
+        id: typeof s.id === "string" && s.id ? s.id : "m" + ts,
+        ts, weekBefore: b, sessionUsed: u, weekAfter: a, delta, normalizedDelta: nd,
+        timeLeftMs: num(s.timeLeftMs)
+      };
+      if (s.fromTimer) out.fromTimer = true;
+      return out;
+    }
+    function normalizeSynced(d) {
+      d = d && typeof d === "object" ? d : {};
+      const out = {};
+      out.sessions = (Array.isArray(d.sessions) ? d.sessions : []).map(cleanSession).filter(Boolean);
+      out.deleted = {};
+      if (d.deleted && typeof d.deleted === "object") {
+        for (const [k, v] of Object.entries(d.deleted)) if (num(v) !== null) out.deleted[k] = num(v);
+      }
+      let sw = d.spotWeekly;
+      if (typeof sw === "number") sw = { value: sw, ts: 0 };
+      out.spotWeekly = sw && num(sw.value) !== null ? { value: num(sw.value), ts: num(sw.ts) || 0 } : null;
+      const as = d.activeSession;
+      out.activeSession = as && num(as.startTs) !== null
+        ? { startTs: num(as.startTs), weekBefore: num(as.weekBefore) || 0 } : null;
+      out.activeSessionTs = num(d.activeSessionTs) !== null ? num(d.activeSessionTs)
+                          : (out.activeSession ? out.activeSession.startTs : 0);
+      out.cycles = {};
+      if (d.cycles && typeof d.cycles === "object") {
+        for (const [k, v] of Object.entries(d.cycles)) {
+          if (v && num(v.value) !== null && num(v.ts) !== null) out.cycles[k] = { value: num(v.value), ts: num(v.ts) };
+        }
+      }
+      const st = d.settings;
+      out.settings = st && num(st.resetAnchor) !== null
+        ? { resetAnchor: num(st.resetAnchor), ts: num(st.ts) || 0 }
+        : { resetAnchor: DEFAULT_RESET_ANCHOR, ts: 0 };
+      return out;
+    }
+    function emptyData() {
+      return Object.assign(normalizeSynced({}), { trackerOpen: false, lastSheetTab: "spot", sync: null, notifiedFor: null });
+    }
     function loadData() {
       try {
         const raw = localStorage.getItem(STORAGE_KEY);
-        if (!raw) return { sessions: [], trackerOpen: false, spotWeekly: null, activeSession: null };
-        const data = JSON.parse(raw);
-        if (typeof data.spotWeekly === "number") {
-          data.spotWeekly = { value: data.spotWeekly, ts: 0 };
+        if (!raw) return emptyData();
+        const d = JSON.parse(raw);
+        const out = normalizeSynced(d);
+        out.trackerOpen  = false;
+        out.lastSheetTab = d.lastSheetTab || "spot";
+        out.sync         = d.sync && typeof d.sync.code === "string" ? d.sync : null;
+        // Migrate the old per-session "notified" flag to a per-device field
+        out.notifiedFor  = d.notifiedFor || (d.activeSession && d.activeSession.notified ? d.activeSession.startTs : null);
+        // Seed the per-cycle log from an existing reading
+        if (out.spotWeekly && out.spotWeekly.ts && !Object.keys(out.cycles).length) {
+          const a = out.settings.resetAnchor;
+          const cs = a + Math.floor((out.spotWeekly.ts - a) / CYCLE_MS) * CYCLE_MS;
+          out.cycles[String(cs)] = { value: out.spotWeekly.value, ts: out.spotWeekly.ts };
         }
-        if (!("activeSession" in data)) data.activeSession = null;
-        return data;
-      } catch(e) {
-        return { sessions: [], trackerOpen: false, spotWeekly: null, activeSession: null };
+        out.sessions.sort((a, b) => b.ts - a.ts);
+        return out;
+      } catch (e) {
+        return emptyData();
       }
     }
-
     function saveData(data) {
-      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch(e) {}
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch (e) {}
+    }
+    // Save a change to synced data and push it to other devices
+    function commit() {
+      saveData(trackerData);
+      scheduleSync();
     }
 
-    // ─── Calculations ─────────────────────────────────────────────────────────
-    function calcAvg(sessions) {
-      if (!sessions.length) return null;
-      const normalized = sessions.map(s => s.normalizedDelta);
-      const avg = normalized.reduce((a, b) => a + b, 0) / normalized.length;
-      return { avg, min: Math.min(...normalized), max: Math.max(...normalized), n: sessions.length };
+    // ─── Merge (used by sync and import) ──────────────────────────────────────
+    // Every field has a timestamp, so merging is order-independent: the newest
+    // write wins, sessions are unioned by id, and deletions are kept as tombstones.
+    function mergeSynced(a, b) {
+      if (!b) return a;
+      const out = {};
+      out.deleted = Object.assign({}, a.deleted);
+      for (const [k, v] of Object.entries(b.deleted)) out.deleted[k] = Math.max(out.deleted[k] || 0, v);
+      const cutoff = Date.now() - TOMBSTONE_KEEP_MS;
+      for (const k of Object.keys(out.deleted)) if (out.deleted[k] < cutoff) delete out.deleted[k];
+      const byId = new Map();
+      [...a.sessions, ...b.sessions].forEach(s => { if (!out.deleted[s.id] && !byId.has(s.id)) byId.set(s.id, s); });
+      out.sessions = [...byId.values()].sort((x, y) => y.ts - x.ts);
+      const aw = a.spotWeekly, bw = b.spotWeekly;
+      out.spotWeekly = !aw ? bw : !bw ? aw : (bw.ts > aw.ts ? bw : aw);
+      if (b.activeSessionTs > a.activeSessionTs) {
+        out.activeSession = b.activeSession; out.activeSessionTs = b.activeSessionTs;
+      } else {
+        out.activeSession = a.activeSession; out.activeSessionTs = a.activeSessionTs;
+      }
+      out.cycles = Object.assign({}, a.cycles);
+      for (const [k, v] of Object.entries(b.cycles)) if (!out.cycles[k] || v.ts > out.cycles[k].ts) out.cycles[k] = v;
+      out.settings = b.settings.ts > a.settings.ts ? b.settings : a.settings;
+      return out;
     }
-
-    function getDriftStatus(weeklyPct, timePct) {
-      if (weeklyPct === null || weeklyPct === undefined) return "no-data";
-      const gap = Math.abs(weeklyPct - timePct);
-      if (gap < 5)  return "on-track";
-      if (gap < 10) return "drifting";
-      if (gap < 20) return "at-risk";
-      return "critical";
+    function syncedPart(d) {
+      return {
+        sessions: d.sessions, deleted: d.deleted, spotWeekly: d.spotWeekly,
+        activeSession: d.activeSession, activeSessionTs: d.activeSessionTs,
+        cycles: d.cycles, settings: d.settings
+      };
     }
-
-    function getDriftLabel(status) {
-      return { "on-track": "On Track", "drifting": "Drifting", "at-risk": "At Risk",
-               "critical": "Critical", "no-data": "No Data" }[status];
+    function stableStringify(v) {
+      if (Array.isArray(v)) return "[" + v.map(stableStringify).join(",") + "]";
+      if (v && typeof v === "object") {
+        return "{" + Object.keys(v).sort().filter(k => v[k] !== undefined)
+          .map(k => JSON.stringify(k) + ":" + stableStringify(v[k])).join(",") + "}";
+      }
+      return JSON.stringify(v === undefined ? null : v);
+    }
+    function applySynced(merged) {
+      // Merge again with whatever is local right now, in case the user changed
+      // something while a network request was in flight.
+      const final = mergeSynced(normalizeSynced(syncedPart(trackerData)), merged);
+      Object.assign(trackerData, final);
     }
 
     // ─── Build DOM (once) ─────────────────────────────────────────────────────
     const app = document.getElementById("app");
-
     app.innerHTML = `
+      <button class="settings-btn" id="settingsBtn" aria-label="Settings">⚙<span class="sync-dot" id="syncDot"></span></button>
       <div class="header">
         <div class="header-label">Claude Usage Cycle</div>
-        <div class="header-sub">Resets Wed · 13:00 AWST<span class="header-countdown" id="headerCountdown"></span></div>
+        <div class="header-sub"><span id="headerReset">Resets</span><span class="header-countdown" id="headerCountdown"></span></div>
       </div>
 
       <div class="big-pct">
@@ -1176,7 +1499,7 @@
 
       <div class="day-grid" id="dayGrid"></div>
 
-      <button class="session-timer-card" id="sessionTimerCard" style="display:none" aria-label="Active session — tap to manage">
+      <button class="session-timer-card" id="sessionTimerCard" style="display:none" aria-label="Active session, tap to manage">
         <div class="stc-top">
           <span class="stc-label"><span class="stc-dot"></span><span id="stcLabelText">Active Session</span></span>
           <span class="stc-time" id="sessionTimeLeft">5:00:00</span>
@@ -1213,7 +1536,6 @@
 
       <div class="tracker-panel" id="trackerPanel">
         <div class="tracker-inner">
-
           <div class="drift-card">
             <div class="drift-card-header">
               <span class="drift-card-title">Weekly Usage vs Time Elapsed</span>
@@ -1240,7 +1562,7 @@
 
           <div class="sessions-card">
             <div class="sessions-stat">
-              <div class="sessions-stat-label">Sessions Left</div>
+              <div class="sessions-stat-label">Sessions Needed</div>
               <div class="sessions-stat-value" id="sessionsLeft">—</div>
               <div class="sessions-stat-sub" id="sessionsLeftSub">log sessions to calculate</div>
             </div>
@@ -1259,44 +1581,54 @@
             <div id="historyBody"></div>
           </div>
 
+          <div class="cycles-card" id="cyclesCard" style="display:none">
+            <div class="history-title" style="margin-bottom:8px">Past Cycles</div>
+            <div id="cyclesBody"></div>
+          </div>
         </div>
       </div>
     `;
 
-    // Build day cells
-    const dayGrid = document.getElementById("dayGrid");
-    DAY_LABELS.forEach((label, i) => {
-      const cell = document.createElement("div");
-      cell.className = "day-cell";
-      cell.id = "day-" + i;
-      cell.innerHTML = `
-        <div class="day-bar" id="daybar-${i}">
-          <div class="day-bar-fill" id="dayfill-${i}" style="left:0;width:0"></div>
-          ${i === 0 ? `<div class="day-marker" style="left:${MARKER_PCT}%"></div>` : ""}
-        </div>
-        <div class="day-label" id="daylabel-${i}">${label}</div>
-        ${i === 0 ? `<div class="day-time">13:00</div>` : ""}
-      `;
-      dayGrid.appendChild(cell);
-    });
-
     // ─── Layer 2 state ────────────────────────────────────────────────────────
-    let trackerData = loadData();
+    trackerData = loadData();
+    saveData(trackerData);   // persist any migration
+
+    // Day cells are (re)built from the cycle's local start, so labels and the
+    // reset marker follow the device time zone and the configured reset.
+    const dayGrid = document.getElementById("dayGrid");
+    let dayGridKey = null;
+    function buildDayGrid() {
+      const cs  = getCycleStartUTC();
+      const key = cs + "|" + new Date(cs).getTimezoneOffset();
+      if (key === dayGridKey) return;
+      dayGridKey = key;
+      const mid0      = localMidnight(cs);
+      const markerPct = ((cs - mid0) / (addLocalDays(mid0, 1) - mid0)) * 100;
+      dayGrid.innerHTML = "";
+      for (let i = 0; i < 7; i++) {
+        const label = new Date(addLocalDays(mid0, i)).toLocaleString("en-AU", { weekday: "short" });
+        const cell = document.createElement("div");
+        cell.className = "day-cell";
+        cell.innerHTML = `
+          <div class="day-bar" id="daybar-${i}">
+            <div class="day-bar-fill" id="dayfill-${i}" style="left:0;width:0"></div>
+            ${i === 0 && markerPct > 0 ? `<div class="day-marker" style="left:${markerPct}%"></div>` : ""}
+          </div>
+          <div class="day-label" id="daylabel-${i}">${label}</div>
+          ${i === 0 ? `<div class="day-time">${formatClockTime(cs)}</div>` : ""}
+        `;
+        dayGrid.appendChild(cell);
+      }
+      dayGrid.dataset.marker = markerPct;
+    }
 
     const trackerToggle = document.getElementById("trackerToggle");
     const trackerPanel  = document.getElementById("trackerPanel");
     const fab           = document.getElementById("fab");
 
     function updateFabVisibility() {
-      if (trackerPanel.classList.contains("open")) {
-        fab.classList.add("hidden");
-      } else {
-        fab.classList.remove("hidden");
-      }
+      fab.classList.toggle("hidden", trackerPanel.classList.contains("open"));
     }
-
-    // Session Tracker always starts collapsed on load
-    trackerData.trackerOpen = false;
     updateFabVisibility();
 
     trackerToggle.addEventListener("click", () => {
@@ -1307,23 +1639,77 @@
       saveData(trackerData);
       updateFabVisibility();
       if (isOpen) {
-        document.body.style.overflow = "auto";
         setTimeout(() => {
           const top = trackerToggle.getBoundingClientRect().top + window.scrollY;
           window.scrollTo({ top, behavior: "smooth" });
         }, 20);
       } else {
         window.scrollTo({ top: 0, behavior: "smooth" });
-        setTimeout(() => {
-          document.body.style.overflow = "hidden";
-        }, 380);
       }
     });
+
+    // ─── Toast with undo ──────────────────────────────────────────────────────
+    const toast = document.getElementById("toast");
+    const toastMsg = document.getElementById("toastMsg");
+    const toastUndo = document.getElementById("toastUndo");
+    let toastTimer = null, toastUndoFn = null;
+    function showToast(msg, undoFn) {
+      toastMsg.textContent = msg;
+      toastUndoFn = undoFn || null;
+      toastUndo.style.display = undoFn ? "" : "none";
+      toast.classList.add("show");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(hideToast, undoFn ? 6000 : 3000);
+    }
+    function hideToast() { toast.classList.remove("show"); toastUndoFn = null; }
+    toastUndo.addEventListener("click", () => {
+      const fn = toastUndoFn;
+      hideToast();
+      if (fn) fn();
+    });
+
+    function renderAll() {
+      renderLayer2();
+      update();
+      renderSessionTimer();
+    }
+
+    // Adds a session; returns an undo function that reverts it
+    function addSession(s) {
+      const prevSpot = trackerData.spotWeekly;
+      const entry = Object.assign({ id: newId() }, s);
+      trackerData.sessions.unshift(entry);
+      setWeekly(s.weekAfter, s.ts);
+      commit();
+      return () => {
+        trackerData.sessions = trackerData.sessions.filter(x => x.id !== entry.id);
+        trackerData.deleted[entry.id] = Date.now();
+        trackerData.spotWeekly = prevSpot ? { value: prevSpot.value, ts: Date.now() } : null;
+        commit();
+        renderAll();
+      };
+    }
+    function deleteSession(id) {
+      const s = trackerData.sessions.find(x => x.id === id);
+      if (!s) return;
+      trackerData.sessions = trackerData.sessions.filter(x => x.id !== id);
+      trackerData.deleted[id] = Date.now();
+      commit();
+      renderAll();
+      showToast("Session deleted", () => {
+        // Restore under a new id so the tombstone still hides the old one everywhere
+        trackerData.sessions.push(Object.assign({}, s, { id: newId() }));
+        trackerData.sessions.sort((a, b) => b.ts - a.ts);
+        commit();
+        renderAll();
+      });
+    }
 
     // ─── FAB / Bottom sheet ───────────────────────────────────────────────────
     const sheet         = document.getElementById("sheet");
     const sheetBackdrop = document.getElementById("sheetBackdrop");
     const sheetClose    = document.getElementById("sheetClose");
+    const sheetTitle    = document.getElementById("sheetTitle");
     const sheetBefore   = document.getElementById("sheetBefore");
     const sheetSession  = document.getElementById("sheetSession");
     const sheetAfter    = document.getElementById("sheetAfter");
@@ -1339,6 +1725,7 @@
     const paneLog       = document.getElementById("paneLog");
     const paneSpot      = document.getElementById("paneSpot");
     const paneComplete  = document.getElementById("paneComplete");
+    const paneSettings  = document.getElementById("paneSettings");
     const sessionStartInput = document.getElementById("sessionStartInput");
     const sessionStartBtn   = document.getElementById("sessionStartBtn");
     const sessionCompleteBtn = document.getElementById("sessionCompleteBtn");
@@ -1355,10 +1742,14 @@
     let sheetTimeLeftMs = null;
     let autoPromptedFor = null;   // startTs we've already auto-opened completion for
 
+    const ALL_PANES = () => [paneTimer, paneLog, paneSpot, paneComplete, paneSettings];
+
     // ── Tab switching ─────────────────────────────────────────────────────────
     function switchTab(tab) {
       sheetTabs.style.display = "";
+      sheetTitle.textContent = "Quick Entry";
       paneComplete.classList.remove("active");
+      paneSettings.classList.remove("active");
       tabTimer.classList.toggle("active", tab === "timer");
       tabLog.classList.toggle("active",   tab === "log");
       tabSpot.classList.toggle("active",  tab === "spot");
@@ -1371,10 +1762,21 @@
       else if (tab === "log")   sheetBefore.focus();
       else                      { sheetSpotInput.focus(); sheetSpotInput.select(); }
     }
-
     tabTimer.addEventListener("click", () => switchTab("timer"));
     tabLog.addEventListener("click",   () => switchTab("log"));
     tabSpot.addEventListener("click",  () => switchTab("spot"));
+
+    function showSpecialPane(pane, title) {
+      sheetTabs.style.display = "none";
+      sheetTitle.textContent = title;
+      ALL_PANES().forEach(p => p.classList.remove("active"));
+      pane.classList.add("active");
+      if (!sheetIsOpen()) {
+        sheet.classList.add("open");
+        sheetBackdrop.classList.add("open");
+      }
+      sheet.scrollTop = 0;
+    }
 
     // ── Pill wiring helper ────────────────────────────────────────────────────
     function wirePills(containerId, onSelect) {
@@ -1392,27 +1794,23 @@
         }
       });
     }
-
     wirePills("sheetTimePills", ms => { sheetTimeLeftMs = ms; });
 
     function openSheet(forceTab) {
       const tab = forceTab || (trackerData.lastSheetTab || "spot");
       switchTab(tab);
-      // Pre-fill spot input with current value
-      if (trackerData.spotWeekly !== null) {
-        sheetSpotInput.value = trackerData.spotWeekly.value;
-      }
+      const w = getWeekly();
+      if (w !== null) sheetSpotInput.value = w.value;
+      updateSpotBtn();
       sheet.classList.add("open");
       sheetBackdrop.classList.add("open");
     }
-
     function closeSheet() {
       sheet.classList.remove("open");
       sheetBackdrop.classList.remove("open");
       sheet.style.transform = "";
       if (fab && !fab.classList.contains("hidden")) fab.focus();
     }
-
     function sheetIsOpen() { return sheet.classList.contains("open"); }
 
     fab.addEventListener("click", () => openSheet());
@@ -1425,7 +1823,7 @@
       if (e.key === "Escape") { e.preventDefault(); closeSheet(); return; }
       if (e.key === "Tab") {
         const focusable = sheet.querySelectorAll(
-          'button, input, [href], [tabindex]:not([tabindex="-1"])'
+          'button, input, select, [href], [tabindex]:not([tabindex="-1"])'
         );
         const visible = Array.from(focusable).filter(el => !el.disabled && el.offsetParent !== null);
         if (!visible.length) return;
@@ -1435,12 +1833,12 @@
       }
     });
 
-    // ── Swipe-to-dismiss (the drag handle implies the sheet is draggable) ───────
+    // ── Swipe-to-dismiss (only when the sheet is scrolled to the top) ─────────
     (function enableSheetDrag() {
       let startY = null, dragY = 0;
       const THRESHOLD = 90;
       sheet.addEventListener("touchstart", e => {
-        if (!sheetIsOpen()) return;
+        if (!sheetIsOpen() || sheet.scrollTop > 0) return;
         startY = e.touches[0].clientY;
         dragY = 0;
         sheet.style.transition = "none";
@@ -1448,7 +1846,7 @@
       sheet.addEventListener("touchmove", e => {
         if (startY === null) return;
         dragY = e.touches[0].clientY - startY;
-        if (dragY < 0) dragY = 0;                 // only drag downward
+        if (dragY < 0) dragY = 0;
         sheet.style.transform = `translateY(${dragY}px)`;
       }, { passive: true });
       sheet.addEventListener("touchend", () => {
@@ -1460,100 +1858,104 @@
       });
     })();
 
+    // ── Input validation (C8) ─────────────────────────────────────────────────
+    const inPct     = v => !isNaN(v) && v >= 0 && v <= 100;
+    const inSession = v => !isNaN(v) && v > 0 && v <= 100;
+
     // ── Log Session pane ──────────────────────────────────────────────────────
     function updateSheetPreview() {
       const b = parseFloat(sheetBefore.value);
       const s = parseFloat(sheetSession.value);
       const a = parseFloat(sheetAfter.value);
-      if (!isNaN(b) && !isNaN(s) && !isNaN(a) && s > 0) {
-        const delta = a - b;
-        const norm  = delta / (s / 100);
-        if (delta < 0) {
-          sheetPreview.innerHTML = `<span style="color:#f87171">⚠ Week % after is less than before</span>`;
-          sheetLogBtn.disabled = true;
-        } else {
-          sheetPreview.innerHTML = `Δ <span>+${delta.toFixed(1)}%</span> · <span>${norm.toFixed(2)}%</span>/full session`;
-          sheetLogBtn.disabled = false;
-        }
-      } else {
+      sheetLogBtn.disabled = true;
+      if (isNaN(b) || isNaN(s) || isNaN(a)) {
         sheetPreview.textContent = "Fill in all three fields to preview";
-        sheetLogBtn.disabled = true;
+      } else if (!inPct(b) || !inPct(a) || !inSession(s)) {
+        sheetPreview.innerHTML = `<span style="color:#f87171">⚠ Values must be between 0 and 100</span>`;
+      } else if (a < b) {
+        sheetPreview.innerHTML = `<span style="color:#f87171">⚠ Week % after is less than before</span>`;
+      } else {
+        const delta = a - b;
+        sheetPreview.innerHTML = `Δ <span>+${delta.toFixed(1)}%</span> · <span>${(delta / (s / 100)).toFixed(2)}%</span>/full session`;
+        sheetLogBtn.disabled = false;
       }
     }
-
     [sheetBefore, sheetSession, sheetAfter].forEach(el => el.addEventListener("input", updateSheetPreview));
 
     sheetLogBtn.addEventListener("click", () => {
       const b = parseFloat(sheetBefore.value);
       const s = parseFloat(sheetSession.value);
       const a = parseFloat(sheetAfter.value);
-      if (isNaN(b) || isNaN(s) || isNaN(a) || s <= 0 || a < b) return;
+      if (!inPct(b) || !inPct(a) || !inSession(s) || a < b) return;
       const delta = a - b;
-      const norm  = delta / (s / 100);
-      trackerData.sessions.unshift({
+      const undo = addSession({
         ts: Date.now(), weekBefore: b, sessionUsed: s, weekAfter: a,
         delta: parseFloat(delta.toFixed(2)),
-        normalizedDelta: parseFloat(norm.toFixed(3)),
+        normalizedDelta: parseFloat((delta / (s / 100)).toFixed(3)),
         timeLeftMs: sheetTimeLeftMs
       });
-      trackerData.spotWeekly = { value: a, ts: Date.now() };
-      saveData(trackerData);
       sheetBefore.value = ""; sheetSession.value = ""; sheetAfter.value = "";
       sheetLogBtn.disabled = true;
       sheetPreview.textContent = "Fill in all three fields to preview";
       sheetTimeLeftMs = null;
       document.querySelectorAll("#sheetTimePills .time-pill").forEach(p => p.classList.remove("selected"));
       closeSheet();
-      renderLayer2();
-      update();
+      renderAll();
+      showToast("Session logged", undo);
     });
 
     // ── Spot Check pane ───────────────────────────────────────────────────────
     function updateSpotBtn() {
-      const v = parseFloat(sheetSpotInput.value);
-      sheetSpotBtn.disabled = isNaN(v) || v < 0 || v > 100;
+      sheetSpotBtn.disabled = !inPct(parseFloat(sheetSpotInput.value));
     }
-
     sheetSpotInput.addEventListener("input", updateSpotBtn);
-    sheetSpotInput.addEventListener("keydown", e => { if (e.key === "Enter") sheetSpotBtn.click(); });
+    sheetSpotInput.addEventListener("keydown", e => { if (e.key === "Enter" && !sheetSpotBtn.disabled) sheetSpotBtn.click(); });
 
     sheetSpotBtn.addEventListener("click", () => {
       const v = parseFloat(sheetSpotInput.value);
-      if (isNaN(v) || v < 0 || v > 100) return;
-      trackerData.spotWeekly = { value: v, ts: Date.now() };
-      saveData(trackerData);
+      if (!inPct(v)) return;
+      const prev = trackerData.spotWeekly;
+      setWeekly(v, Date.now());
+      commit();
       closeSheet();
-      renderLayer2();
-      update();
+      renderAll();
+      showToast(`Weekly set to ${v}%`, () => {
+        trackerData.spotWeekly = prev ? { value: prev.value, ts: Date.now() } : null;
+        commit();
+        renderAll();
+      });
     });
 
     // ── Session timer ─────────────────────────────────────────────────────────
     function updateStartBtn() {
-      const v = parseFloat(sessionStartInput.value);
-      sessionStartBtn.disabled = isNaN(v) || v < 0 || v > 100;
+      sessionStartBtn.disabled = !inPct(parseFloat(sessionStartInput.value));
     }
     sessionStartInput.addEventListener("input", updateStartBtn);
     sessionStartInput.addEventListener("keydown", e => {
       if (e.key === "Enter" && !sessionStartBtn.disabled) sessionStartBtn.click();
     });
 
+    function setActiveSession(as) {
+      trackerData.activeSession   = as;
+      trackerData.activeSessionTs = Date.now();
+    }
+
     sessionStartBtn.addEventListener("click", () => {
       const v = parseFloat(sessionStartInput.value);
-      if (isNaN(v) || v < 0 || v > 100) return;
-      trackerData.activeSession = { startTs: Date.now(), weekBefore: v, notified: false };
-      trackerData.spotWeekly    = { value: v, ts: Date.now() };
-      saveData(trackerData);
+      if (!inPct(v)) return;
+      const now = Date.now();
+      setActiveSession({ startTs: now, weekBefore: v });
+      setWeekly(v, now);
+      commit();
       autoPromptedFor = null;
       sessionStartInput.value = "";
       sessionStartBtn.disabled = true;
-      closeSheet();
-      renderSessionTimer();
-      renderLayer2();
-      update();
+      renderAll();
+      // Stay on the timer pane so the calendar-reminder buttons are one tap away
+      switchTab("timer");
       requestNotifyPermission().finally(scheduleSessionNotification);
     });
 
-    // Toggle the Timer pane between "start a session" and "session running"
     function renderTimerPane() {
       const as = trackerData.activeSession;
       document.getElementById("timerIdle").style.display   = as ? "none" : "";
@@ -1565,64 +1967,97 @@
         paneTimeLeft.textContent = ended ? "Session ended" : formatClock(remaining);
         paneTimerSub.textContent =
           `weekly was ${as.weekBefore}% · started ${formatClockTime(as.startTs)} · ends ${formatClockTime(as.startTs + SESSION_MS)}`;
-      } else if (trackerData.spotWeekly !== null && !sessionStartInput.value) {
-        sessionStartInput.value = trackerData.spotWeekly.value;
+      } else {
+        const w = getWeekly();
+        if (w !== null && !sessionStartInput.value) sessionStartInput.value = w.value;
         updateStartBtn();
       }
     }
 
     sessionCompleteBtn.addEventListener("click", () => openCompletion());
-
     sessionCancelBtn.addEventListener("click", () => {
       if (!confirm("Cancel this session without logging it?")) return;
       clearSessionNotifyTimer();
-      trackerData.activeSession = null;
-      saveData(trackerData);
+      setActiveSession(null);
+      commit();
       autoPromptedFor = null;
       closeSheet();
       renderSessionTimer();
     });
 
+    // ── Calendar reminder (U3) ────────────────────────────────────────────────
+    function icsStamp(ms) { return new Date(ms).toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, ""); }
+    function reminderTimes() {
+      const as = trackerData.activeSession;
+      if (!as) return null;
+      const end = as.startTs + SESSION_MS;
+      return { start: end, end: end + 15 * 60000 };
+    }
+    document.getElementById("remindGoogleBtn").addEventListener("click", () => {
+      const t = reminderTimes(); if (!t) return;
+      const url = "https://calendar.google.com/calendar/render?action=TEMPLATE"
+        + "&text=" + encodeURIComponent("Claude session ended: log usage")
+        + "&dates=" + icsStamp(t.start) + "/" + icsStamp(t.end)
+        + "&details=" + encodeURIComponent("Open Claude Cycle and log the session. " + location.href.split("#")[0]);
+      window.open(url, "_blank", "noopener");
+    });
+    document.getElementById("remindIcsBtn").addEventListener("click", () => {
+      const t = reminderTimes(); if (!t) return;
+      const uid = trackerData.activeSession.startTs + "@claude-cycle";
+      const ics = [
+        "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Claude Cycle//EN", "BEGIN:VEVENT",
+        "UID:" + uid, "DTSTAMP:" + icsStamp(Date.now()),
+        "DTSTART:" + icsStamp(t.start), "DTEND:" + icsStamp(t.end),
+        "SUMMARY:Claude session ended: log usage",
+        "DESCRIPTION:Open Claude Cycle and log the session.",
+        "BEGIN:VALARM", "TRIGGER:PT0M", "ACTION:DISPLAY", "DESCRIPTION:Claude session ended", "END:VALARM",
+        "END:VEVENT", "END:VCALENDAR"
+      ].join("\r\n");
+      downloadFile("claude-session-end.ics", ics, "text/calendar");
+    });
+    function downloadFile(name, text, type) {
+      const url = URL.createObjectURL(new Blob([text], { type }));
+      const a = document.createElement("a");
+      a.href = url; a.download = name;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+    }
+
     // ── Complete a session (asks for session % used + new weekly %) ─────────────
     function openCompletion() {
       const as = trackerData.activeSession;
       if (!as) return;
-      sheetTabs.style.display = "none";
-      [paneTimer, paneLog, paneSpot].forEach(p => p.classList.remove("active"));
-      paneComplete.classList.add("active");
-      completeBanner.textContent = `Session ended — weekly was ${as.weekBefore}% at the start. Enter what you used.`;
+      showSpecialPane(paneComplete, "Log Session");
+      const crossed = as.startTs < getCycleStartUTC();
+      completeBanner.textContent = crossed
+        ? "Session ended. The weekly limit reset during it, so enter your weekly % now."
+        : `Session ended. Weekly was ${as.weekBefore}% at the start. Enter what you used.`;
       completeSession.value = "";
-      completeAfter.value   = as.weekBefore;
+      completeAfter.value   = crossed ? "" : as.weekBefore;
       updateCompletePreview();
-      if (!sheet.classList.contains("open")) {
-        sheet.classList.add("open");
-        sheetBackdrop.classList.add("open");
-      }
       setTimeout(() => completeSession.focus(), 60);
     }
-
+    // If the reset happened mid-session, usage before it belonged to the old cycle
+    function completionBefore(as) { return as.startTs < getCycleStartUTC() ? 0 : as.weekBefore; }
     function updateCompletePreview() {
       const as = trackerData.activeSession;
       if (!as) return;
-      const b = as.weekBefore;
+      const b = completionBefore(as);
       const s = parseFloat(completeSession.value);
       const a = parseFloat(completeAfter.value);
-      if (!isNaN(s) && !isNaN(a) && s > 0) {
-        const delta = a - b;
-        if (delta < 0) {
-          completePreview.innerHTML = `<span style="color:#f87171">⚠ Weekly % is below the ${b}% you started at</span>`;
-          completeBtn.disabled = true;
-        } else {
-          const norm = delta / (s / 100);
-          completePreview.innerHTML = `Δ <span>+${delta.toFixed(1)}%</span> · <span>${norm.toFixed(2)}%</span>/full session`;
-          completeBtn.disabled = false;
-        }
-      } else {
+      completeBtn.disabled = true;
+      if (isNaN(s) || isNaN(a)) {
         completePreview.textContent = "Enter both to preview";
-        completeBtn.disabled = true;
+      } else if (!inSession(s) || !inPct(a)) {
+        completePreview.innerHTML = `<span style="color:#f87171">⚠ Values must be between 0 and 100</span>`;
+      } else if (a < b) {
+        completePreview.innerHTML = `<span style="color:#f87171">⚠ Weekly % is below the ${b}% you started at</span>`;
+      } else {
+        const delta = a - b;
+        completePreview.innerHTML = `Δ <span>+${delta.toFixed(1)}%</span> · <span>${(delta / (s / 100)).toFixed(2)}%</span>/full session`;
+        completeBtn.disabled = false;
       }
     }
-
     [completeSession, completeAfter].forEach(el => el.addEventListener("input", updateCompletePreview));
     completeAfter.addEventListener("keydown", e => {
       if (e.key === "Enter" && !completeBtn.disabled) completeBtn.click();
@@ -1631,27 +2066,23 @@
     completeBtn.addEventListener("click", () => {
       const as = trackerData.activeSession;
       if (!as) return;
-      const b = as.weekBefore;
+      const b = completionBefore(as);
       const s = parseFloat(completeSession.value);
       const a = parseFloat(completeAfter.value);
-      if (isNaN(s) || isNaN(a) || s <= 0 || a < b) return;
+      if (!inSession(s) || !inPct(a) || a < b) return;
       const delta = a - b;
-      const norm  = delta / (s / 100);
-      trackerData.sessions.unshift({
+      setActiveSession(null);
+      clearSessionNotifyTimer();
+      const undo = addSession({
         ts: Date.now(), weekBefore: b, sessionUsed: s, weekAfter: a,
         delta: parseFloat(delta.toFixed(2)),
-        normalizedDelta: parseFloat(norm.toFixed(3)),
+        normalizedDelta: parseFloat((delta / (s / 100)).toFixed(3)),
         timeLeftMs: 0, fromTimer: true
       });
-      trackerData.spotWeekly    = { value: a, ts: Date.now() };
-      trackerData.activeSession = null;
-      clearSessionNotifyTimer();
-      saveData(trackerData);
       autoPromptedFor = null;
       closeSheet();
-      renderSessionTimer();
-      renderLayer2();
-      update();
+      renderAll();
+      showToast("Session logged", undo);
     });
 
     // Main-screen card + live tick; auto-prompts completion when the 5h elapses
@@ -1669,8 +2100,8 @@
       document.getElementById("sessionFill").style.width = (ended ? 100 : pctLeft) + "%";
       document.getElementById("sessionCardSub").textContent =
         `weekly was ${as.weekBefore}% · ${ended ? "ended" : "ends"} ${formatClockTime(endTs)}`;
-      if (sheet.classList.contains("open") && paneTimer.classList.contains("active")) renderTimerPane();
-      if (ended && autoPromptedFor !== as.startTs) {
+      if (sheetIsOpen() && paneTimer.classList.contains("active")) renderTimerPane();
+      if (ended && autoPromptedFor !== as.startTs && !(sheetIsOpen() && paneSettings.classList.contains("active"))) {
         autoPromptedFor = as.startTs;
         openCompletion();
       }
@@ -1682,22 +2113,39 @@
       else openSheet("timer");
     });
 
-    // ─── Clear history ────────────────────────────────────────────────────────
+    // ─── Clear history (C7: keeps the current weekly %) ───────────────────────
     document.getElementById("clearBtn").addEventListener("click", () => {
-      if (!confirm("Clear all session history?")) return;
-      trackerData.sessions   = [];
-      trackerData.spotWeekly = null;
-      saveData(trackerData);
-      renderLayer2();
+      if (!trackerData.sessions.length) return;
+      if (!confirm("Delete all session history? Your current weekly % is kept.")) return;
+      const removed = trackerData.sessions;
+      const now = Date.now();
+      removed.forEach(s => { trackerData.deleted[s.id] = now; });
+      trackerData.sessions = [];
+      commit();
+      renderAll();
+      showToast(`${removed.length} session${removed.length > 1 ? "s" : ""} deleted`, () => {
+        trackerData.sessions = removed.map(s => Object.assign({}, s, { id: newId() }))
+          .concat(trackerData.sessions).sort((a, b) => b.ts - a.ts);
+        commit();
+        renderAll();
+      });
     });
 
     // ─── Render Layer 2 ───────────────────────────────────────────────────────
+    let historyExpanded = false;
+    const historyBody = document.getElementById("historyBody");
+    historyBody.addEventListener("click", e => {
+      const del = e.target.closest(".hist-del");
+      if (del) { deleteSession(del.dataset.id); return; }
+      if (e.target.closest(".hist-more")) { historyExpanded = !historyExpanded; renderLayer2(); }
+    });
+
     function renderLayer2() {
       const nowMs        = Date.now();
       const cycleStartMs = getCycleStartUTC();
-      const elapsedMs    = nowMs - cycleStartMs;
-      const timePct      = Math.min(100, Math.max(0, (elapsedMs / CYCLE_MS) * 100));
-      const weeklyPct    = trackerData.spotWeekly !== null ? trackerData.spotWeekly.value : null;
+      const timePct      = Math.min(100, Math.max(0, ((nowMs - cycleStartMs) / CYCLE_MS) * 100));
+      const weekly       = getWeekly();
+      const weeklyPct    = weekly ? weekly.value : null;
 
       // Drift bars
       const driftTimeBar   = document.getElementById("driftTimeBar");
@@ -1707,25 +2155,25 @@
       const driftBadge     = document.getElementById("driftBadge");
       const driftGapLabel  = document.getElementById("driftGapLabel");
 
-      driftTimeBar.style.width      = timePct + "%";
-      driftTimeBar.style.background = "#475569";
-      driftTimeVal.textContent      = timePct.toFixed(1) + "%";
+      driftTimeBar.style.width = timePct + "%";
+      driftTimeVal.textContent = timePct.toFixed(1) + "%";
 
       const status = getDriftStatus(weeklyPct, timePct);
       driftBadge.className   = "drift-badge " + status;
       driftBadge.textContent = getDriftLabel(status);
 
       if (weeklyPct !== null) {
-        const wc = status === "on-track" ? "#22c55e" : status === "drifting" ? "#eab308"
-                 : status === "at-risk"  ? "#f97316" : "#ef4444";
+        const wc = barColour(status);
         driftWeeklyBar.style.width      = Math.min(100, weeklyPct) + "%";
         driftWeeklyBar.style.background = wc;
         driftWeeklyVal.textContent      = weeklyPct.toFixed(1) + "%";
         const gap = weeklyPct - timePct;
         driftGapLabel.style.color = wc;
-        driftGapLabel.textContent = gap > 0 ? `You're ${gap.toFixed(1)}% over target`
-                                  : gap < 0 ? `You're ${Math.abs(gap).toFixed(1)}% under target`
-                                  : "Perfectly on target";
+        driftGapLabel.textContent = weekly.isReset
+          ? "New cycle: weekly reset to 0%. Set your current % with +"
+          : gap >= 0.05 ? `${gap.toFixed(1)}% ahead of pace, on track to use it all`
+          : gap <= -0.05 ? `${Math.abs(gap).toFixed(1)}% behind pace, allowance at risk of going unused`
+          : "Exactly on pace";
       } else {
         driftWeeklyBar.style.width = "0%";
         driftWeeklyVal.textContent = "—";
@@ -1733,55 +2181,85 @@
         driftGapLabel.style.color  = "#94a3b8";
       }
 
-      // Sessions remaining
+      // Sessions needed vs slots left (C4: same numbers as the pace card)
       const avgData        = calcAvg(trackerData.sessions);
       const sessionsLeftEl  = document.getElementById("sessionsLeft");
       const sessionsLeftSub = document.getElementById("sessionsLeftSub");
       const avgSessionVal   = document.getElementById("avgSessionVal");
       const avgSessionSub   = document.getElementById("avgSessionSub");
+      const slots = countSlots(nowMs, cycleStartMs + CYCLE_MS);
 
       if (avgData) {
         avgSessionVal.textContent = avgData.avg.toFixed(2) + "%";
-        avgSessionSub.textContent = `based on ${avgData.n} session${avgData.n > 1 ? "s" : ""}`;
-        if (weeklyPct !== null) {
-          sessionsLeftEl.textContent  = ((100 - weeklyPct) / avgData.avg).toFixed(1);
-          sessionsLeftSub.textContent = `at ${avgData.avg.toFixed(2)}% avg per session`;
+        avgSessionSub.textContent = `weighted, last ${avgData.n} session${avgData.n > 1 ? "s" : ""}`;
+        if (weeklyPct !== null && avgData.avg > 0) {
+          const needed = Math.max(0, 100 - weeklyPct) / avgData.avg;
+          sessionsLeftEl.textContent  = needed.toFixed(1);
+          sessionsLeftSub.textContent = `~${slots} slot${slots === 1 ? "" : "s"} left before reset`;
+          sessionsLeftEl.style.color  = needed > slots ? "#f87171" : "";
         } else {
           sessionsLeftEl.textContent  = "—";
           sessionsLeftSub.textContent = "set weekly % to calculate";
+          sessionsLeftEl.style.color  = "";
         }
       } else {
         avgSessionVal.textContent   = "—";
         avgSessionSub.textContent   = "no sessions logged yet";
         sessionsLeftEl.textContent  = "—";
-        sessionsLeftSub.textContent = "log sessions to calculate";
+        sessionsLeftSub.textContent = `~${slots} slot${slots === 1 ? "" : "s"} left before reset`;
+        sessionsLeftEl.style.color  = "";
       }
 
-      // History — compact stacked rows (no horizontal scroll on any width)
-      const historyBody = document.getElementById("historyBody");
-      const sessions    = trackerData.sessions.slice(0, 10);
-      if (!sessions.length) {
+      renderCycles(cycleStartMs);
+
+      // History: compact stacked rows, each deletable (U1)
+      const all = trackerData.sessions;
+      if (!all.length) {
         historyBody.innerHTML = `<div class="history-empty">No sessions logged yet</div>`;
         return;
       }
+      const shown = historyExpanded ? all : all.slice(0, 10);
       historyBody.innerHTML = `
-        <div class="hist-list">${sessions.map(s => {
+        <div class="hist-list">${shown.map(s => {
           const sign = s.delta < 0 ? "neg" : "pos";
           const deltaStr = (s.delta >= 0 ? "+" : "") + s.delta.toFixed(1) + "%";
           return `
             <div class="hist-row">
               <div class="hist-row-top">
                 <span class="hist-date">${formatShortDate(s.ts)}</span>
-                <span class="hist-delta ${sign}">${deltaStr}</span>
+                <span class="hist-right">
+                  <span class="hist-delta ${sign}">${deltaStr}</span>
+                  <button class="hist-del" data-id="${s.id}" aria-label="Delete session from ${formatShortDate(s.ts)}">✕</button>
+                </span>
               </div>
               <div class="hist-detail">${s.weekBefore}%→${s.weekAfter}%<span class="sep">·</span>${s.sessionUsed}% session<span class="sep">·</span>${s.normalizedDelta.toFixed(2)}%/100%</div>
             </div>`;
-        }).join("")}</div>`;
+        }).join("")}</div>
+        ${all.length > 10 ? `<button class="hist-more">${historyExpanded ? "Show fewer" : `Show all ${all.length}`}</button>` : ""}`;
+    }
+
+    // Past cycles: last weekly % recorded in each finished cycle (C1)
+    function renderCycles(currentStart) {
+      const card = document.getElementById("cyclesCard");
+      const rows = Object.entries(trackerData.cycles)
+        .map(([k, v]) => ({ start: +k, value: v.value, ts: v.ts }))
+        .filter(c => c.start < currentStart)
+        .sort((a, b) => b.start - a.start)
+        .slice(0, 6);
+      if (!rows.length) { card.style.display = "none"; return; }
+      card.style.display = "";
+      document.getElementById("cyclesBody").innerHTML = rows.map(c => {
+        const cls = c.value >= 95 ? "good" : c.value >= 80 ? "ok" : "bad";
+        const lastBefore = c.start + CYCLE_MS - c.ts;
+        const note = lastBefore > 12 * 3600000 ? `<span class="cycle-sub">logged ${formatDuration(lastBefore)} before reset</span>` : "";
+        return `<div class="cycle-row"><span>${formatDayDate(c.start)}</span>
+          <span><span class="cycle-val ${cls}">${c.value.toFixed(1)}% used</span>${note}</span></div>`;
+      }).join("");
     }
 
     // ─── Render Pacing card (velocity model) ──────────────────────────────────
     function renderPacing() {
-      const pacing  = calcPacing(trackerData);
+      const pacing  = calcPacing();
       const card             = document.getElementById("paceCard");
       const paceRequired     = document.getElementById("paceRequired");
       const paceRequiredUnit = document.getElementById("paceRequiredUnit");
@@ -1791,13 +2269,11 @@
       const capacityRow      = document.getElementById("paceCapacityRow");
       const recoveryRow      = document.getElementById("paceRecoveryRow");
 
-      // Reset stale state by default
       card.classList.remove("stale");
       staleCaption.style.display = "none";
       capacityRow.style.display  = "none";
       recoveryRow.style.display  = "none";
 
-      // Empty state
       if (pacing.state === "empty") {
         paceRequired.textContent     = "—";
         paceRequiredUnit.textContent = "set weekly %";
@@ -1805,8 +2281,6 @@
         paceBadgeWrap.innerHTML      = `<span class="pace-badge empty">No Data</span>`;
         return;
       }
-
-      // Cycle just started
       if (pacing.state === "starting") {
         paceRequired.textContent     = "—";
         paceRequiredUnit.textContent = "";
@@ -1814,8 +2288,6 @@
         paceBadgeWrap.innerHTML      = `<span class="pace-badge empty">Just Started</span>`;
         return;
       }
-
-      // Final stretch
       if (pacing.state === "final") {
         paceRequired.textContent     = pacing.usageLeft.toFixed(1) + "%";
         paceRequiredUnit.textContent = "left to use";
@@ -1824,12 +2296,11 @@
         if (pacing.isStale) {
           card.classList.add("stale");
           staleCaption.style.display = "";
-          staleCaption.textContent = `signal ${formatSignalAge(pacing.signalAgeMs)} — refresh below`;
+          staleCaption.textContent = `signal ${formatSignalAge(pacing.signalAgeMs)}, tap + to refresh`;
         }
         return;
       }
 
-      // Normal velocity state
       paceRequired.textContent     = pacing.requiredDailyPct.toFixed(1) + "%";
       paceRequiredUnit.textContent = "/day required";
       paceSecondary.textContent    = `current: ${pacing.currentDailyPct.toFixed(1)}%/day · ${pacing.daysRemaining.toFixed(1)} days left`;
@@ -1837,25 +2308,22 @@
 
       if (pacing.isStale) {
         card.classList.add("stale");
-        // Override badge to stale grey
         paceBadgeWrap.innerHTML = `<span class="pace-badge stale">Stale</span>`;
         staleCaption.style.display = "";
-        staleCaption.textContent = `signal ${formatSignalAge(pacing.signalAgeMs)} — refresh below`;
+        staleCaption.textContent = `signal ${formatSignalAge(pacing.signalAgeMs)}, tap + to refresh`;
       }
 
-      // Recovery row (conditional) — how long a break is needed to get back on pace
       if (pacing.recovery) {
         recoveryRow.style.display = "";
         if (pacing.recovery.resetsFirst) {
-          recoveryRow.textContent = "⏱ Cycle resets before time catches up — no break needed";
+          recoveryRow.textContent = "⏱ Cycle resets before time catches up, no break needed";
         } else {
-          const dateStr  = formatShortDate(pacing.recovery.recoveryMs);
+          const dateStr   = formatShortDate(pacing.recovery.recoveryMs);
           const breakLeft = formatDuration(pacing.recovery.recoveryMs - Date.now());
-          recoveryRow.textContent = `⏱ Stop now → back on pace ${dateStr} AWST (${breakLeft} break)`;
+          recoveryRow.textContent = `⏱ Stop now → back on pace ${dateStr} (${breakLeft} break)`;
         }
       }
 
-      // Capacity row (conditional)
       if (pacing.capacity && pacing.capacity.show) {
         capacityRow.style.display = "";
         if (pacing.capacity.overCapacity) {
@@ -1873,15 +2341,17 @@
       const nowMs        = Date.now();
       const cycleStartMs = getCycleStartUTC();
       const cycleEndMs   = cycleStartMs + CYCLE_MS;
-      const elapsedMs    = nowMs - cycleStartMs;
-      const remainingMs  = cycleEndMs - nowMs;
-      const pct          = Math.min(100, Math.max(0, (elapsedMs / CYCLE_MS) * 100));
-      const spotValue    = trackerData.spotWeekly !== null ? trackerData.spotWeekly.value : null;
-      const driftStatus  = getDriftStatus(spotValue, pct);
-      const colour       = barColour(driftStatus);
-      const activeDayIdx = getActiveDayIndex();
+      const pct          = Math.min(100, Math.max(0, ((nowMs - cycleStartMs) / CYCLE_MS) * 100));
+      const weekly       = getWeekly();
+      const spotValue    = weekly ? weekly.value : null;
+      const colour       = barColour(getDriftStatus(spotValue, pct));
 
-      document.getElementById("headerCountdown").textContent = "· " + formatDuration(remainingMs) + " left";
+      buildDayGrid();
+      const tz = tzAbbrev(cycleEndMs);
+      document.getElementById("headerReset").textContent =
+        "Resets " + new Date(cycleEndMs).toLocaleString("en-AU", { weekday: "short" })
+        + " · " + formatClockTime(cycleEndMs) + (tz ? " " + tz : "");
+      document.getElementById("headerCountdown").textContent = "· " + formatDuration(cycleEndMs - nowMs) + " left";
 
       const pctEl = document.getElementById("pctNumber");
       pctEl.style.color = colour;
@@ -1891,70 +2361,60 @@
       fill.style.width      = pct + "%";
       fill.style.background = `linear-gradient(90deg, ${colour}88, ${colour})`;
 
-      DAY_LABELS.forEach((_, i) => {
-        const done    = i < activeDayIdx;
-        const active  = i === activeDayIdx;
+      // Day grid: cell i is local day (cycle start day + i). Cell 0 holds both
+      // ends of the cycle: after the reset on day 0, and before it on day 7.
+      const mid0      = localMidnight(cycleStartMs);
+      const todayMid  = localMidnight(nowMs);
+      const dayIdx    = Math.round((todayMid - mid0) / DAY_MS);       // 0..7
+      const activeIdx = dayIdx % 7;
+      const markerPct = parseFloat(dayGrid.dataset.marker) || 0;
+      const dayPct    = ((nowMs - todayMid) / (addLocalDays(todayMid, 1) - todayMid)) * 100;
+      for (let i = 0; i < 7; i++) {
+        const done    = i < dayIdx && !(i === 0 && dayIdx === 7);
+        const active  = i === activeIdx;
         const bar     = document.getElementById("daybar-"  + i);
         const fillEl  = document.getElementById("dayfill-" + i);
         const labelEl = document.getElementById("daylabel-"+ i);
-
         bar.style.border         = active ? `1px solid ${colour}` : "1px solid transparent";
         labelEl.style.color      = active ? "#e2e8f0" : done ? "#94a3b8" : "#64748b";
         labelEl.style.fontWeight = active ? "700" : "400";
-
         if (i === 0) {
-          if (active) {
-            const awstDate  = new Date(nowMs + AWST_OFFSET_MS);
-            const msIntoDay = awstDate.getUTCHours() * 3600000 + awstDate.getUTCMinutes() * 60000 + awstDate.getUTCSeconds() * 1000;
-            const dayPct    = (msIntoDay / (24 * 3600000)) * 100;
-            if (dayPct < MARKER_PCT) {
-              fillEl.style.left = "0%"; fillEl.style.width = dayPct + "%";
-            } else {
-              fillEl.style.left = MARKER_PCT + "%"; fillEl.style.width = (dayPct - MARKER_PCT) + "%";
-            }
+          if (active && dayIdx === 7) {          // last partial day, before the reset
+            fillEl.style.left = "0%"; fillEl.style.width = dayPct + "%";
             fillEl.style.background = colour;
-          } else if (done) {
-            fillEl.style.left = MARKER_PCT + "%"; fillEl.style.width = WED_WINDOW + "%";
+          } else if (active) {                   // first day, after the reset
+            fillEl.style.left = markerPct + "%"; fillEl.style.width = Math.max(0, dayPct - markerPct) + "%";
+            fillEl.style.background = colour;
+          } else {                               // first day finished
+            fillEl.style.left = markerPct + "%"; fillEl.style.width = (100 - markerPct) + "%";
             fillEl.style.background = "#334155";
-          } else {
-            fillEl.style.left = "0%"; fillEl.style.width = "0%";
           }
         } else {
           fillEl.style.left = "0%";
-          if (done) {
-            fillEl.style.width = "100%"; fillEl.style.background = "#334155";
-          } else if (active) {
-            const awstDate  = new Date(nowMs + AWST_OFFSET_MS);
-            const msIntoDay = awstDate.getUTCHours() * 3600000 + awstDate.getUTCMinutes() * 60000 + awstDate.getUTCSeconds() * 1000;
-            fillEl.style.width = ((msIntoDay / (24 * 3600000)) * 100) + "%";
-            fillEl.style.background = colour;
-          } else {
-            fillEl.style.width = "0%";
-          }
+          if (done)        { fillEl.style.width = "100%"; fillEl.style.background = "#334155"; }
+          else if (active) { fillEl.style.width = dayPct + "%"; fillEl.style.background = colour; }
+          else             { fillEl.style.width = "0%"; }
         }
-      });
+      }
 
       // Weekly usage marker on main bar
       const weeklyMarker = document.getElementById("mainBarWeeklyMarker");
       const weeklyLabel  = document.getElementById("mainBarWeeklyLabel");
-      const sw = trackerData.spotWeekly;
-      if (sw !== null && sw.value !== null) {
-        const wPct = Math.min(100, Math.max(0, sw.value));
-        weeklyMarker.style.display = "";
-        weeklyMarker.style.left    = wPct + "%";
-        weeklyLabel.style.display  = "";
-        weeklyLabel.style.left     = Math.max(wPct - 1, 2) + "%";
+      if (weekly) {
+        const wPct = Math.min(100, Math.max(0, weekly.value));
+        weeklyMarker.style.display  = "";
+        weeklyMarker.style.left     = wPct + "%";
+        weeklyLabel.style.display   = "";
+        weeklyLabel.style.left      = Math.max(wPct - 1, 2) + "%";
         weeklyLabel.style.transform = "translate(-100%, -50%)";
-        weeklyLabel.textContent    = sw.value.toFixed(1) + "%";
+        weeklyLabel.textContent     = weekly.value.toFixed(1) + "%";
       } else {
         weeklyMarker.style.display = "none";
         weeklyLabel.style.display  = "none";
       }
 
-      // Check-ins
       const checkIns = getNextCheckIns();
-      const checkInsList = document.getElementById("checkInsList");
-      checkInsList.innerHTML = checkIns.length
+      document.getElementById("checkInsList").innerHTML = checkIns.length
         ? checkIns.map(c => `
             <div class="checkin-row">
               <span class="checkin-time">${c.label}</span>
@@ -1966,35 +2426,243 @@
       renderPacing();
     }
 
+    // ─── Settings (C9 reset time, sync, backup) ───────────────────────────────
+    const resetDay  = document.getElementById("resetDay");
+    const resetTime = document.getElementById("resetTime");
+    function openSettings() {
+      const next = getCycleStartUTC() + CYCLE_MS;
+      const d = new Date(next);
+      resetDay.value  = String(d.getDay());
+      resetTime.value = String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
+      let tzName = "";
+      try { tzName = Intl.DateTimeFormat().resolvedOptions().timeZone; } catch (e) {}
+      document.getElementById("tzName").textContent = (tzName || "local") + (tzAbbrev(Date.now()) ? ", " + tzAbbrev(Date.now()) : "");
+      renderSyncUI();
+      showSpecialPane(paneSettings, "Settings");
+    }
+    document.getElementById("settingsBtn").addEventListener("click", openSettings);
+
+    document.getElementById("resetSaveBtn").addEventListener("click", () => {
+      const [h, m] = resetTime.value.split(":").map(Number);
+      if (isNaN(h) || isNaN(m)) return;
+      const nowMs = Date.now();
+      const today = localMidnight(nowMs);
+      const diff  = (parseInt(resetDay.value, 10) - new Date(today).getDay() + 7) % 7;
+      let anchor  = localAt(addLocalDays(today, diff), h + m / 60);
+      if (anchor <= nowMs) anchor = localAt(addLocalDays(today, diff + 7), h + m / 60);
+      trackerData.settings = { resetAnchor: anchor, ts: nowMs };
+      dayGridKey = null;
+      commit();
+      renderAll();
+      showToast("Reset time saved");
+    });
+
+    // ── Export / import ───────────────────────────────────────────────────────
+    document.getElementById("exportBtn").addEventListener("click", () => {
+      const stamp = new Date().toISOString().slice(0, 10);
+      const payload = Object.assign({ app: "claude-usage-tracker", exportedAt: new Date().toISOString() },
+                                    syncedPart(trackerData));
+      downloadFile(`claude-tracker-backup-${stamp}.json`, JSON.stringify(payload, null, 2), "application/json");
+    });
+    const importFile = document.getElementById("importFile");
+    document.getElementById("importBtn").addEventListener("click", () => importFile.click());
+    importFile.addEventListener("change", async () => {
+      const f = importFile.files[0];
+      importFile.value = "";
+      if (!f) return;
+      try {
+        const parsed = JSON.parse(await f.text());
+        const before = trackerData.sessions.length;
+        applySynced(normalizeSynced(parsed));
+        commit();
+        renderAll();
+        const added = trackerData.sessions.length - before;
+        showToast(`Imported: ${added} new session${added === 1 ? "" : "s"}`);
+      } catch (e) {
+        showToast("That file isn't a valid backup");
+      }
+    });
+
+    // ─── Sync ─────────────────────────────────────────────────────────────────
+    let syncing = false, syncAgain = false, syncTimer = null;
+    let syncState = "off";   // off | ok | syncing | error | offline
+
+    async function rpc(fn, body) {
+      const r = await fetch(`${SB_URL}/rest/v1/rpc/${fn}`, {
+        method: "POST",
+        headers: { apikey: SB_KEY, "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      });
+      if (!r.ok) throw new Error(fn + " " + r.status);
+      return r.json();
+    }
+    function newSyncCode() {
+      const b = new Uint8Array(32);
+      crypto.getRandomValues(b);
+      return btoa(String.fromCharCode(...b)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+    }
+    function parseSyncCode(text) {
+      text = (text || "").trim();
+      const m = text.match(/[#&?]sync=([A-Za-z0-9_-]+)/);
+      const code = m ? m[1] : text;
+      return /^[A-Za-z0-9_-]{32,64}$/.test(code) ? code : null;
+    }
+    function scheduleSync(delay) {
+      if (!trackerData.sync) return;
+      clearTimeout(syncTimer);
+      syncTimer = setTimeout(syncNow, delay === undefined ? 1500 : delay);
+    }
+    async function syncNow() {
+      const s = trackerData.sync;
+      if (!s) return;
+      if (syncing) { syncAgain = true; return; }
+      syncing = true;
+      setSyncState("syncing");
+      try {
+        let done = false;
+        for (let attempt = 0; attempt < 4 && !done; attempt++) {
+          const remote = await rpc("tracker_pull", { p_code: s.code });
+          const rev = remote ? remote.rev : 0;
+          const remoteData = remote ? normalizeSynced(remote.data) : null;
+          applySynced(remoteData);
+          const mine = syncedPart(trackerData);
+          if (remoteData && stableStringify(mine) === stableStringify(syncedPart(remoteData))) { done = true; break; }
+          const res = await rpc("tracker_push", { p_code: s.code, p_data: mine, p_rev: rev });
+          done = !!(res && res.ok);
+        }
+        if (!done) throw new Error("conflict");
+        s.lastSyncTs = Date.now();
+        setSyncState("ok");
+      } catch (e) {
+        setSyncState(navigator.onLine === false ? "offline" : "error");
+      } finally {
+        syncing = false;
+        saveData(trackerData);
+        dayGridKey = null;
+        renderAll();
+        scheduleSessionNotification();
+        if (syncAgain) { syncAgain = false; scheduleSync(300); }
+      }
+    }
+    function setSyncState(state) {
+      syncState = trackerData.sync ? state : "off";
+      const dot = document.getElementById("syncDot");
+      dot.className = "sync-dot" + (syncState === "ok" ? " ok" : syncState === "syncing" ? " syncing"
+                    : syncState === "error" || syncState === "offline" ? " error" : "");
+      if (paneSettings.classList.contains("active")) renderSyncUI();
+    }
+    function syncLink(code) { return location.origin + location.pathname + "#sync=" + code; }
+
+    function renderSyncUI() {
+      const s = trackerData.sync;
+      document.getElementById("syncOff").style.display = s ? "none" : "";
+      document.getElementById("syncOn").style.display  = s ? "" : "none";
+      if (!s) return;
+      document.getElementById("syncCodeShow").textContent = s.code;
+      const st = document.getElementById("syncStatus");
+      if (syncState === "syncing") st.textContent = "Syncing…";
+      else if (syncState === "offline") st.innerHTML = `<span class="err">Offline.</span> Changes are saved here and will sync when you're back online.`;
+      else if (syncState === "error") st.innerHTML = `<span class="err">Couldn't reach the sync server.</span> Will retry automatically.`;
+      else st.textContent = s.lastSyncTs ? `✓ Synced ${formatAgo(s.lastSyncTs)}` : "Not synced yet";
+    }
+
+    document.getElementById("syncEnableBtn").addEventListener("click", () => {
+      trackerData.sync = { code: newSyncCode(), lastSyncTs: 0 };
+      saveData(trackerData);
+      renderSyncUI();
+      syncNow();
+    });
+    const syncCodeInput = document.getElementById("syncCodeInput");
+    const syncJoinBtn   = document.getElementById("syncJoinBtn");
+    syncCodeInput.addEventListener("input", () => { syncJoinBtn.disabled = !parseSyncCode(syncCodeInput.value); });
+    syncJoinBtn.addEventListener("click", () => {
+      const code = parseSyncCode(syncCodeInput.value);
+      if (!code) return;
+      linkDevice(code);
+      syncCodeInput.value = "";
+      syncJoinBtn.disabled = true;
+    });
+    function linkDevice(code) {
+      // Data already on this device is merged in, never thrown away
+      trackerData.sync = { code, lastSyncTs: 0 };
+      saveData(trackerData);
+      renderSyncUI();
+      syncNow();
+      showToast("Device linked, syncing…");
+    }
+    async function copyText(text, msg) {
+      try { await navigator.clipboard.writeText(text); showToast(msg); }
+      catch (e) { prompt("Copy this:", text); }
+    }
+    document.getElementById("syncCopyCodeBtn").addEventListener("click", () => copyText(trackerData.sync.code, "Sync code copied"));
+    document.getElementById("syncCopyLinkBtn").addEventListener("click", () => copyText(syncLink(trackerData.sync.code), "Sync link copied"));
+    document.getElementById("syncNowBtn").addEventListener("click", () => syncNow());
+    document.getElementById("syncOffBtn").addEventListener("click", () => {
+      if (!confirm("Unlink this device? Its data stays here, and other devices keep syncing.")) return;
+      trackerData.sync = null;
+      saveData(trackerData);
+      document.getElementById("qrBox").style.display = "none";
+      setSyncState("off");
+      renderSyncUI();
+    });
+    document.getElementById("syncQrBtn").addEventListener("click", () => {
+      const box = document.getElementById("qrBox");
+      if (box.style.display !== "none") { box.style.display = "none"; return; }
+      const draw = () => {
+        const qr = window.qrcode(0, "M");
+        qr.addData(syncLink(trackerData.sync.code));
+        qr.make();
+        box.innerHTML = qr.createSvgTag({ cellSize: 4, margin: 3, scalable: true });
+        box.style.display = "";
+      };
+      if (window.qrcode) return draw();
+      const sc = document.createElement("script");
+      sc.src = "https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js";
+      sc.onload = draw;
+      sc.onerror = () => showToast("QR needs an internet connection");
+      document.head.appendChild(sc);
+    });
+
+    // Opening a #sync=CODE link offers to link this device
+    (function handleSyncLink() {
+      const code = parseSyncCode(location.hash);
+      if (!code) return;
+      history.replaceState(null, "", location.pathname + location.search);
+      if (trackerData.sync && trackerData.sync.code === code) return;
+      if (confirm("Link this device to your synced tracker data?")) linkDevice(code);
+    })();
+
+    // ─── Boot ─────────────────────────────────────────────────────────────────
     update();
     renderLayer2();
     renderSessionTimer();
+    setSyncState(trackerData.sync ? "ok" : "off");
+    if (trackerData.sync) syncNow();
+
     setInterval(update, 10000);
     setInterval(renderLayer2, 60000);
     setInterval(renderSessionTimer, 1000);
+    setInterval(() => { if (document.visibilityState === "visible") scheduleSync(0); }, 5 * 60000);
 
     // The session clock is wall-clock based (derived from startTs vs Date.now),
     // so it never actually pauses. But mobile browsers suspend setInterval when
     // the app is backgrounded or the phone is locked, freezing the *display*.
-    // Re-render immediately whenever the app returns to the foreground so the
-    // clock snaps back to the true elapsed time instead of appearing paused.
+    // Re-render immediately whenever the app returns to the foreground.
     function resyncOnResume() {
       if (document.visibilityState === "hidden") return;
-      renderSessionTimer();
-      renderLayer2();
-      update();
+      dayGridKey = null;   // time zone may have changed while away
+      renderAll();
       maybeNotifySessionEnd();
+      scheduleSync(0);
     }
     document.addEventListener("visibilitychange", resyncOnResume);
     window.addEventListener("focus", resyncOnResume);
     window.addEventListener("pageshow", resyncOnResume);
+    window.addEventListener("online", () => scheduleSync(0));
 
     // ─── Session-end notifications ────────────────────────────────────────────
-    // Local (client-only) notifications — no push server. Two paths give
-    // best-effort coverage: (1) a setTimeout scheduled while the app is alive
-    // fires at the exact end time if the process survives in the background;
-    // (2) resyncOnResume fires it the instant you reopen the app, guaranteeing
-    // you always get the notification at the latest on next interaction.
+    // Local (client-only) notifications. Best effort: a setTimeout while the app
+    // is alive, plus a check on resume. The calendar reminder is the reliable path.
     let sessionNotifyTimer = null;
 
     function requestNotifyPermission() {
@@ -2003,17 +2671,12 @@
         return Promise.resolve(Notification.permission);
       return Notification.requestPermission();
     }
-
     function showSessionEndNotification() {
       const title = "Session ended";
-      const body  = "Your 5-hour session is up — tap to log your usage.";
       const opts  = {
-        body,
-        tag: "session-end",
-        renotify: true,
-        requireInteraction: true,
-        icon: "icons/icon-192.png",
-        badge: "icons/icon-192.png"
+        body: "Your 5-hour session is up. Tap to log your usage.",
+        tag: "session-end", renotify: true, requireInteraction: true,
+        icon: "icons/icon-192.png", badge: "icons/icon-192.png"
       };
       if (navigator.serviceWorker && navigator.serviceWorker.ready) {
         navigator.serviceWorker.ready
@@ -2023,32 +2686,27 @@
         try { new Notification(title, opts); } catch (e) {}
       }
     }
-
-    // Fire once per session (persisted on the session so a reload won't repeat it)
+    // Fire once per session per device (persisted so a reload won't repeat it)
     function maybeNotifySessionEnd() {
       const as = trackerData.activeSession;
-      if (!as || as.notified) return;
+      if (!as || trackerData.notifiedFor === as.startTs) return;
       if (Date.now() < as.startTs + SESSION_MS) return;
       if (!("Notification" in window) || Notification.permission !== "granted") return;
-      as.notified = true;
+      trackerData.notifiedFor = as.startTs;
       saveData(trackerData);
       showSessionEndNotification();
     }
-
     function clearSessionNotifyTimer() {
       if (sessionNotifyTimer) { clearTimeout(sessionNotifyTimer); sessionNotifyTimer = null; }
     }
-
     function scheduleSessionNotification() {
       clearSessionNotifyTimer();
       const as = trackerData.activeSession;
-      if (!as || as.notified) return;
+      if (!as || trackerData.notifiedFor === as.startTs) return;
       const remaining = as.startTs + SESSION_MS - Date.now();
       if (remaining <= 0) { maybeNotifySessionEnd(); return; }
       sessionNotifyTimer = setTimeout(maybeNotifySessionEnd, remaining);
     }
-
-    // Start scheduling for any session already active on load
     scheduleSessionNotification();
 
     // ─── Service Worker ───────────────────────────────────────────────────────
