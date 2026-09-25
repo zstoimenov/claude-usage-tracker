@@ -23,8 +23,17 @@ Settings and paste the code. Anyone holding the code can read and change that
 data, so keep it to yourself. On iPhone the home-screen app has its own
 storage apart from Safari, so paste the code inside the installed app.
 
+Security:
+- End-to-end encrypted. From the code the app derives (HKDF-SHA256) a row id
+  and an AES-256-GCM key. The server only sees the row id and ciphertext, and
+  rejects anything that isn't encrypted.
+- Settings → *Replace code* moves to a new code and revokes the old one;
+  devices on the old code unlink themselves.
+- The server caps the table at 20 rows and 256 KB per row.
+
 Backend: table `usage_tracker_sync` in Supabase project `xlhqigvzwavidsiwojiy`,
-reached only through the `tracker_pull` / `tracker_push` RPC functions.
+reached only through the `tracker_pull` / `tracker_push` / `tracker_revoke`
+RPC functions.
 
 ## Files
 

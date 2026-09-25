@@ -1017,8 +1017,8 @@
       <div class="set-section">
         <div class="set-title">Sync between devices</div>
         <div id="syncOff">
-          <div class="set-hint">Keeps your sessions and weekly % in step across devices. No account needed: a private sync code links them. Anyone with the code can see and change this data, so only share it with your own devices.</div>
-          <button class="set-btn" id="syncEnableBtn" style="width:100%;margin-bottom:12px">Turn on sync on this device</button>
+          <div class="set-hint">Keeps your sessions and weekly % in step across devices. No account needed: a private sync code links them. Data is encrypted on your device with a key derived from the code, so the server only stores scrambled data. Anyone with the code can see and change it, so only share it with your own devices.</div>
+          <button class="set-btn" id="syncEnableBtn" style="width:100%;margin-bottom:12px">Start new sync (first device only)</button>
           <div class="set-hint" style="margin-bottom:6px">Already turned on elsewhere? Paste that device's code or link:</div>
           <div class="set-row">
             <input class="set-input" id="syncCodeInput" placeholder="Sync code or link" autocomplete="off" autocapitalize="off" spellcheck="false" />
@@ -1039,6 +1039,7 @@
             <button class="set-btn" id="syncNowBtn">Sync now</button>
             <button class="set-btn danger" id="syncOffBtn">Unlink this device</button>
           </div>
+          <button class="set-btn ghost" id="syncReplaceBtn" style="width:100%">Replace code (if it leaked)</button>
         </div>
       </div>
 
@@ -2497,7 +2498,7 @@
     });
 
     // ─── Sync ─────────────────────────────────────────────────────────────────
-    let syncing = false, syncAgain = false, syncTimer = null;
+    let syncTimer = null, syncChain = Promise.resolve();
     let syncState = "off";   // off | ok | syncing | error | offline
 
     async function rpc(fn, body) {
@@ -2512,7 +2513,14 @@
     function newSyncCode() {
       const b = new Uint8Array(32);
       crypto.getRandomValues(b);
-      return btoa(String.fromCharCode(...b)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+      return b64url(b);
+    }
+    function b64url(bytes) {
+      return btoa(String.fromCharCode(...new Uint8Array(bytes))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+    }
+    function b64decode(str) {
+      str = str.replace(/-/g, "+").replace(/_/g, "/");
+      return Uint8Array.from(atob(str + "===".slice((str.length + 3) % 4)), c => c.charCodeAt(0));
     }
     function parseSyncCode(text) {
       text = (text || "").trim();
@@ -2520,42 +2528,104 @@
       const code = m ? m[1] : text;
       return /^[A-Za-z0-9_-]{32,64}$/.test(code) ? code : null;
     }
+
+    // ── End-to-end encryption (S2) ────────────────────────────────────────────
+    // The sync code never leaves the device. From it we derive (HKDF-SHA256):
+    //   id  - the row id the server sees; can't be reversed into the code
+    //   key - AES-256-GCM key; the server only ever stores ciphertext
+    const keyCache = new Map();
+    function deriveSync(code) {
+      if (keyCache.has(code)) return keyCache.get(code);
+      const enc  = new TextEncoder();
+      const salt = enc.encode("claude-usage-tracker/sync/v1");
+      const p = (async () => {
+        const base  = await crypto.subtle.importKey("raw", enc.encode(code), "HKDF", false, ["deriveBits", "deriveKey"]);
+        const idBits = await crypto.subtle.deriveBits(
+          { name: "HKDF", hash: "SHA-256", salt, info: enc.encode("row-id") }, base, 256);
+        const key = await crypto.subtle.deriveKey(
+          { name: "HKDF", hash: "SHA-256", salt, info: enc.encode("data-key") }, base,
+          { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]);
+        const id = Array.from(new Uint8Array(idBits), x => x.toString(16).padStart(2, "0")).join("");
+        return { id, key };
+      })();
+      keyCache.set(code, p);
+      return p;
+    }
+    async function encryptData(key, obj) {
+      const iv = crypto.getRandomValues(new Uint8Array(12));
+      const ct = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, new TextEncoder().encode(JSON.stringify(obj)));
+      return { v: 1, iv: b64url(iv), ct: b64url(ct) };
+    }
+    async function decryptData(key, box) {
+      const pt = await crypto.subtle.decrypt({ name: "AES-GCM", iv: b64decode(box.iv) }, key, b64decode(box.ct));
+      return JSON.parse(new TextDecoder().decode(pt));
+    }
+
     function scheduleSync(delay) {
       if (!trackerData.sync) return;
       clearTimeout(syncTimer);
       syncTimer = setTimeout(syncNow, delay === undefined ? 1500 : delay);
     }
-    async function syncNow() {
+    // Runs are queued so two syncs never overlap; resolves true on success
+    function syncNow() {
+      const run = syncChain.then(doSync, doSync);
+      syncChain = run.catch(() => {});
+      return run;
+    }
+    async function doSync() {
       const s = trackerData.sync;
-      if (!s) return;
-      if (syncing) { syncAgain = true; return; }
-      syncing = true;
+      if (!s) return false;
       setSyncState("syncing");
+      let ok = false;
       try {
+        const { id, key } = await deriveSync(s.code);
+        // One-time upgrade: pull the old unencrypted row stored under the raw
+        // code, merge it, and wipe it once the encrypted copy is saved.
+        let legacyToWipe = false;
+        if (!s.migrated) {
+          const legacy = await rpc("tracker_pull", { p_code: s.code });
+          if (legacy && legacy.data && !legacy.data.revoked && !legacy.data.ct) {
+            applySynced(normalizeSynced(legacy.data));
+            legacyToWipe = true;
+          }
+        }
         let done = false;
         for (let attempt = 0; attempt < 4 && !done; attempt++) {
-          const remote = await rpc("tracker_pull", { p_code: s.code });
+          const remote = await rpc("tracker_pull", { p_code: id });
+          if (remote && remote.data && remote.data.revoked) { handleRevoked(); return false; }
           const rev = remote ? remote.rev : 0;
-          const remoteData = remote ? normalizeSynced(remote.data) : null;
+          const remoteData = remote ? normalizeSynced(await decryptData(key, remote.data)) : null;
           applySynced(remoteData);
           const mine = syncedPart(trackerData);
           if (remoteData && stableStringify(mine) === stableStringify(syncedPart(remoteData))) { done = true; break; }
-          const res = await rpc("tracker_push", { p_code: s.code, p_data: mine, p_rev: rev });
+          const res = await rpc("tracker_push", { p_code: id, p_data: await encryptData(key, mine), p_rev: rev });
+          if (res && res.revoked) { handleRevoked(); return false; }
           done = !!(res && res.ok);
         }
         if (!done) throw new Error("conflict");
+        if (legacyToWipe) await rpc("tracker_revoke", { p_code: s.code });
+        s.migrated   = true;
         s.lastSyncTs = Date.now();
         setSyncState("ok");
+        ok = true;
       } catch (e) {
         setSyncState(navigator.onLine === false ? "offline" : "error");
       } finally {
-        syncing = false;
         saveData(trackerData);
         dayGridKey = null;
         renderAll();
         scheduleSessionNotification();
-        if (syncAgain) { syncAgain = false; scheduleSync(300); }
       }
+      return ok;
+    }
+    // The code was replaced on another device: stop syncing, keep local data
+    function handleRevoked() {
+      trackerData.sync = null;
+      saveData(trackerData);
+      document.getElementById("qrBox").style.display = "none";
+      setSyncState("off");
+      renderSyncUI();
+      showToast("Sync code was replaced on another device. Paste the new code in Settings.");
     }
     function setSyncState(state) {
       syncState = trackerData.sync ? state : "off";
@@ -2580,7 +2650,8 @@
     }
 
     document.getElementById("syncEnableBtn").addEventListener("click", () => {
-      trackerData.sync = { code: newSyncCode(), lastSyncTs: 0 };
+      if (!confirm("Start a NEW sync group? Only do this on your first device. On other devices, paste this device's code instead.")) return;
+      trackerData.sync = { code: newSyncCode(), lastSyncTs: 0, migrated: true };
       saveData(trackerData);
       renderSyncUI();
       syncNow();
@@ -2597,7 +2668,7 @@
     });
     function linkDevice(code) {
       // Data already on this device is merged in, never thrown away
-      trackerData.sync = { code, lastSyncTs: 0 };
+      trackerData.sync = { code, lastSyncTs: 0, migrated: false };
       saveData(trackerData);
       renderSyncUI();
       syncNow();
@@ -2618,6 +2689,33 @@
       setSyncState("off");
       renderSyncUI();
     });
+    // S3: move to a fresh code and revoke the old one. Devices still on the old
+    // code unlink themselves on their next sync; they never learn the new code.
+    document.getElementById("syncReplaceBtn").addEventListener("click", async () => {
+      if (!confirm("Replace the sync code? Your other devices will be unlinked until you paste the new code on them.")) return;
+      const oldCode = trackerData.sync.code;
+      if (!(await syncNow())) { showToast("Couldn't reach the sync server. Try again when online."); return; }
+      if (!trackerData.sync || trackerData.sync.code !== oldCode) return;
+      trackerData.sync = { code: newSyncCode(), lastSyncTs: 0, migrated: true };
+      saveData(trackerData);
+      document.getElementById("qrBox").style.display = "none";
+      if (!(await syncNow())) {
+        trackerData.sync = { code: oldCode, lastSyncTs: Date.now(), migrated: true };
+        saveData(trackerData);
+        renderSyncUI();
+        showToast("Couldn't save to the new code. Old code kept.");
+        return;
+      }
+      try {
+        const { id } = await deriveSync(oldCode);
+        await rpc("tracker_revoke", { p_code: id });
+        showToast("New sync code created. Paste it on your other devices.");
+      } catch (e) {
+        showToast("New code works, but the old one couldn't be revoked yet. Try again.");
+      }
+      renderSyncUI();
+    });
+
     document.getElementById("syncQrBtn").addEventListener("click", () => {
       const box = document.getElementById("qrBox");
       if (box.style.display !== "none") { box.style.display = "none"; return; }
