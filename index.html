@@ -339,6 +339,10 @@
       border-bottom: 1px dotted #334155;
       margin: 0 8px 3px;
     }
+    .checkin-gap {
+      font-size: 11px; font-weight: 500; color: #eab308; margin-left: 6px;
+    }
+    .checkin-gap.ahead { color: #60a5fa; }
     .checkin-pct {
       font-size: 16px;
       font-weight: 700;
@@ -1171,7 +1175,7 @@
             const label = new Date(candidateMs).toLocaleString("en-AU", {
               weekday: "short", hour: "2-digit", minute: "2-digit", hour12: false,
             });
-            results.push({ label, pct });
+            results.push({ label, pct, nextCycle: candidateMs >= cycleEndMs });
           }
         }
       }
@@ -2413,13 +2417,22 @@
         weeklyLabel.style.display  = "none";
       }
 
+      // "+X to go": how much more usage is needed to be on pace by each check-in.
+      // A check-in after the reset starts from 0%.
+      function checkInGap(c, current) {
+        if (current === null) return "";
+        const gap = c.pct - (c.nextCycle ? 0 : current);
+        if (gap >= 0.05)  return `<span class="checkin-gap">+${gap.toFixed(1)} to go</span>`;
+        if (gap <= -0.05) return `<span class="checkin-gap ahead">${Math.abs(gap).toFixed(1)} ahead</span>`;
+        return `<span class="checkin-gap ahead">on pace</span>`;
+      }
       const checkIns = getNextCheckIns();
       document.getElementById("checkInsList").innerHTML = checkIns.length
         ? checkIns.map(c => `
             <div class="checkin-row">
               <span class="checkin-time">${c.label}</span>
               <span class="checkin-dots"></span>
-              <span class="checkin-pct">${c.pct.toFixed(1)}%</span>
+              <span class="checkin-pct">${c.pct.toFixed(1)}%${checkInGap(c, spotValue)}</span>
             </div>`).join("")
         : `<span style="color:#94a3b8;font-size:12px">—</span>`;
 
