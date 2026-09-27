@@ -1,6 +1,6 @@
 # Claude Usage Cycle Tracker
 
-Version 2.2 · last updated 2026-09-27
+Version 2.3 · last updated 2026-09-27
 
 A Progressive Web App (PWA) that tracks your Claude weekly usage and helps you
 use the whole allowance before it resets.
@@ -132,6 +132,9 @@ Bump `CACHE_NAME` in `sw.js` only when you want old caches cleared.
 
 ## Changelog
 
+- **2.3** (2026-09-27): main screen fills the whole screen on any device and
+  scales with it; on wide screens (iPad landscape, desktop) the chart gets
+  its own column.
 - **2.2** (2026-09-27): compact main screen that fits a phone without
   scrolling; check-ins pinned under the main number; explanations moved
   behind "i" buttons.
