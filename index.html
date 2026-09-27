@@ -70,7 +70,7 @@
     /* ── Header ──────────────────────────────────────────────────────────── */
     .header {
       text-align: center;
-      margin-bottom: 32px;
+      margin-bottom: 20px;
     }
     .header-label {
       font-size: 13px;
@@ -89,266 +89,147 @@
       margin-left: 6px;
     }
 
-    /* ── Big % ───────────────────────────────────────────────────────────── */
-    .big-pct {
-      text-align: center;
-      margin-bottom: 28px;
+    /* ── Hero: time elapsed (main number) + usage ────────────────────────── */
+    .hero {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: end;
+      gap: 12px;
+      margin-bottom: 18px;
     }
-    .big-pct .number {
-      font-size: clamp(64px, 16vw, 88px);
+    .hero-pct {
+      font-size: clamp(52px, 14vw, 72px);
       font-weight: 700;
-      letter-spacing: -4px;
+      letter-spacing: -3px;
       line-height: 1;
       transition: color 1s;
+      font-variant-numeric: tabular-nums;
     }
-    .big-pct .unit {
-      font-size: clamp(28px, 7vw, 40px);
+    .hero-pct .unit {
+      font-size: clamp(24px, 6vw, 32px);
       font-weight: 400;
       color: #cbd5e1;
+      letter-spacing: 0;
     }
-    .big-pct .sub {
-      font-size: 14px;
+    .hero-sub { font-size: 13px; color: #94a3b8; margin-top: 6px; }
+    .hero-side {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 6px;
+      font-size: 12px;
       color: #94a3b8;
-      margin-top: 6px;
+      font-variant-numeric: tabular-nums;
     }
-
-    /* ── Main bar ────────────────────────────────────────────────────────── */
-    .main-bar-wrap {
-      background: #1e293b;
-      border-radius: 12px;
-      overflow: visible;
-      height: 20px;
-      margin-bottom: 8px;
-      position: relative;
-    }
-    .main-bar-inner {
-      position: absolute;
-      inset: 0;
-      border-radius: 12px;
-      overflow: hidden;
-    }
-    .main-bar-weekly-marker {
-      position: absolute;
-      top: 50%;
-      width: 2px;
-      height: 28px;
-      background: #f8fafc;
-      border-radius: 1px;
-      transform: translate(-50%, -50%);
-      z-index: 3;
-      box-shadow: 0 0 4px rgba(248,250,252,0.53);
-      transition: left 0.5s;
-    }
-    .main-bar-weekly-label {
-      position: absolute;
-      top: 50%;
-      transform: translateY(-50%);
-      font-size: 10px;
+    .hero-side b { font-size: 18px; color: #e2e8f0; }
+    .status-pill {
+      font-size: 11px;
       font-weight: 700;
-      color: #f8fafc;
-      z-index: 4;
-      pointer-events: none;
-      transition: left 0.5s;
-      text-shadow: 0 0 6px rgba(15,23,42,0.9);
+      padding: 3px 9px;
+      border-radius: 20px;
+      letter-spacing: 0.5px;
       white-space: nowrap;
     }
-    .main-bar-fill {
-      height: 100%;
-      border-radius: 12px;
-      transition: width 0.5s, background 1s;
-    }
-    .main-bar-tick {
-      position: absolute;
-      top: 0;
-      width: 1px;
-      height: 100%;
-      background: rgba(15,23,42,0.4);
-    }
-    .main-bar-labels {
-      display: flex;
-      justify-content: space-between;
-      font-size: 11px;
-      color: #64748b;
-      margin-bottom: 28px;
-    }
+    .status-pill.on-track  { background: #14532d; color: #4ade80; }
+    .status-pill.drifting  { background: #422006; color: #eab308; }
+    .status-pill.at-risk   { background: #431407; color: #f97316; }
+    .status-pill.critical  { background: #450a0a; color: #ef4444; }
+    .status-pill.ahead     { background: #0c2d4a; color: #60a5fa; }
+    .status-pill.no-data   { background: #1e293b; color: #94a3b8; border: 1px solid #334155; }
 
-    /* ── Day grid ────────────────────────────────────────────────────────── */
-    .day-grid {
-      display: grid;
-      grid-template-columns: repeat(7, 1fr);
-      gap: 6px;
-      margin-bottom: 28px;
-    }
-    .day-cell {
-      text-align: center;
-    }
-    .day-bar {
-      position: relative;
-      background: #1e293b;
-      border-radius: 6px;
-      height: 6px;
-      margin-bottom: 4px;
-      border: 1px solid transparent;
-    }
-    .day-bar-fill {
-      position: absolute;
-      top: 0;
-      height: 100%;
-      border-radius: 6px;
-      transition: width 0.5s;
-    }
-    .day-marker {
-      position: absolute;
-      top: 50%;
-      width: 2px;
-      height: 12px;
-      background: #f8fafc;
-      border-radius: 1px;
-      transform: translate(-50%, -50%);
-      z-index: 2;
-      box-shadow: 0 0 4px rgba(248,250,252,0.53);
-    }
-    .day-label {
-      font-size: 11px;
-      transition: color 0.3s;
-    }
-    .day-time {
-      font-size: 9px;
-      color: #64748b;
-      margin-top: 1px;
-    }
-
-    /* ── Stats grid ──────────────────────────────────────────────────────── */
-    .stats-grid {
+    /* ── Main cards ──────────────────────────────────────────────────────── */
+    .main-stack {
       display: flex;
       flex-direction: column;
       gap: 12px;
       margin-bottom: 20px;
     }
-    .stat-card {
+    .card {
       background: #1e293b;
       border-radius: 10px;
-      padding: 20px;
-    }
-
-    /* ── Pacing card (velocity reframe) ──────────────────────────────────── */
-    .stat-card-pace {
+      padding: 14px 16px;
       display: flex;
       flex-direction: column;
       gap: 10px;
-      padding: 16px 20px;
-      transition: opacity 0.3s;
     }
-    .stat-card-pace.stale .pace-primary,
-    .stat-card-pace.stale .pace-secondary {
-      opacity: 0.4;
-    }
-    .pace-label {
+    .card-label {
       font-size: 11px;
       color: #64748b;
       text-transform: uppercase;
       letter-spacing: 1px;
     }
-    .pace-top-row {
+    .card-head {
       display: flex;
-      align-items: baseline;
       justify-content: space-between;
+      align-items: baseline;
       gap: 12px;
     }
-    .pace-primary {
-      display: flex;
-      align-items: baseline;
-      gap: 8px;
-      transition: opacity 0.3s;
-    }
-    .pace-required {
-      font-size: 28px;
-      font-weight: 700;
-      color: #e2e8f0;
-      line-height: 1;
-    }
-    .pace-required-unit {
-      font-size: 13px;
-      color: #94a3b8;
-      font-weight: 400;
-    }
-    .pace-badge {
-      display: inline-block;
-      font-size: 10px;
-      font-weight: 700;
-      padding: 3px 8px;
-      border-radius: 20px;
-      letter-spacing: 0.5px;
-      white-space: nowrap;
-    }
-    .pace-badge.slow-down      { background: #0c2d4a; color: #60a5fa; }
-    .pace-badge.on-pace        { background: #14532d; color: #4ade80; }
-    .pace-badge.behind         { background: #422006; color: #eab308; }
-    .pace-badge.falling-behind { background: #450a0a; color: #ef4444; }
-    .pace-badge.stale          { background: #1e293b; color: #64748b; border: 1px solid #334155; }
-    .pace-badge.empty          { background: #1e293b; color: #94a3b8; border: 1px solid #334155; }
-    .pace-secondary {
-      font-size: 11px;
-      color: #64748b;
-      transition: opacity 0.3s;
-    }
-    .pace-empty {
-      font-size: 12px;
-      color: #64748b;
-      font-style: italic;
-    }
-    .pace-stale-caption {
-      font-size: 10px;
-      color: #f59e0b;
-      margin-top: 2px;
-    }
-    .pace-capacity-row {
-      font-size: 11px;
-      color: #94a3b8;
-      padding-top: 8px;
-      border-top: 1px solid #0f172a;
-      margin-top: 2px;
-    }
-    .pace-capacity-row.forfeit { color: #f87171; }
-    .pace-recovery-row {
-      font-size: 11px;
-      color: #60a5fa;
-      padding-top: 8px;
-      border-top: 1px solid #0f172a;
-      margin-top: 2px;
-    }
+    .card-head .num { font-weight: 700; color: #e2e8f0; }
+    .card-sub { font-size: 12px; color: #94a3b8; line-height: 1.4; }
+    .card-sub.stale { color: #f97316; }
+    .card-text { font-size: 13px; color: #e2e8f0; line-height: 1.4; }
+    .num { font-variant-numeric: tabular-nums; }
 
-    .checkins-list {
+    /* Burn-up chart */
+    .chart-card { padding: 10px 8px 4px; }
+    .chart-card svg { display: block; width: 100%; height: auto; }
+
+    /* Next session target */
+    .next-row { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+    .next-big {
+      font-size: 34px;
+      font-weight: 700;
+      letter-spacing: -1px;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+    }
+    .next-unit { font-size: 13px; color: #94a3b8; }
+
+    /* Pace gap bar, centred on 0 */
+    .gap-bar { position: relative; height: 10px; background: #0f172a; border-radius: 5px; }
+    .gap-bar-fill { position: absolute; top: 0; bottom: 0; width: 0; transition: width 0.5s; }
+    .gap-bar-centre {
+      position: absolute; left: 50%; top: -3px; bottom: -3px;
+      width: 2px; margin-left: -1px; background: #94a3b8; border-radius: 1px;
+    }
+    .gap-bar-labels { display: flex; justify-content: space-between; font-size: 10px; color: #64748b; }
+
+    /* Slots left, one row per day */
+    .slot-grid {
+      display: grid;
+      grid-template-columns: 34px 1fr;
+      gap: 6px 8px;
+      align-items: center;
+    }
+    .slot-day { font-size: 11px; font-weight: 600; color: #94a3b8; }
+    .slot-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
+    .slot {
+      height: 22px;
+      border-radius: 5px;
+      border: 1.5px solid #334155;
+      font-size: 10px;
+      color: #64748b;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-variant-numeric: tabular-nums;
+    }
+    .slot.need { color: #0f172a; font-weight: 700; }
+
+    /* Check-ins */
+    .checkin-tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .checkin-tile {
+      background: #1e293b;
+      border-radius: 10px;
+      padding: 12px 14px;
       display: flex;
       flex-direction: column;
-      gap: 7px;
+      gap: 2px;
     }
-    .checkin-row {
-      display: flex;
-      align-items: baseline;
-    }
-    .checkin-time {
-      font-size: 13px;
-      color: #94a3b8;
-      font-weight: 500;
-      letter-spacing: 0.3px;
-      flex-shrink: 0;
-    }
-    .checkin-dots {
-      flex: 1;
-      border-bottom: 1px dotted #334155;
-      margin: 0 8px 3px;
-    }
-    .checkin-gap {
-      font-size: 11px; font-weight: 500; color: #eab308; margin-left: 6px;
-    }
+    .checkin-time { font-size: 11px; color: #64748b; }
+    .checkin-pct { font-size: 18px; font-weight: 700; color: #e2e8f0; font-variant-numeric: tabular-nums; }
+    .checkin-gap { font-size: 11px; font-weight: 700; color: #eab308; }
     .checkin-gap.ahead { color: #60a5fa; }
-    .checkin-pct {
-      font-size: 16px;
-      font-weight: 700;
-      color: #e2e8f0;
-      flex-shrink: 0;
-    }
 
     /* ── Session Tracker toggle ──────────────────────────────────────────── */
     .tracker-toggle {
@@ -399,57 +280,6 @@
       flex-direction: column;
       gap: 14px;
     }
-
-    /* ── Drift card ──────────────────────────────────────────────────────── */
-    .drift-card {
-      background: #1e293b;
-      border-radius: 10px;
-      padding: 16px;
-    }
-    .drift-card-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 12px;
-    }
-    .drift-card-title {
-      font-size: 11px;
-      color: #64748b;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-    }
-    .drift-badge {
-      font-size: 11px;
-      font-weight: 700;
-      padding: 3px 8px;
-      border-radius: 20px;
-      letter-spacing: 0.5px;
-    }
-    .drift-badge.on-track  { background: #14532d; color: #4ade80; }
-    .drift-badge.drifting  { background: #422006; color: #eab308; }
-    .drift-badge.at-risk   { background: #431407; color: #f97316; }
-    .drift-badge.critical  { background: #450a0a; color: #ef4444; }
-    .drift-badge.ahead     { background: #0c2d4a; color: #60a5fa; }
-    .drift-badge.no-data   { background: #1e293b; color: #94a3b8; border: 1px solid #334155; }
-
-    .drift-bars { display: flex; flex-direction: column; gap: 6px; }
-    .drift-bar-row { display: flex; align-items: center; gap: 8px; }
-    .drift-bar-row-label {
-      font-size: 10px; color: #64748b;
-      width: 44px; flex-shrink: 0; text-align: right;
-    }
-    .drift-bar-track {
-      flex: 1; background: #0f172a;
-      border-radius: 4px; height: 8px;
-      position: relative; overflow: hidden;
-    }
-    .drift-bar-fill { height: 100%; border-radius: 4px; transition: width 0.5s; }
-    .drift-bar-value { font-size: 10px; color: #94a3b8; width: 36px; flex-shrink: 0; }
-    .drift-gap-label {
-      text-align: center; font-size: 11px;
-      color: #64748b; margin-top: 8px;
-    }
-
 
     /* ── History card ────────────────────────────────────────────────────── */
     .sessions-card {
@@ -1074,8 +904,6 @@
     const SESSION_MS           = SESSION_LOCK_HOURS * 3600000;   // full 5h window
     const MIN_USEFUL_SLOT_MS   = 3600000;        // a partial window under 1h isn't a usable slot
     const STALE_SIGNAL_MS      = 5 * 3600000;    // 5h
-    const CAPACITY_TRIGGER     = 0.7;
-    const EDGE_WINDOW_MS       = 6 * 3600000;    // 6h start/end edge cases
     const AVG_WINDOW_MS        = 28 * DAY_MS;    // sessions used for the average
     const AVG_HALF_LIFE_DAYS   = 14;             // recency weighting
     const TOMBSTONE_KEEP_MS    = 60 * DAY_MS;
@@ -1176,7 +1004,7 @@
             const label = new Date(candidateMs).toLocaleString("en-AU", {
               weekday: "short", hour: "2-digit", minute: "2-digit", hour12: false,
             });
-            results.push({ label, pct, nextCycle: candidateMs >= cycleEndMs });
+            results.push({ label, pct, ms: candidateMs, nextCycle: candidateMs >= cycleEndMs });
           }
         }
       }
@@ -1247,12 +1075,12 @@
     }
 
     // C4/C5: real 5h windows left before reset, inside waking hours, starting
-    // after any running session. One shared number for every card.
-    function countSlots(nowMs, cycleEndMs) {
+    // after any running session. One shared list for every card.
+    function listSlots(nowMs, cycleEndMs) {
       const as = trackerData.activeSession;
       let earliest = nowMs;
       if (as) earliest = Math.max(earliest, as.startTs + SESSION_MS);
-      let slots = 0;
+      const slots = [];
       for (let mid = localMidnight(nowMs); mid < cycleEndMs; mid = addLocalDays(mid, 1)) {
         const ws = Math.max(localAt(mid, WAKE_START_H), earliest);
         const we = Math.min(localAt(mid, WAKE_END_H), cycleEndMs);
@@ -1260,7 +1088,7 @@
         const len = we - ws;
         let n = Math.floor(len / SESSION_MS);
         if (len % SESSION_MS >= MIN_USEFUL_SLOT_MS) n++;
-        slots += n;
+        for (let i = 0; i < n; i++) slots.push({ start: ws + i * SESSION_MS, mid });
         earliest = ws + n * SESSION_MS;
       }
       return slots;
@@ -1273,70 +1101,37 @@
       return Date.now() - bestTs;
     }
 
-    function calcPacing() {
-      const nowMs         = Date.now();
-      const cycleStartMs  = getCycleStartUTC();
-      const cycleEndMs    = cycleStartMs + CYCLE_MS;
-      const daysElapsed   = (nowMs - cycleStartMs) / DAY_MS;
-      const daysRemaining = (cycleEndMs - nowMs) / DAY_MS;
-      const weekly        = getWeekly();
-      const weeklyPct     = weekly ? weekly.value : null;
-      const signalAgeMs   = getFreshestSignalAge(weekly);
-      const isStale       = signalAgeMs !== null && signalAgeMs > STALE_SIGNAL_MS;
-
-      if (weeklyPct === null) {
-        return { state: "empty", message: "Set current weekly % to calculate pace" };
+    // Next-session target: weekly % a session must add so that you are back on
+    // the target line when it ends. A running session counts from its start
+    // reading. When ahead, the next session starts once time catches up.
+    function planNextSession(nowMs, cycleStartMs, cycleEndMs, weeklyPct) {
+      const target = ms => Math.min(100, ((ms - cycleStartMs) / CYCLE_MS) * 100);
+      const as = trackerData.activeSession;
+      if (as && as.startTs + SESSION_MS > nowMs) {
+        const end = Math.min(as.startTs + SESSION_MS, cycleEndMs);
+        return { running: true, from: as.startTs, end, need: Math.max(0, target(end) - completionBefore(as)) };
       }
-      if (nowMs - cycleStartMs < EDGE_WINDOW_MS) {
-        return { state: "starting", message: "Cycle just started. Log some sessions." };
+      let from = nowMs, restUntil = null;
+      if (weeklyPct > target(nowMs)) {
+        restUntil = cycleStartMs + (weeklyPct / 100) * CYCLE_MS;
+        if (restUntil >= cycleEndMs) return { none: true };
+        from = restUntil;
       }
-      if (cycleEndMs - nowMs < EDGE_WINDOW_MS) {
-        const usageLeft = Math.max(0, 100 - weeklyPct);
-        return { state: "final", weeklyPct, usageLeft,
-                 message: `Final stretch: ${usageLeft.toFixed(1)}% left to use`,
-                 isStale, signalAgeMs };
-      }
+      // First usable slot from then on (same rule as the slot grid)
+      const slot = listSlots(from, cycleEndMs)[0];
+      if (!slot) return { none: true };
+      from = slot.start;
+      const end = Math.min(from + SESSION_MS, cycleEndMs);
+      return { from, end, restUntil, need: Math.max(0, target(end) - weeklyPct) };
+    }
 
-      const usageRemaining   = Math.max(0, 100 - weeklyPct);
-      const requiredDailyPct = usageRemaining / daysRemaining;
-      const currentDailyPct  = daysElapsed > 0 ? weeklyPct / daysElapsed : 0;
-      const paceRatio        = currentDailyPct > 0 ? requiredDailyPct / currentDailyPct : null;
-
-      // Recovery point: if usage is ahead of time, when does time catch up?
-      const timePct = (daysElapsed / 7) * 100;
-      let recovery  = null;
-      if (weeklyPct > timePct) {
-        const recoveryMs = cycleStartMs + (weeklyPct / 100) * CYCLE_MS;
-        recovery = recoveryMs >= cycleEndMs
-          ? { resetsFirst: true, recoveryMs: cycleEndMs }
-          : { resetsFirst: false, recoveryMs };
-      }
-
-      let badge, badgeLabel;
-      if (paceRatio === null)        { badge = "falling-behind"; badgeLabel = "🔴 Not Started"; }
-      else if (paceRatio < 0.85)     { badge = "slow-down";      badgeLabel = "🔵 Ahead"; }
-      else if (paceRatio <= 1.15)    { badge = "on-pace";        badgeLabel = "🟢 On Pace"; }
-      else if (paceRatio <= 1.5)     { badge = "behind";         badgeLabel = "🟡 Behind"; }
-      else                           { badge = "falling-behind"; badgeLabel = "🔴 Falling Behind"; }
-
-      const avgData = calcAvg(trackerData.sessions);
-      let capacity = null;
-      if (avgData && avgData.avg > 0 && usageRemaining > 0) {
-        const slotsAvailable = countSlots(nowMs, cycleEndMs);
-        const sessionsNeeded = usageRemaining / avgData.avg;
-        const forfeitPct     = Math.max(0, (sessionsNeeded - slotsAvailable) * avgData.avg);
-        const show           = sessionsNeeded > slotsAvailable * CAPACITY_TRIGGER;
-        capacity = { slotsAvailable, sessionsNeeded, forfeitPct, show,
-                     overCapacity: sessionsNeeded > slotsAvailable };
-      }
-
-      return {
-        state: "normal",
-        weeklyPct, daysElapsed, daysRemaining,
-        requiredDailyPct, currentDailyPct, paceRatio,
-        badge, badgeLabel, isStale, signalAgeMs,
-        capacity, recovery
-      };
+    // Weekly readings in the current cycle, for the burn-up chart
+    function cycleReadings(cycleStartMs) {
+      const pts = [[cycleStartMs, 0]];
+      trackerData.sessions.forEach(s => { if (s.ts >= cycleStartMs) pts.push([s.ts, s.weekAfter]); });
+      const sw = trackerData.spotWeekly;
+      if (sw && sw.ts >= cycleStartMs) pts.push([sw.ts, sw.value]);
+      return pts.sort((a, b) => a[0] - b[0]);
     }
 
     // ─── Storage & data model ─────────────────────────────────────────────────
@@ -1483,26 +1278,16 @@
         <div class="header-sub"><span id="headerReset">Resets</span><span class="header-countdown" id="headerCountdown"></span></div>
       </div>
 
-      <div class="big-pct">
-        <div class="number" id="pctNumber">0.00<span class="unit">%</span></div>
-        <div class="sub">of this week's cycle elapsed</div>
-      </div>
-
-      <div class="main-bar-wrap" id="mainBarWrap">
-        <div class="main-bar-inner">
-          <div class="main-bar-fill" id="mainBarFill"></div>
-          <div class="main-bar-tick" style="left:25%"></div>
-          <div class="main-bar-tick" style="left:50%"></div>
-          <div class="main-bar-tick" style="left:75%"></div>
+      <div class="hero">
+        <div>
+          <div class="hero-pct" id="pctNumber">0.00<span class="unit">%</span></div>
+          <div class="hero-sub">of this week's cycle elapsed</div>
         </div>
-        <div class="main-bar-weekly-marker" id="mainBarWeeklyMarker" style="display:none"></div>
-        <div class="main-bar-weekly-label"  id="mainBarWeeklyLabel"  style="display:none"></div>
+        <div class="hero-side">
+          <span id="heroUsed">— used</span>
+          <span class="status-pill no-data" id="statusPill">No data</span>
+        </div>
       </div>
-      <div class="main-bar-labels">
-        <span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span>
-      </div>
-
-      <div class="day-grid" id="dayGrid"></div>
 
       <button class="session-timer-card" id="sessionTimerCard" style="display:none" aria-label="Active session, tap to manage">
         <div class="stc-top">
@@ -1513,64 +1298,49 @@
         <div class="stc-sub" id="sessionCardSub">—</div>
       </button>
 
-      <div class="stats-grid">
-        <div class="stat-card stat-card-pace" id="paceCard">
-          <div class="pace-label">Weekly Pace</div>
-          <div class="pace-top-row">
-            <div class="pace-primary" id="pacePrimary">
-              <span class="pace-required" id="paceRequired">—</span>
-              <span class="pace-required-unit" id="paceRequiredUnit">%/day required</span>
-            </div>
-            <div id="paceBadgeWrap"></div>
+      <div class="main-stack">
+        <div class="card chart-card" id="burnChart"></div>
+
+        <div class="card">
+          <div class="card-label" id="nextTitle">Next session</div>
+          <div class="next-row">
+            <span class="next-big" id="nextBig">—</span>
+            <span class="next-unit" id="nextUnit"></span>
           </div>
-          <div class="pace-secondary" id="paceSecondary">—</div>
-          <div class="pace-stale-caption" id="paceStaleCaption" style="display:none"></div>
-          <div class="pace-recovery-row" id="paceRecoveryRow" style="display:none"></div>
-          <div class="pace-capacity-row" id="paceCapacityRow" style="display:none"></div>
+          <div class="card-sub" id="nextNote"></div>
         </div>
-        <div class="stat-card stat-card-checkins" style="padding:16px 20px">
-          <div class="pace-label" style="margin-bottom:10px">Next Check-ins</div>
-          <div class="checkins-list" id="checkInsList">—</div>
+
+        <div class="card">
+          <div class="card-head">
+            <span class="card-label">Pace gap</span>
+            <span class="num" id="gapPct">—</span>
+          </div>
+          <div class="gap-bar"><div class="gap-bar-fill" id="gapFill"></div><div class="gap-bar-centre"></div></div>
+          <div class="gap-bar-labels"><span>20% behind</span><span>on target</span><span>20% ahead</span></div>
+          <div class="card-text num" id="gapText">Use + to set your current weekly %</div>
+          <div class="card-sub" id="gapAge"></div>
         </div>
+
+        <div class="card">
+          <div class="card-head">
+            <span class="card-label">Sessions to 100%</span>
+            <span class="num" id="slotsHead"></span>
+          </div>
+          <div class="slot-grid" id="slotGrid"></div>
+          <div class="card-sub" id="slotsSub"></div>
+        </div>
+
+        <div class="checkin-tiles" id="checkInsList"></div>
       </div>
 
       <!-- ── Layer 2 ──────────────────────────────────────────────────────── -->
       <button class="tracker-toggle" id="trackerToggle" aria-expanded="false" aria-controls="trackerPanel">
-        Session Tracker <i class="arrow">▾</i>
+        History &amp; Past Cycles <i class="arrow">▾</i>
       </button>
 
       <div class="tracker-panel" id="trackerPanel">
         <div class="tracker-inner">
-          <div class="drift-card">
-            <div class="drift-card-header">
-              <span class="drift-card-title">Weekly Usage vs Time Elapsed</span>
-              <span class="drift-badge no-data" id="driftBadge">No Data</span>
-            </div>
-            <div class="drift-bars">
-              <div class="drift-bar-row">
-                <div class="drift-bar-row-label">Time</div>
-                <div class="drift-bar-track">
-                  <div class="drift-bar-fill" id="driftTimeBar" style="width:0%;background:#475569"></div>
-                </div>
-                <div class="drift-bar-value" id="driftTimeVal">0%</div>
-              </div>
-              <div class="drift-bar-row">
-                <div class="drift-bar-row-label">Weekly</div>
-                <div class="drift-bar-track">
-                  <div class="drift-bar-fill" id="driftWeeklyBar" style="width:0%;background:#334155"></div>
-                </div>
-                <div class="drift-bar-value" id="driftWeeklyVal">—</div>
-              </div>
-            </div>
-            <div class="drift-gap-label" id="driftGapLabel">Use + to set your current weekly %</div>
-          </div>
-
-          <div class="sessions-card">
-            <div class="sessions-stat">
-              <div class="sessions-stat-label">Sessions Needed</div>
-              <div class="sessions-stat-value" id="sessionsLeft">—</div>
-              <div class="sessions-stat-sub" id="sessionsLeftSub">log sessions to calculate</div>
-            </div>
+          <div class="sessions-card" style="grid-template-columns:1fr">
             <div class="sessions-stat">
               <div class="sessions-stat-label">Avg Session Value</div>
               <div class="sessions-stat-value" id="avgSessionVal">—</div>
@@ -1597,35 +1367,6 @@
     // ─── Layer 2 state ────────────────────────────────────────────────────────
     trackerData = loadData();
     saveData(trackerData);   // persist any migration
-
-    // Day cells are (re)built from the cycle's local start, so labels and the
-    // reset marker follow the device time zone and the configured reset.
-    const dayGrid = document.getElementById("dayGrid");
-    let dayGridKey = null;
-    function buildDayGrid() {
-      const cs  = getCycleStartUTC();
-      const key = cs + "|" + new Date(cs).getTimezoneOffset();
-      if (key === dayGridKey) return;
-      dayGridKey = key;
-      const mid0      = localMidnight(cs);
-      const markerPct = ((cs - mid0) / (addLocalDays(mid0, 1) - mid0)) * 100;
-      dayGrid.innerHTML = "";
-      for (let i = 0; i < 7; i++) {
-        const label = new Date(addLocalDays(mid0, i)).toLocaleString("en-AU", { weekday: "short" });
-        const cell = document.createElement("div");
-        cell.className = "day-cell";
-        cell.innerHTML = `
-          <div class="day-bar" id="daybar-${i}">
-            <div class="day-bar-fill" id="dayfill-${i}" style="left:0;width:0"></div>
-            ${i === 0 && markerPct > 0 ? `<div class="day-marker" style="left:${markerPct}%"></div>` : ""}
-          </div>
-          <div class="day-label" id="daylabel-${i}">${label}</div>
-          ${i === 0 ? `<div class="day-time">${formatClockTime(cs)}</div>` : ""}
-        `;
-        dayGrid.appendChild(cell);
-      }
-      dayGrid.dataset.marker = markerPct;
-    }
 
     const trackerToggle = document.getElementById("trackerToggle");
     const trackerPanel  = document.getElementById("trackerPanel");
@@ -2146,73 +1887,16 @@
     });
 
     function renderLayer2() {
-      const nowMs        = Date.now();
       const cycleStartMs = getCycleStartUTC();
-      const timePct      = Math.min(100, Math.max(0, ((nowMs - cycleStartMs) / CYCLE_MS) * 100));
-      const weekly       = getWeekly();
-      const weeklyPct    = weekly ? weekly.value : null;
-
-      // Drift bars
-      const driftTimeBar   = document.getElementById("driftTimeBar");
-      const driftWeeklyBar = document.getElementById("driftWeeklyBar");
-      const driftTimeVal   = document.getElementById("driftTimeVal");
-      const driftWeeklyVal = document.getElementById("driftWeeklyVal");
-      const driftBadge     = document.getElementById("driftBadge");
-      const driftGapLabel  = document.getElementById("driftGapLabel");
-
-      driftTimeBar.style.width = timePct + "%";
-      driftTimeVal.textContent = timePct.toFixed(1) + "%";
-
-      const status = getDriftStatus(weeklyPct, timePct);
-      driftBadge.className   = "drift-badge " + status;
-      driftBadge.textContent = getDriftLabel(status);
-
-      if (weeklyPct !== null) {
-        const wc = barColour(status);
-        driftWeeklyBar.style.width      = Math.min(100, weeklyPct) + "%";
-        driftWeeklyBar.style.background = wc;
-        driftWeeklyVal.textContent      = weeklyPct.toFixed(1) + "%";
-        const gap = weeklyPct - timePct;
-        driftGapLabel.style.color = wc;
-        driftGapLabel.textContent = weekly.isReset
-          ? "New cycle: weekly reset to 0%. Set your current % with +"
-          : gap >= 0.05 ? `${gap.toFixed(1)}% ahead of pace, on track to use it all`
-          : gap <= -0.05 ? `${Math.abs(gap).toFixed(1)}% behind pace, allowance at risk of going unused`
-          : "Exactly on pace";
-      } else {
-        driftWeeklyBar.style.width = "0%";
-        driftWeeklyVal.textContent = "—";
-        driftGapLabel.textContent  = "Use + to set your current weekly %";
-        driftGapLabel.style.color  = "#94a3b8";
-      }
-
-      // Sessions needed vs slots left (C4: same numbers as the pace card)
-      const avgData        = calcAvg(trackerData.sessions);
-      const sessionsLeftEl  = document.getElementById("sessionsLeft");
-      const sessionsLeftSub = document.getElementById("sessionsLeftSub");
-      const avgSessionVal   = document.getElementById("avgSessionVal");
-      const avgSessionSub   = document.getElementById("avgSessionSub");
-      const slots = countSlots(nowMs, cycleStartMs + CYCLE_MS);
-
+      const avgData       = calcAvg(trackerData.sessions);
+      const avgSessionVal = document.getElementById("avgSessionVal");
+      const avgSessionSub = document.getElementById("avgSessionSub");
       if (avgData) {
         avgSessionVal.textContent = avgData.avg.toFixed(2) + "%";
-        avgSessionSub.textContent = `weighted, last ${avgData.n} session${avgData.n > 1 ? "s" : ""}`;
-        if (weeklyPct !== null && avgData.avg > 0) {
-          const needed = Math.max(0, 100 - weeklyPct) / avgData.avg;
-          sessionsLeftEl.textContent  = needed.toFixed(1);
-          sessionsLeftSub.textContent = `~${slots} slot${slots === 1 ? "" : "s"} left before reset`;
-          sessionsLeftEl.style.color  = needed > slots ? "#f87171" : "";
-        } else {
-          sessionsLeftEl.textContent  = "—";
-          sessionsLeftSub.textContent = "set weekly % to calculate";
-          sessionsLeftEl.style.color  = "";
-        }
+        avgSessionSub.textContent = `weekly % per full session · weighted, last ${avgData.n} session${avgData.n > 1 ? "s" : ""}`;
       } else {
-        avgSessionVal.textContent   = "—";
-        avgSessionSub.textContent   = "no sessions logged yet";
-        sessionsLeftEl.textContent  = "—";
-        sessionsLeftSub.textContent = `~${slots} slot${slots === 1 ? "" : "s"} left before reset`;
-        sessionsLeftEl.style.color  = "";
+        avgSessionVal.textContent = "—";
+        avgSessionSub.textContent = "no sessions logged yet";
       }
 
       renderCycles(cycleStartMs);
@@ -2262,182 +1946,223 @@
       }).join("");
     }
 
-    // ─── Render Pacing card (velocity model) ──────────────────────────────────
-    function renderPacing() {
-      const pacing  = calcPacing();
-      const card             = document.getElementById("paceCard");
-      const paceRequired     = document.getElementById("paceRequired");
-      const paceRequiredUnit = document.getElementById("paceRequiredUnit");
-      const paceSecondary    = document.getElementById("paceSecondary");
-      const paceBadgeWrap    = document.getElementById("paceBadgeWrap");
-      const staleCaption     = document.getElementById("paceStaleCaption");
-      const capacityRow      = document.getElementById("paceCapacityRow");
-      const recoveryRow      = document.getElementById("paceRecoveryRow");
-
-      card.classList.remove("stale");
-      staleCaption.style.display = "none";
-      capacityRow.style.display  = "none";
-      recoveryRow.style.display  = "none";
-
-      if (pacing.state === "empty") {
-        paceRequired.textContent     = "—";
-        paceRequiredUnit.textContent = "set weekly %";
-        paceSecondary.textContent    = pacing.message;
-        paceBadgeWrap.innerHTML      = `<span class="pace-badge empty">No Data</span>`;
-        return;
-      }
-      if (pacing.state === "starting") {
-        paceRequired.textContent     = "—";
-        paceRequiredUnit.textContent = "";
-        paceSecondary.textContent    = pacing.message;
-        paceBadgeWrap.innerHTML      = `<span class="pace-badge empty">Just Started</span>`;
-        return;
-      }
-      if (pacing.state === "final") {
-        paceRequired.textContent     = pacing.usageLeft.toFixed(1) + "%";
-        paceRequiredUnit.textContent = "left to use";
-        paceSecondary.textContent    = pacing.message;
-        paceBadgeWrap.innerHTML      = `<span class="pace-badge ${pacing.usageLeft > 5 ? "behind" : "on-pace"}">Final Stretch</span>`;
-        if (pacing.isStale) {
-          card.classList.add("stale");
-          staleCaption.style.display = "";
-          staleCaption.textContent = `signal ${formatSignalAge(pacing.signalAgeMs)}, tap + to refresh`;
-        }
-        return;
-      }
-
-      paceRequired.textContent     = pacing.requiredDailyPct.toFixed(1) + "%";
-      paceRequiredUnit.textContent = "/day required";
-      paceSecondary.textContent    = `current: ${pacing.currentDailyPct.toFixed(1)}%/day · ${pacing.daysRemaining.toFixed(1)} days left`;
-      paceBadgeWrap.innerHTML      = `<span class="pace-badge ${pacing.badge}">${pacing.badgeLabel}</span>`;
-
-      if (pacing.isStale) {
-        card.classList.add("stale");
-        paceBadgeWrap.innerHTML = `<span class="pace-badge stale">Stale</span>`;
-        staleCaption.style.display = "";
-        staleCaption.textContent = `signal ${formatSignalAge(pacing.signalAgeMs)}, tap + to refresh`;
-      }
-
-      if (pacing.recovery) {
-        recoveryRow.style.display = "";
-        if (pacing.recovery.resetsFirst) {
-          recoveryRow.textContent = "⏱ Cycle resets before time catches up, no break needed";
-        } else {
-          const dateStr   = formatShortDate(pacing.recovery.recoveryMs);
-          const breakLeft = formatDuration(pacing.recovery.recoveryMs - Date.now());
-          recoveryRow.textContent = `⏱ Stop now → back on pace ${dateStr} (${breakLeft} break)`;
-        }
-      }
-
-      if (pacing.capacity && pacing.capacity.show) {
-        capacityRow.style.display = "";
-        if (pacing.capacity.overCapacity) {
-          capacityRow.classList.add("forfeit");
-          capacityRow.textContent = `⚠ ~${pacing.capacity.forfeitPct.toFixed(1)}% allowance may be forfeited (need ${pacing.capacity.sessionsNeeded.toFixed(1)} of ~${pacing.capacity.slotsAvailable} slots)`;
-        } else {
-          capacityRow.classList.remove("forfeit");
-          capacityRow.textContent = `Need ~${pacing.capacity.sessionsNeeded.toFixed(1)} of ~${pacing.capacity.slotsAvailable} slots remaining`;
-        }
-      }
+    // ─── Main screen update loop ──────────────────────────────────────────────
+    function dayTime(ms) {
+      return new Date(ms).toLocaleString("en-AU", { weekday: "short" }) + " " + formatClockTime(ms);
     }
 
-    // ─── Layer 1 Update loop ──────────────────────────────────────────────────
+    function renderChart(cs, ce, nowMs, weeklyPct, colour, checkIns) {
+      const W = 340, H = 196, L = 30, R = 10, T = 14, B = 22;
+      const x = ms => L + Math.min(1, Math.max(0, (ms - cs) / CYCLE_MS)) * (W - L - R);
+      const y = p => T + (1 - Math.min(100, Math.max(0, p)) / 100) * (H - T - B);
+      let s = "";
+      // Nights (outside waking hours) shaded
+      for (let mid = addLocalDays(localMidnight(cs), -1); mid < ce; mid = addLocalDays(mid, 1)) {
+        const a = Math.max(localAt(mid, WAKE_END_H), cs);
+        const b = Math.min(localAt(addLocalDays(mid, 1), WAKE_START_H), ce);
+        if (b > a) s += `<rect x="${x(a)}" y="${T}" width="${x(b) - x(a)}" height="${H - T - B}" fill="#0f172a" opacity="0.7"/>`;
+      }
+      [0, 25, 50, 75, 100].forEach(p => {
+        s += `<line x1="${L}" x2="${W - R}" y1="${y(p)}" y2="${y(p)}" stroke="#334155" stroke-width="${p === 0 ? 1 : 0.5}"/>`;
+        s += `<text x="${L - 6}" y="${y(p) + 3.5}" font-size="9" fill="#64748b" text-anchor="end">${p}%</text>`;
+      });
+      for (let mid = localMidnight(cs); mid < ce; mid = addLocalDays(mid, 1)) {
+        const noon = localAt(mid, 12);
+        if (noon <= cs || noon >= ce) continue;
+        s += `<text x="${x(noon)}" y="${H - 7}" font-size="9" fill="#64748b" text-anchor="middle">${
+          new Date(noon).toLocaleString("en-AU", { weekday: "short" })}</text>`;
+      }
+      s += `<line x1="${x(cs)}" y1="${y(0)}" x2="${x(ce)}" y2="${y(100)}" stroke="#94a3b8" stroke-width="1.5"/>`;
+      s += `<text x="${x(cs + 0.155 * CYCLE_MS)}" y="${y(15.5) - 6}" font-size="9" fill="#94a3b8" text-anchor="end">target</text>`;
+      checkIns.filter(c => !c.nextCycle).forEach(c =>
+        s += `<circle cx="${x(c.ms)}" cy="${y(c.pct)}" r="3.5" fill="#0f172a" stroke="#94a3b8" stroke-width="1.5"/>`);
+
+      if (weeklyPct !== null) {
+        const pts  = cycleReadings(cs);
+        const last = pts[pts.length - 1];
+        // Projection at the average rate so far, from the latest reading
+        if (last[1] > 0 && last[1] < 100 && last[0] - cs > 3600000) {
+          const rate   = last[1] / (last[0] - cs);
+          const endVal = last[1] + rate * (ce - last[0]);
+          const hits   = endVal >= 100;
+          const endMs  = hits ? last[0] + (100 - last[1]) / rate : ce;
+          const endPct = hits ? 100 : endVal;
+          s += `<line x1="${x(last[0])}" y1="${y(last[1])}" x2="${x(endMs)}" y2="${y(endPct)}" stroke="${colour}" stroke-width="1.5" stroke-dasharray="4 4" opacity="0.8"/>`;
+          s += `<text x="${x(endMs) - 4}" y="${y(endPct) + 14}" font-size="9.5" font-weight="700" fill="${colour}" text-anchor="end">${
+            hits ? "100% by " + dayTime(endMs) : "→ " + endVal.toFixed(0) + "% at reset"}</text>`;
+        }
+        s += `<polyline points="${pts.map(([t, p]) => x(t) + "," + y(p)).join(" ")}" fill="none" stroke="${colour}" stroke-width="2.5" stroke-linejoin="round"/>`;
+        pts.slice(1, -1).forEach(([t, p]) => s += `<circle cx="${x(t)}" cy="${y(p)}" r="2.5" fill="${colour}"/>`);
+        s += `<circle cx="${x(last[0])}" cy="${y(last[1])}" r="4.5" fill="${colour}" stroke="#1e293b" stroke-width="2"/>`;
+      }
+      s += `<line x1="${x(nowMs)}" x2="${x(nowMs)}" y1="${T}" y2="${H - B}" stroke="#e2e8f0" stroke-width="1" stroke-dasharray="2 3"/>`;
+      s += `<text x="${x(nowMs)}" y="${T - 4}" font-size="9" fill="#e2e8f0" text-anchor="middle">now</text>`;
+      document.getElementById("burnChart").innerHTML =
+        `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Weekly usage against the target line">${s}</svg>`;
+    }
+
+    function renderNextSession(nowMs, cs, ce, weeklyPct, avg, colour) {
+      const title = document.getElementById("nextTitle");
+      const big   = document.getElementById("nextBig");
+      const unit  = document.getElementById("nextUnit");
+      const note  = document.getElementById("nextNote");
+      big.style.color = colour;
+      title.textContent = "Next session";
+      unit.textContent  = "";
+      if (weeklyPct === null) {
+        big.textContent = "—";
+        note.textContent = "Set your weekly % with + to get a target";
+        return;
+      }
+      if (weeklyPct >= 100) {
+        big.textContent = "Done";
+        note.textContent = "Weekly allowance fully used";
+        return;
+      }
+      const p = planNextSession(nowMs, cs, ce, weeklyPct);
+      if (p.none) {
+        big.textContent = "—";
+        note.textContent = "No waking-hours slot left before the reset";
+        return;
+      }
+      if (p.running) title.textContent = "This session · ends " + formatClockTime(p.end);
+      else if (p.restUntil) title.textContent = "Rest until " + dayTime(p.restUntil)
+        + (p.from - p.restUntil > 60000 ? " · next session " + dayTime(p.from) : ", then");
+      else title.textContent = "Next session · " + (p.from - nowMs < 60000 ? "now" : dayTime(p.from));
+
+      const weeklyStr = `+${p.need.toFixed(1)}% weekly to be on the line at ${dayTime(p.end)}`;
+      if (p.need < 0.05) {
+        big.textContent  = "0%";
+        unit.textContent = p.running ? "needed" : "of a session";
+        note.textContent = "Any usage keeps you on the line";
+        return;
+      }
+      if (!avg) {
+        big.textContent  = `+${p.need.toFixed(1)}%`;
+        unit.textContent = "weekly";
+        note.textContent = `by ${dayTime(p.end)} · log a session to see it as session %`;
+        return;
+      }
+      const ratio = p.need / avg;
+      if (ratio <= 1) {
+        big.textContent  = (ratio * 100).toFixed(0) + "%";
+        unit.textContent = p.running ? "session meter by the end" : "of a session";
+        note.textContent = weeklyStr;
+        return;
+      }
+      const full = Math.floor(ratio), rest = (ratio - full) * 100;
+      big.textContent  = "100%";
+      unit.textContent = p.running ? "max this session" : "of a session";
+      const then = rest >= 0.5 ? `, then ${rest.toFixed(0)}% of ${full === 1 ? "the next" : "one more"}` : "";
+      note.textContent = (full === 1 ? "Max this session" : `Max the next ${full} sessions`) + then + ` · ${weeklyStr}`;
+    }
+
     function update() {
       const nowMs        = Date.now();
       const cycleStartMs = getCycleStartUTC();
       const cycleEndMs   = cycleStartMs + CYCLE_MS;
       const pct          = Math.min(100, Math.max(0, ((nowMs - cycleStartMs) / CYCLE_MS) * 100));
       const weekly       = getWeekly();
-      const spotValue    = weekly ? weekly.value : null;
-      const colour       = barColour(getDriftStatus(spotValue, pct));
+      const weeklyPct    = weekly ? weekly.value : null;
+      const status       = getDriftStatus(weeklyPct, pct);
+      const colour       = barColour(status);
+      const avgData      = calcAvg(trackerData.sessions);
+      const avg          = avgData && avgData.avg > 0 ? avgData.avg : null;
+      const checkIns     = getNextCheckIns();
 
-      buildDayGrid();
       const tz = tzAbbrev(cycleEndMs);
       document.getElementById("headerReset").textContent =
         "Resets " + new Date(cycleEndMs).toLocaleString("en-AU", { weekday: "short" })
         + " · " + formatClockTime(cycleEndMs) + (tz ? " " + tz : "");
       document.getElementById("headerCountdown").textContent = "· " + formatDuration(cycleEndMs - nowMs) + " left";
 
+      // Hero
       const pctEl = document.getElementById("pctNumber");
       pctEl.style.color = colour;
       pctEl.innerHTML   = pct.toFixed(2) + '<span class="unit">%</span>';
+      document.getElementById("heroUsed").innerHTML =
+        weeklyPct === null ? "— used" : `<b>${weeklyPct.toFixed(1)}%</b> used`;
+      const pill = document.getElementById("statusPill");
+      pill.className   = "status-pill " + status;
+      pill.textContent = getDriftLabel(status);
 
-      const fill = document.getElementById("mainBarFill");
-      fill.style.width      = pct + "%";
-      fill.style.background = `linear-gradient(90deg, ${colour}88, ${colour})`;
+      renderChart(cycleStartMs, cycleEndMs, nowMs, weeklyPct, colour, checkIns);
+      renderNextSession(nowMs, cycleStartMs, cycleEndMs, weeklyPct, avg, colour);
 
-      // Day grid: cell i is local day (cycle start day + i). Cell 0 holds both
-      // ends of the cycle: after the reset on day 0, and before it on day 7.
-      const mid0      = localMidnight(cycleStartMs);
-      const todayMid  = localMidnight(nowMs);
-      const dayIdx    = Math.round((todayMid - mid0) / DAY_MS);       // 0..7
-      const activeIdx = dayIdx % 7;
-      const markerPct = parseFloat(dayGrid.dataset.marker) || 0;
-      const dayPct    = ((nowMs - todayMid) / (addLocalDays(todayMid, 1) - todayMid)) * 100;
-      for (let i = 0; i < 7; i++) {
-        const done    = i < dayIdx && !(i === 0 && dayIdx === 7);
-        const active  = i === activeIdx;
-        const bar     = document.getElementById("daybar-"  + i);
-        const fillEl  = document.getElementById("dayfill-" + i);
-        const labelEl = document.getElementById("daylabel-"+ i);
-        bar.style.border         = active ? `1px solid ${colour}` : "1px solid transparent";
-        labelEl.style.color      = active ? "#e2e8f0" : done ? "#94a3b8" : "#64748b";
-        labelEl.style.fontWeight = active ? "700" : "400";
-        if (i === 0) {
-          if (active && dayIdx === 7) {          // last partial day, before the reset
-            fillEl.style.left = "0%"; fillEl.style.width = dayPct + "%";
-            fillEl.style.background = colour;
-          } else if (active) {                   // first day, after the reset
-            fillEl.style.left = markerPct + "%"; fillEl.style.width = Math.max(0, dayPct - markerPct) + "%";
-            fillEl.style.background = colour;
-          } else {                               // first day finished
-            fillEl.style.left = markerPct + "%"; fillEl.style.width = (100 - markerPct) + "%";
-            fillEl.style.background = "#334155";
-          }
-        } else {
-          fillEl.style.left = "0%";
-          if (done)        { fillEl.style.width = "100%"; fillEl.style.background = "#334155"; }
-          else if (active) { fillEl.style.width = dayPct + "%"; fillEl.style.background = colour; }
-          else             { fillEl.style.width = "0%"; }
-        }
-      }
-
-      // Weekly usage marker on main bar
-      const weeklyMarker = document.getElementById("mainBarWeeklyMarker");
-      const weeklyLabel  = document.getElementById("mainBarWeeklyLabel");
-      if (weekly) {
-        const wPct = Math.min(100, Math.max(0, weekly.value));
-        weeklyMarker.style.display  = "";
-        weeklyMarker.style.left     = wPct + "%";
-        weeklyLabel.style.display   = "";
-        weeklyLabel.style.left      = Math.max(wPct - 1, 2) + "%";
-        weeklyLabel.style.transform = "translate(-100%, -50%)";
-        weeklyLabel.textContent     = weekly.value.toFixed(1) + "%";
+      // Pace gap: %, clock time and sessions
+      const gapPct  = document.getElementById("gapPct");
+      const gapFill = document.getElementById("gapFill");
+      const gapText = document.getElementById("gapText");
+      const gapAge  = document.getElementById("gapAge");
+      if (weeklyPct === null) {
+        gapPct.textContent = "—";
+        gapFill.style.width = "0";
+        gapText.textContent = "Use + to set your current weekly %";
+        gapAge.textContent = "";
       } else {
-        weeklyMarker.style.display = "none";
-        weeklyLabel.style.display  = "none";
+        const gap = weeklyPct - pct, abs = Math.abs(gap);
+        gapPct.textContent = (gap >= 0 ? "+" : "−") + abs.toFixed(1) + "%";
+        gapPct.style.color = colour;
+        gapFill.style.background   = colour;
+        gapFill.style.width        = (Math.min(abs, 20) / 20 * 50) + "%";
+        gapFill.style.left         = gap >= 0 ? "50%" : "auto";
+        gapFill.style.right        = gap >= 0 ? "auto" : "50%";
+        gapFill.style.borderRadius = gap >= 0 ? "0 5px 5px 0" : "5px 0 0 5px";
+        const word = gap >= 0 ? "ahead" : "behind";
+        gapText.textContent = weekly.isReset
+          ? "New cycle: weekly reset to 0%. Set your current % with +"
+          : abs < 0.05 ? "Exactly on the target line"
+          : `${formatDuration(abs / 100 * CYCLE_MS)} ${gap >= 0 ? "buffer" : "to catch up"}`
+            + (avg ? ` · ${(abs / avg).toFixed(1)} sessions ${word}` : "");
+        const age = getFreshestSignalAge(weekly);
+        const stale = age !== null && age > STALE_SIGNAL_MS;
+        gapAge.className = "card-sub" + (stale ? " stale" : "");
+        gapAge.textContent = age === null ? "" : `Last reading ${formatDuration(age)} ago${stale ? ", tap + to refresh" : ""}`;
       }
 
-      // "+X to go": how much more usage is needed to be on pace by each check-in.
-      // A check-in after the reset starts from 0%.
-      function checkInGap(c, current) {
-        if (current === null) return "";
-        const gap = c.pct - (c.nextCycle ? 0 : current);
+      // Sessions to 100% vs slots left
+      const slots  = listSlots(nowMs, cycleEndMs);
+      const needed = weeklyPct !== null && avg ? Math.max(0, 100 - weeklyPct) / avg : null;
+      const needN  = needed === null ? 0 : Math.min(slots.length, Math.ceil(needed - 1e-9));
+      document.getElementById("slotsHead").innerHTML = needed === null
+        ? `${slots.length} slot${slots.length === 1 ? "" : "s"} left`
+        : `${needed.toFixed(1)} <span class="card-sub">of ${slots.length} slots</span>`;
+      const days = [];
+      slots.forEach((sl, i) => {
+        if (!days.length || days[days.length - 1].mid !== sl.mid) days.push({ mid: sl.mid, cells: [] });
+        days[days.length - 1].cells.push(`<span class="slot${i < needN ? " need" : ""}"${
+          i < needN ? ` style="background:${colour};border-color:${colour}"` : ""}>${formatClockTime(sl.start)}</span>`);
+      });
+      document.getElementById("slotGrid").innerHTML = days.map(d =>
+        `<span class="slot-day">${new Date(d.mid).toLocaleString("en-AU", { weekday: "short" })}</span>
+         <div class="slot-row">${d.cells.join("")}</div>`).join("");
+      const slotsSub = document.getElementById("slotsSub");
+      slotsSub.style.color = "";
+      if (!slots.length) slotsSub.textContent = "No waking-hours slots left before the reset";
+      else if (needed === null) slotsSub.textContent = avg ? "Set your weekly % to see how many you need"
+                                                          : "Log a session to see how many you need";
+      else if (needed > slots.length) {
+        slotsSub.textContent = `~${((needed - slots.length) * avg).toFixed(1)}% may go unused, even using every slot`;
+        slotsSub.style.color = "#f87171";
+      } else {
+        const spare = slots.length - needN;
+        slotsSub.textContent = `${spare} spare slot${spare === 1 ? "" : "s"} before reset`;
+      }
+
+      // Check-ins: target at that time and how much more usage to be on it
+      function checkInGap(c) {
+        if (weeklyPct === null) return "";
+        const gap = c.pct - (c.nextCycle ? 0 : weeklyPct);
         if (gap >= 0.05)  return `<span class="checkin-gap">+${gap.toFixed(1)} to go</span>`;
         if (gap <= -0.05) return `<span class="checkin-gap ahead">${Math.abs(gap).toFixed(1)} ahead</span>`;
         return `<span class="checkin-gap ahead">on pace</span>`;
       }
-      const checkIns = getNextCheckIns();
-      document.getElementById("checkInsList").innerHTML = checkIns.length
-        ? checkIns.map(c => `
-            <div class="checkin-row">
-              <span class="checkin-time">${c.label}</span>
-              <span class="checkin-dots"></span>
-              <span class="checkin-pct">${c.pct.toFixed(1)}%${checkInGap(c, spotValue)}</span>
-            </div>`).join("")
-        : `<span style="color:#94a3b8;font-size:12px">—</span>`;
-
-      renderPacing();
+      document.getElementById("checkInsList").innerHTML = checkIns.map(c => `
+        <div class="checkin-tile">
+          <span class="checkin-time">${c.label} target</span>
+          <span class="checkin-pct">${c.pct.toFixed(1)}%</span>
+          ${checkInGap(c)}
+        </div>`).join("");
     }
 
     // ─── Settings (C9 reset time, sync, backup) ───────────────────────────────
@@ -2465,7 +2190,6 @@
       let anchor  = localAt(addLocalDays(today, diff), h + m / 60);
       if (anchor <= nowMs) anchor = localAt(addLocalDays(today, diff + 7), h + m / 60);
       trackerData.settings = { resetAnchor: anchor, ts: nowMs };
-      dayGridKey = null;
       commit();
       renderAll();
       showToast("Reset time saved");
@@ -2612,7 +2336,6 @@
         setSyncState(navigator.onLine === false ? "offline" : "error");
       } finally {
         saveData(trackerData);
-        dayGridKey = null;
         renderAll();
         scheduleSessionNotification();
       }
@@ -2761,7 +2484,6 @@
     // Re-render immediately whenever the app returns to the foreground.
     function resyncOnResume() {
       if (document.visibilityState === "hidden") return;
-      dayGridKey = null;   // time zone may have changed while away
       renderAll();
       maybeNotifySessionEnd();
       scheduleSync(0);

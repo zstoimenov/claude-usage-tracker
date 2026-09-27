@@ -1,6 +1,6 @@
 # Claude Usage Cycle Tracker
 
-Version 2.0 · last updated 2026-09-25
+Version 2.1 · last updated 2026-09-27
 
 A Progressive Web App (PWA) that tracks your Claude weekly usage and helps you
 use the whole allowance before it resets.
@@ -12,10 +12,14 @@ Live at `https://zstoimenov.github.io/claude-usage-tracker/`
 ## Features
 
 - Live countdown; all times shown in your device's time zone
-- Colour-coded pace, tuned for using the whole allowance:
-  blue = ahead, green = on track, amber / orange / red = under-using
-- Day-by-day breakdown with a reset marker
-- Weekly Pace card: %/day required, recovery time, 5-hour slots left
+- Main number: % of the week elapsed, coloured by pace
+  (blue = ahead, green = on track, amber / orange / red = under-using)
+- Burn-up chart: your weekly readings against the target line, nights shaded,
+  with a projection to the reset
+- Next session target: how much of your next 5-hour session to use to be back
+  on the target line when it ends
+- Pace gap in %, clock time and sessions
+- Sessions to 100%: slots left before reset, by day, with the ones you need filled
 - Check-ins at 07:30 and 19:30 with how much usage is still to go
 - 5-hour session timer, with notifications and calendar reminders
   (Google Calendar or .ics)
@@ -30,11 +34,15 @@ Live at `https://zstoimenov.github.io/claude-usage-tracker/`
 | Number | Calculation |
 |---|---|
 | Weekly % | Your latest reading; resets to 0% at each weekly reset |
-| Drift | Weekly % minus % of the week elapsed |
-| Required %/day | (100 - weekly %) ÷ days left |
+| Target line | % of the week elapsed (straight line from 0% at reset to 100% at the next) |
+| Pace gap | Weekly % minus % of the week elapsed |
+| Gap as time | Gap % × 1.68 h (1% of a week) |
+| Gap as sessions | Gap % ÷ avg session value |
 | Avg session value | Weekly % gained ÷ session % used, last 28 days, recent sessions weighted more (14-day half-life) |
 | Slots left | 5-hour windows left before reset, within 07:30-21:30, after any running session |
-| Sessions needed | (100 - weekly %) ÷ avg session value |
+| Sessions to 100% | (100 - weekly %) ÷ avg session value |
+| Next session target | (target at the session's end - weekly %) ÷ avg session value. Starts at the first slot left; when ahead, at the first slot after the target line catches up. A running session is measured from its starting reading. Over 100% it shows how many sessions to max out |
+| Projection | Average rate so far, extended from the latest reading to the reset |
 | Check-in "to go" | % of week elapsed at that time minus your current weekly % |
 
 ## Sync
@@ -123,6 +131,9 @@ Bump `CACHE_NAME` in `sw.js` only when you want old caches cleared.
 
 ## Changelog
 
+- **2.1** (2026-09-27): redesigned main screen: burn-up chart, next session
+  target, pace gap in %, time and sessions, slot grid by day, check-in tiles.
+  Removed the day grid, drift card and %/day figures.
 - **2.0** (2026-09-25): device sync (end-to-end encrypted), per-entry delete
   with Undo, local time zone and configurable reset, weekly % resets with the
   cycle, past cycles, pacing fixes, check-in "to go", calendar reminders,
