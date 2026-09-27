@@ -907,6 +907,7 @@
     const AVG_WINDOW_MS        = 28 * DAY_MS;    // sessions used for the average
     const AVG_HALF_LIFE_DAYS   = 14;             // recency weighting
     const TOMBSTONE_KEEP_MS    = 60 * DAY_MS;
+    const READINGS_KEEP_MS     = 15 * DAY_MS;    // weekly % readings kept for the chart
 
     // ─── Sync backend (Supabase, free tier) ───────────────────────────────────
     const SB_URL = "https://xlhqigvzwavidsiwojiy.supabase.co";
@@ -1048,6 +1049,17 @@
       if (sw.ts >= cs) return sw;
       return { value: 0, ts: cs, isReset: true };
     }
+    // Weekly % read from Claude (spot check or session start), kept for the chart
+    function addReading(value, ts) {
+      const r = { id: newId(), ts, value };
+      trackerData.readings = trackerData.readings
+        .filter(x => x.ts >= Date.now() - READINGS_KEEP_MS).concat(r);
+      return r.id;
+    }
+    function removeReading(id) {
+      trackerData.readings = trackerData.readings.filter(x => x.id !== id);
+      trackerData.deleted[id] = Date.now();
+    }
     function setWeekly(value, ts) {
       trackerData.spotWeekly = { value, ts };
       const key = String(cycleStartFor(ts));
@@ -1129,8 +1141,7 @@
     function cycleReadings(cycleStartMs) {
       const pts = [[cycleStartMs, 0]];
       trackerData.sessions.forEach(s => { if (s.ts >= cycleStartMs) pts.push([s.ts, s.weekAfter]); });
-      const sw = trackerData.spotWeekly;
-      if (sw && sw.ts >= cycleStartMs) pts.push([sw.ts, sw.value]);
+      trackerData.readings.forEach(r => { if (r.ts >= cycleStartMs) pts.push([r.ts, r.value]); });
       return pts.sort((a, b) => a[0] - b[0]);
     }
 
@@ -1181,6 +1192,10 @@
           if (v && num(v.value) !== null && num(v.ts) !== null) out.cycles[k] = { value: num(v.value), ts: num(v.ts) };
         }
       }
+      out.readings = (Array.isArray(d.readings) ? d.readings : [])
+        .map(r => r && typeof r.id === "string" && num(r.ts) !== null && num(r.value) !== null
+          ? { id: r.id, ts: num(r.ts), value: num(r.value) } : null)
+        .filter(r => r && r.ts >= Date.now() - READINGS_KEEP_MS);
       const st = d.settings;
       out.settings = st && num(st.resetAnchor) !== null
         ? { resetAnchor: num(st.resetAnchor), ts: num(st.ts) || 0 }
@@ -1206,6 +1221,10 @@
           const a = out.settings.resetAnchor;
           const cs = a + Math.floor((out.spotWeekly.ts - a) / CYCLE_MS) * CYCLE_MS;
           out.cycles[String(cs)] = { value: out.spotWeekly.value, ts: out.spotWeekly.ts };
+        }
+        // Seed the chart's readings from the last known reading
+        if (!out.readings.length && out.spotWeekly && out.spotWeekly.ts >= Date.now() - READINGS_KEEP_MS) {
+          out.readings.push({ id: "r" + out.spotWeekly.ts, ts: out.spotWeekly.ts, value: out.spotWeekly.value });
         }
         out.sessions.sort((a, b) => b.ts - a.ts);
         return out;
@@ -1235,6 +1254,9 @@
       const byId = new Map();
       [...a.sessions, ...b.sessions].forEach(s => { if (!out.deleted[s.id] && !byId.has(s.id)) byId.set(s.id, s); });
       out.sessions = [...byId.values()].sort((x, y) => y.ts - x.ts);
+      const rById = new Map();
+      [...a.readings, ...b.readings].forEach(r => { if (!out.deleted[r.id] && !rById.has(r.id)) rById.set(r.id, r); });
+      out.readings = [...rById.values()].sort((x, y) => x.ts - y.ts);
       const aw = a.spotWeekly, bw = b.spotWeekly;
       out.spotWeekly = !aw ? bw : !bw ? aw : (bw.ts > aw.ts ? bw : aw);
       if (b.activeSessionTs > a.activeSessionTs) {
@@ -1251,7 +1273,7 @@
       return {
         sessions: d.sessions, deleted: d.deleted, spotWeekly: d.spotWeekly,
         activeSession: d.activeSession, activeSessionTs: d.activeSessionTs,
-        cycles: d.cycles, settings: d.settings
+        cycles: d.cycles, settings: d.settings, readings: d.readings
       };
     }
     function stableStringify(v) {
@@ -1661,12 +1683,15 @@
       const v = parseFloat(sheetSpotInput.value);
       if (!inPct(v)) return;
       const prev = trackerData.spotWeekly;
-      setWeekly(v, Date.now());
+      const now  = Date.now();
+      setWeekly(v, now);
+      const readingId = addReading(v, now);
       commit();
       closeSheet();
       renderAll();
       showToast(`Weekly set to ${v}%`, () => {
         trackerData.spotWeekly = prev ? { value: prev.value, ts: Date.now() } : null;
+        removeReading(readingId);
         commit();
         renderAll();
       });
@@ -1692,6 +1717,7 @@
       const now = Date.now();
       setActiveSession({ startTs: now, weekBefore: v });
       setWeekly(v, now);
+      addReading(v, now);
       commit();
       autoPromptedFor = null;
       sessionStartInput.value = "";

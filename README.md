@@ -14,7 +14,8 @@ Live at `https://zstoimenov.github.io/claude-usage-tracker/`
 - Live countdown; all times shown in your device's time zone
 - Main number: % of the week elapsed, coloured by pace
   (blue = ahead, green = on track, amber / orange / red = under-using)
-- Burn-up chart: your weekly readings against the target line, nights shaded,
+- Burn-up chart: every weekly reading (spot checks, session starts, logged
+  sessions) against the target line, nights shaded,
   with a projection to the reset
 - Next session target: how much of your next 5-hour session to use to be back
   on the target line when it ends
@@ -133,7 +134,8 @@ Bump `CACHE_NAME` in `sw.js` only when you want old caches cleared.
 
 - **2.1** (2026-09-27): redesigned main screen: burn-up chart, next session
   target, pace gap in %, time and sessions, slot grid by day, check-in tiles.
-  Removed the day grid, drift card and %/day figures.
+  Removed the day grid, drift card and %/day figures. Spot checks and
+  session-start readings are now stored (15 days, synced) for the chart.
 - **2.0** (2026-09-25): device sync (end-to-end encrypted), per-entry delete
   with Undo, local time zone and configurable reset, weekly % resets with the
   cycle, past cycles, pacing fixes, check-in "to go", calendar reminders,
