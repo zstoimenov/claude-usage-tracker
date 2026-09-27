@@ -1131,22 +1131,19 @@
       return { avg: num / den, min: Math.min(...normalized), max: Math.max(...normalized), n: pool.length };
     }
 
-    // C4/C5: real 5h windows left before reset, inside waking hours, starting
-    // after any running session. One shared list for every card.
+    // C4/C5: fixed 5h slots each day (06:00, 11:00, 16:00) that haven't started
+    // yet, after any running session, with at least 1h before the reset.
+    // One shared list for every card.
     function listSlots(nowMs, cycleEndMs) {
       const as = trackerData.activeSession;
       let earliest = nowMs;
       if (as) earliest = Math.max(earliest, as.startTs + SESSION_MS);
       const slots = [];
       for (let mid = localMidnight(nowMs); mid < cycleEndMs; mid = addLocalDays(mid, 1)) {
-        const ws = Math.max(localAt(mid, WAKE_START_H), earliest);
-        const we = Math.min(localAt(mid, WAKE_END_H), cycleEndMs);
-        if (we <= ws) continue;
-        const len = we - ws;
-        let n = Math.floor(len / SESSION_MS);
-        if (len % SESSION_MS >= MIN_USEFUL_SLOT_MS) n++;
-        for (let i = 0; i < n; i++) slots.push({ start: ws + i * SESSION_MS, mid });
-        earliest = ws + n * SESSION_MS;
+        for (let h = WAKE_START_H; h + SESSION_LOCK_HOURS <= WAKE_END_H; h += SESSION_LOCK_HOURS) {
+          const start = localAt(mid, h);
+          if (start >= earliest && cycleEndMs - start >= MIN_USEFUL_SLOT_MS) slots.push({ start, mid });
+        }
       }
       return slots;
     }
@@ -2133,7 +2130,7 @@
 
       let when;
       if (p.running)        { title.textContent = "This session"; when = "ends " + formatClockTime(p.end); }
-      else if (p.restUntil) { title.textContent = "After a rest"; when = "rest until " + dayTime(p.restUntil); }
+      else if (p.restUntil) { title.textContent = "After a rest"; when = "at " + dayTime(p.from); }
       else                  { when = p.from - nowMs < 60000 ? "start now" : "at " + dayTime(p.from); }
       const weekly = `It needs +${p.need.toFixed(1)}% weekly by ${dayTime(p.end)}`
         + (avg ? `, at your average of ${avg.toFixed(1)}% weekly per full session.` : ".");
@@ -2257,7 +2254,7 @@
       warn.textContent = !slots.length ? "No waking-hours slots left before the reset"
         : warn.hidden ? "" : `~${((needed - slots.length) * avg).toFixed(1)}% may go unused, even using every slot`;
       document.getElementById("slotsInfo").textContent =
-        "Each box is a 5-hour slot left before the reset, between 06:00 and 21:00 (06:00, 11:00, 16:00), after any running session. "
+        "Each box is a 5-hour slot (06:00, 11:00, 16:00) that hasn't started yet, before the reset and after any running session. "
         + (needed === null
           ? (avg ? "Set your weekly % to see how many you need." : "Log a session to see how many you need.")
           : `Filled boxes: the ${needed.toFixed(1)} sessions to reach 100%, at your average of ${avg.toFixed(1)}% weekly per full session.`);
