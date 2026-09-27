@@ -1,6 +1,6 @@
 # Claude Usage Cycle Tracker
 
-Version 2.3 · last updated 2026-09-27
+Version 2.4 · last updated 2026-09-27
 
 A Progressive Web App (PWA) that tracks your Claude weekly usage and helps you
 use the whole allowance before it resets.
@@ -40,7 +40,7 @@ Live at `https://zstoimenov.github.io/claude-usage-tracker/`
 | Gap as time | Gap % × 1.68 h (1% of a week) |
 | Gap as sessions | Gap % ÷ avg session value |
 | Avg session value | Weekly % gained ÷ session % used, last 28 days, recent sessions weighted more (14-day half-life) |
-| Slots left | 5-hour windows left before reset, within 07:30-21:30, after any running session |
+| Slots left | 5-hour windows left before reset, within 06:00-21:00 (06:00, 11:00, 16:00), after any running session |
 | Sessions to 100% | (100 - weekly %) ÷ avg session value |
 | Next session target | (target at the session's end - weekly %) ÷ avg session value. Starts at the first slot left; when ahead, at the first slot after the target line catches up. A running session is measured from its starting reading. Over 100% it shows how many sessions to max out |
 | Projection | Average rate so far, extended from the latest reading to the reset |
@@ -132,6 +132,7 @@ Bump `CACHE_NAME` in `sw.js` only when you want old caches cleared.
 
 ## Changelog
 
+- **2.4** (2026-09-27): session slots start at 06:00, 11:00 and 16:00.
 - **2.3** (2026-09-27): main screen fills the whole screen on any device and
   scales with it; on wide screens (iPad landscape, desktop) the chart gets
   its own column.

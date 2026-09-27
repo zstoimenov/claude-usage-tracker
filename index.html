@@ -942,8 +942,8 @@
     const DEFAULT_RESET_ANCHOR = Date.UTC(2026, 8, 23, 5, 0, 0);
 
     // ─── Pacing constants (velocity model) ────────────────────────────────────
-    const WAKE_START_H         = 7.5;            // 07:30 local
-    const WAKE_END_H           = 21.5;           // 21:30 local
+    const WAKE_START_H         = 6;              // 06:00 local: sessions 06:00, 11:00, 16:00
+    const WAKE_END_H           = 21;             // 21:00 local
     const CHECKIN_HOURS        = [7.5, 19.5];    // 07:30 and 19:30 local
     const SESSION_LOCK_HOURS   = 5;
     const SESSION_MS           = SESSION_LOCK_HOURS * 3600000;   // full 5h window
@@ -1446,7 +1446,7 @@
           <div class="info" id="chartInfo" hidden>
             Solid grey line: the target, rising evenly from 0% at the reset to 100% at the next.
             Coloured line: your readings. Dashed line: your average rate so far, extended to the reset.
-            Circles: your next check-ins. Shaded bands: nights (21:30-07:30).
+            Circles: your next check-ins. Shaded bands: nights (21:00-06:00).
           </div>
         </div>
       </div>
@@ -2257,7 +2257,7 @@
       warn.textContent = !slots.length ? "No waking-hours slots left before the reset"
         : warn.hidden ? "" : `~${((needed - slots.length) * avg).toFixed(1)}% may go unused, even using every slot`;
       document.getElementById("slotsInfo").textContent =
-        "Each box is a 5-hour slot left before the reset, between 07:30 and 21:30, after any running session. "
+        "Each box is a 5-hour slot left before the reset, between 06:00 and 21:00 (06:00, 11:00, 16:00), after any running session. "
         + (needed === null
           ? (avg ? "Set your weekly % to see how many you need." : "Log a session to see how many you need.")
           : `Filled boxes: the ${needed.toFixed(1)} sessions to reach 100%, at your average of ${avg.toFixed(1)}% weekly per full session.`);
