@@ -44,10 +44,10 @@
       }
     }
 
+    /* No min-height on body: 100vh counts the space under the browser's
+       address bar on phones, which added a small scroll to a page that fits. */
+    html, body { background: #0f172a; }
     body {
-      min-height: 100vh;
-      min-height: 100dvh;
-      background: #0f172a;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -253,15 +253,17 @@
 
     /* ── Session Tracker toggle ──────────────────────────────────────────── */
     .tracker-toggle {
-      width: calc(100% - 64px);   /* leaves room for the floating + button */
+      width: calc(100% - 144px);  /* centred, clear of the floating + button */
+      margin: 0 auto;
       background: none;
       border: 1px solid #1e293b;
       border-radius: 10px;
       color: #94a3b8;
-      font-size: 12px;
-      letter-spacing: 2px;
+      font-size: 11px;
+      letter-spacing: 1px;
+      white-space: nowrap;
       text-transform: uppercase;
-      padding: 9px 16px;
+      padding: 9px 12px;
       cursor: pointer;
       display: flex;
       align-items: center;
@@ -2022,7 +2024,7 @@
     }
 
     function renderChart(cs, ce, nowMs, weeklyPct, colour, checkIns) {
-      const W = 340, H = 158, L = 30, R = 10, T = 13, B = 20;
+      const W = 340, H = 140, L = 30, R = 10, T = 13, B = 19;
       const x = ms => L + Math.min(1, Math.max(0, (ms - cs) / CYCLE_MS)) * (W - L - R);
       const y = p => T + (1 - Math.min(100, Math.max(0, p)) / 100) * (H - T - B);
       let s = "";
