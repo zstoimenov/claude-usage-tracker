@@ -1131,19 +1131,23 @@
       return { avg: num / den, min: Math.min(...normalized), max: Math.max(...normalized), n: pool.length };
     }
 
-    // C4/C5: fixed 5h slots each day (06:00, 11:00, 16:00) that haven't started
-    // yet, after any running session, with at least 1h before the reset.
-    // One shared list for every card.
+    // C4/C5: 5h windows that still fit before the reset, inside waking hours,
+    // counted from now (or after a running session). An estimate of capacity:
+    // later days show the usual 06:00, 11:00, 16:00, but you can start any time.
     function listSlots(nowMs, cycleEndMs) {
       const as = trackerData.activeSession;
       let earliest = nowMs;
       if (as) earliest = Math.max(earliest, as.startTs + SESSION_MS);
       const slots = [];
       for (let mid = localMidnight(nowMs); mid < cycleEndMs; mid = addLocalDays(mid, 1)) {
-        for (let h = WAKE_START_H; h + SESSION_LOCK_HOURS <= WAKE_END_H; h += SESSION_LOCK_HOURS) {
-          const start = localAt(mid, h);
-          if (start >= earliest && cycleEndMs - start >= MIN_USEFUL_SLOT_MS) slots.push({ start, mid });
-        }
+        const ws = Math.max(localAt(mid, WAKE_START_H), earliest);
+        const we = Math.min(localAt(mid, WAKE_END_H), cycleEndMs);
+        if (we <= ws) continue;
+        const len = we - ws;
+        let n = Math.floor(len / SESSION_MS);
+        if (len % SESSION_MS >= MIN_USEFUL_SLOT_MS) n++;
+        for (let i = 0; i < n; i++) slots.push({ start: ws + i * SESSION_MS, mid });
+        earliest = ws + n * SESSION_MS;
       }
       return slots;
     }
@@ -1171,10 +1175,7 @@
         if (restUntil >= cycleEndMs) return { none: true };
         from = restUntil;
       }
-      // First usable slot from then on (same rule as the slot grid)
-      const slot = listSlots(from, cycleEndMs)[0];
-      if (!slot) return { none: true };
-      from = slot.start;
+      // Starts now, or when the rest ends: not tied to any slot
       const end = Math.min(from + SESSION_MS, cycleEndMs);
       return { from, end, restUntil, need: Math.max(0, target(end) - weeklyPct) };
     }
@@ -2126,15 +2127,15 @@
       if (weeklyPct === null) return show("—", "Set weekly % with +", how);
       if (weeklyPct >= 100)   return show("Done", "Allowance fully used", how);
       const p = planNextSession(nowMs, cs, ce, weeklyPct);
-      if (p.none) return show("—", "No slot left before reset", how);
+      if (p.none) return show("0%", "Nothing needed before reset", how);
 
       let when;
       if (p.running)        { title.textContent = "This session"; when = "ends " + formatClockTime(p.end); }
-      else if (p.restUntil) { title.textContent = "After a rest"; when = "at " + dayTime(p.from); }
-      else                  { when = p.from - nowMs < 60000 ? "start now" : "at " + dayTime(p.from); }
+      else if (p.restUntil) { when = "rest until " + dayTime(p.restUntil); }
+      else                  { when = "if you start now"; }
       const weekly = `It needs +${p.need.toFixed(1)}% weekly by ${dayTime(p.end)}`
         + (avg ? `, at your average of ${avg.toFixed(1)}% weekly per full session.` : ".");
-      const rest = p.restUntil ? ` You are ahead: the target line reaches your usage at ${dayTime(p.restUntil)}, so no session is needed before then.` : "";
+      const rest = p.restUntil ? ` You are ahead: the target line reaches your usage at ${dayTime(p.restUntil)}, so no session is needed before then. The target assumes you start then.` : " The target assumes you start now.";
 
       if (p.need < 0.05) return show(`0%`, when, how + " Any usage keeps you on the line." + rest);
       if (!avg) return show(`+${p.need.toFixed(1)}%<small> weekly</small>`, when,
@@ -2254,7 +2255,7 @@
       warn.textContent = !slots.length ? "No waking-hours slots left before the reset"
         : warn.hidden ? "" : `~${((needed - slots.length) * avg).toFixed(1)}% may go unused, even using every slot`;
       document.getElementById("slotsInfo").textContent =
-        "Each box is a 5-hour slot (06:00, 11:00, 16:00) that hasn't started yet, before the reset and after any running session. "
+        "A guide to how many 5-hour sessions still fit before the reset: today counts from now, later days show your usual 06:00, 11:00 and 16:00. You can start any time. "
         + (needed === null
           ? (avg ? "Set your weekly % to see how many you need." : "Log a session to see how many you need.")
           : `Filled boxes: the ${needed.toFixed(1)} sessions to reach 100%, at your average of ${avg.toFixed(1)}% weekly per full session.`);
