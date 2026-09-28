@@ -20,5 +20,33 @@
       "type": "image/png",
       "purpose": "any maskable"
     }
+  ],
+  "shortcuts": [
+    {
+      "name": "Update usage",
+      "short_name": "Update usage",
+      "description": "Enter your current weekly % from Claude",
+      "url": "/claude-usage-tracker/#update",
+      "icons": [
+        {
+          "src": "icons/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Start session",
+      "short_name": "Start session",
+      "description": "Start the 5-hour session timer",
+      "url": "/claude-usage-tracker/#start",
+      "icons": [
+        {
+          "src": "icons/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    }
   ]
 }

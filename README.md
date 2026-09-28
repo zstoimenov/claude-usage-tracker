@@ -1,6 +1,6 @@
 # Claude Usage Cycle Tracker
 
-Version 2.4 · last updated 2026-09-27
+Version 2.5 · last updated 2026-09-27
 
 A Progressive Web App (PWA) that tracks your Claude weekly usage and helps you
 use the whole allowance before it resets.
@@ -21,7 +21,15 @@ Live at `https://zstoimenov.github.io/claude-usage-tracker/`
   on the target line when it ends
 - Pace gap in %, clock time and sessions
 - Sessions to 100%: slots left before reset, by day, with the ones you need filled
-- Check-ins at 07:30 and 19:30 with how much usage is still to go
+- Check-ins (default 07:30 and 19:30) with how much usage is still to go
+- Tap "% used" to update your weekly % in place (the + button still works)
+- "Today" line: sessions needed to be on track by the end of your day
+- Status and gap show ▲ / ● / ▼ as well as colour
+- Tap the chart to read a reading or the target at any time
+- "Remind me then" adds a calendar reminder for when a rest ends
+- Past cycles trend: one bar per week
+- Settings → Your day: day start and end (usual session times) and check-in times
+- App icon shortcuts (long-press): Update usage, Start session
 - 5-hour session timer, with notifications and calendar reminders
   (Google Calendar or .ics)
 - Session history: delete any entry, Undo after logging or deleting
@@ -132,6 +140,9 @@ Bump `CACHE_NAME` in `sw.js` only when you want old caches cleared.
 
 ## Changelog
 
+- **2.5** (2026-09-28): tap-to-update usage, Today line, arrows on status,
+  chart tap values, rest reminder, past-weeks trend, Your day settings,
+  app icon shortcuts.
 - **2.4** (2026-09-28): usual session times 06:00, 11:00 and 16:00 shown as a guide; next session and rest time are not tied to slots.
 - **2.3** (2026-09-27): main screen fills the whole screen on any device and
   scales with it; on wide screens (iPad landscape, desktop) the chart gets
