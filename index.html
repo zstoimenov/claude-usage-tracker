@@ -1478,6 +1478,7 @@
         }, 20);
       } else {
         window.scrollTo({ top: 0, behavior: "smooth" });
+        setTimeout(fitToScreen, 400);   // after the panel's closing transition
       }
     });
 
@@ -1489,7 +1490,28 @@
       const open = btn.getAttribute("aria-expanded") !== "true";
       btn.setAttribute("aria-expanded", String(open));
       box.hidden = !open;
+      if (!open) fitToScreen();
     });
+
+    // Shrink the whole main screen until it fits the visible height. The CSS
+    // sizes are right for a default phone, but a larger system font or display
+    // size, or a shorter browser window, can still push it past the bottom.
+    // Skipped while History or an explanation is open: those may scroll.
+    function fitToScreen() {
+      const root = document.documentElement;
+      if (trackerPanel.classList.contains("open") || document.querySelector(".info:not([hidden])")) return;
+      // Fill exactly the visible height (the CSS 100dvh is only a first guess)
+      document.body.style.minHeight = window.innerHeight + "px";
+      root.style.fontSize = "";
+      for (let i = 0; i < 4; i++) {
+        const over = root.scrollHeight - window.innerHeight;
+        if (over <= 0) break;
+        const cur = parseFloat(getComputedStyle(root).fontSize);
+        const scalable = Math.max(1, root.scrollHeight - 32);   // minus body padding
+        root.style.fontSize = Math.max(10, cur * (scalable - over) / scalable - 0.05) + "px";
+      }
+    }
+    window.addEventListener("resize", fitToScreen);
 
     // Redraw the chart when its box changes size (rotation, window resize, layout)
     if (window.ResizeObserver) {
@@ -1941,11 +1963,17 @@
     // Main-screen card + live tick; auto-prompts completion when the 5h elapses
     function renderSessionTimer() {
       const as = trackerData.activeSession;
-      if (!as) { sessionTimerCard.style.display = "none"; return; }
+      const wasShown = sessionTimerCard.style.display !== "none";
+      if (!as) {
+        sessionTimerCard.style.display = "none";
+        if (wasShown) fitToScreen();
+        return;
+      }
       const endTs     = as.startTs + SESSION_MS;
       const remaining = endTs - Date.now();
       const ended     = remaining <= 0;
       sessionTimerCard.style.display = "";
+      if (!wasShown) fitToScreen();
       sessionTimerCard.classList.toggle("ended", ended);
       document.getElementById("stcLabelText").textContent  = ended ? "Session ended" : "Active Session";
       document.getElementById("sessionTimeLeft").textContent = ended ? "Tap to log" : formatClock(remaining);
@@ -2259,6 +2287,7 @@
         + (needed === null
           ? (avg ? "Set your weekly % to see how many you need." : "Log a session to see how many you need.")
           : `Filled boxes: the ${needed.toFixed(1)} sessions to reach 100%, at your average of ${avg.toFixed(1)}% weekly per full session.`);
+      fitToScreen();
     }
 
     // ─── Settings (C9 reset time, sync, backup) ───────────────────────────────
