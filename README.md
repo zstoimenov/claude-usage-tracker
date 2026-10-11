@@ -80,14 +80,17 @@ the code inside the installed app. Opening a link or QR code only links Safari.
 ### What is public
 | Item | Exposure |
 |---|---|
-| App code, Supabase URL, publishable key | Public (public repo). The key only reaches the 3 functions below |
+| App code, sync server URL | Public (public repo). The URL only reaches the 3 functions below |
 | Your synced data | Encrypted; unreadable without the code, even to the database owner |
 | Listing or guessing sync rows | Not possible: no direct table access, and codes are random 256-bit |
 
 ### Backend
-Supabase project `xlhqigvzwavidsiwojiy` (free tier), table
-`usage_tracker_sync` (row-level security on, no direct access). Reached only
-through these RPC functions:
+Su### Backend
+A Neon project (free tier, Singapore) holds table `usage_tracker_sync`. The
+browser never talks to the database: a small Neon Function (`neon/index.mjs`,
+no dependencies) answers `POST /rpc/<name>` and runs one of three SQL
+functions (`neon/schema.sql`). It only answers browser calls from the GitHub
+Pages site and refuses bodies over 300 KB.
 
 | Function | Does |
 |---|---|
@@ -95,7 +98,17 @@ through these RPC functions:
 | `tracker_push(code, data, rev)` | Saves encrypted data if the revision matches (conflict-safe) |
 | `tracker_revoke(code)` | Wipes a row and marks it revoked |
 
-Merging happens on the device: each field has a timestamp, sessions are
+Neon's free tier suspends the database when idle and wakes it on the next
+request, so it never pauses for good and needs no keep-alive. Moved from
+Supabase on 2026-10-11; each device re-uploads its own data on its first sync
+after the update.
+
+To redeploy the function: zip `neon/index.mjs` on its own and deploy it as
+slug `sync` (Neon CLI: `neon functions deploy sync --src neon/index.mjs
+--no-bundle`). Tests: `cd neon && npm i && node test.mjs` (needs a local
+Postgres with `schema.sql` loaded; see the top of `test.mjs`).
+
+s on the device: each field has a timestamp, sessions are
 combined by id, and deletions are kept for 60 days so they don't come back.
 
 ## Files
@@ -140,6 +153,8 @@ Bump `CACHE_NAME` in `sw.js` only when you want old caches cleared.
 
 ## Changelog
 
+- **2.6** (2026-10-11): sync moved from Supabase to a Neon Function. Same
+  encryption and codes; nothing to re-link.
 - **2.5** (2026-09-28): tap-to-update usage, Today line, arrows on status,
   chart tap values, rest reminder, past-weeks trend, Your day settings,
   app icon shortcuts.

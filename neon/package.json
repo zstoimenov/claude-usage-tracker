@@ -1,0 +1,6 @@
+{
+  "private": true,
+  "type": "module",
+  "description": "Tests for the sync function. The function itself has no dependencies.",
+  "devDependencies": { "pg": "8.16.3" }
+}

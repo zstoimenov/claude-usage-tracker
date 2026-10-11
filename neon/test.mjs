@@ -1,0 +1,52 @@
+// Tests the sync function against a local stand-in for Neon's /sql endpoint.
+// Needs a local Postgres with schema.sql loaded; set PG_URL to point at it.
+import { startSqlMock } from "./mock-sql.mjs";
+const mock = await startSqlMock(process.env.PG_URL || "postgres://postgres@localhost:5432/postgres");
+process.env.DATABASE_URL = "postgresql://u:p@ep-test-pooler.c-4.ap-southeast-1.aws.neon.tech/neondb?sslmode=require";
+process.env.SQL_URL = mock.url;
+const { default: fn } = await import("./index.mjs");
+let failed = 0;
+const check = (n, ok, x = "") => { console.log(`${ok ? "PASS" : "FAIL"} ${n}${x ? " - " + x : ""}`); if (!ok) failed++; };
+const ORIGIN = "https://zstoimenov.github.io";
+const call = async (name, body, { origin = ORIGIN, method = "POST", raw } = {}) => {
+  const r = await fn.fetch(new Request(`https://x.test/rpc/${name}`, { method, headers: { origin, "content-type": "application/json" }, body: method === "POST" ? (raw ?? JSON.stringify(body)) : undefined }));
+  return { status: r.status, cors: r.headers.get("access-control-allow-origin"), body: r.status === 204 ? null : await r.json() };
+};
+const code = "a".repeat(64), box = { v: 1, iv: "aXY", ct: "Y3Q" };
+
+let r = await call("tracker_pull", { p_code: code });
+check("pull missing row returns null", r.status === 200 && r.body === null);
+check("CORS allowed for the Pages site", r.cors === ORIGIN);
+check("CORS not given to other sites", (await call("tracker_pull", { p_code: code }, { origin: "https://evil.example" })).cors === null);
+r = await call("tracker_push", { p_code: code, p_data: box, p_rev: 0 });
+check("first push creates row", r.body?.ok === true && r.body.rev === 1, JSON.stringify(r.body));
+r = await call("tracker_push", { p_code: code, p_data: box, p_rev: 0 });
+check("stale rev refused", r.body?.ok === false && r.body.rev === 1);
+r = await call("tracker_pull", { p_code: code });
+check("pull returns data and rev", r.body?.rev === 1 && r.body.data?.ct === "Y3Q");
+r = await call("tracker_push", { p_code: code, p_data: { plain: "text" }, p_rev: 1 });
+check("unencrypted payload refused", r.status === 400 && /encrypted/.test(r.body.message), JSON.stringify(r.body));
+r = await call("tracker_push", { p_code: "short", p_data: box, p_rev: 0 });
+check("bad code refused", r.status === 400);
+r = await call("tracker_push", { p_code: code, p_data: { ...box, ct: "x".repeat(320000) }, p_rev: 1 });
+check("oversized body refused", r.status === 413);
+r = await call("tracker_pull", null, { raw: "{bad" });
+check("bad json refused", r.status === 400);
+r = await call("drop_everything", { p_code: code });
+check("unknown function refused", r.status === 404);
+r = await call("tracker_pull", null, { method: "GET" });
+check("GET refused", r.status === 404);
+r = await call("tracker_pull", { p_code: "x'); drop table public.usage_tracker_sync; --".padEnd(40, "x") });
+check("injection attempt is just a missing row", r.status === 200 && r.body === null);
+r = await call("tracker_revoke", { p_code: code });
+check("revoke", r.body?.ok === true);
+r = await call("tracker_push", { p_code: code, p_data: box, p_rev: 2 });
+check("push to revoked row says revoked", r.body?.revoked === true);
+r = await call("tracker_revoke", { p_code: "b".repeat(64) });
+check("revoke missing row returns null", r.status === 200 && r.body === null);
+const pre = await fn.fetch(new Request("https://x.test/rpc/tracker_push", { method: "OPTIONS", headers: { origin: ORIGIN } }));
+check("preflight", pre.status === 204 && pre.headers.get("access-control-allow-methods") === "POST");
+check("sends the connection string header", mock.seen.every(s => s.headers["neon-connection-string"]?.includes("ep-test-pooler")));
+await mock.close();
+console.log(failed ? `${failed} failed` : "all passed");
+process.exit(failed ? 1 : 0);
