@@ -168,6 +168,10 @@
     }
     .qe-save { background: #0f4c81; color: #bfdbfe; font-size: 0.8125rem; padding: 0.5rem; }
     .qe-step:focus-visible, .qe-save:focus-visible, .qe-input:focus { outline: 2px solid #60a5fa; outline-offset: 1px; }
+    /* No browser up/down arrows on number fields (issue #9) */
+    input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
     .hero-age { font-size: 0.6875rem; color: #64748b; }
     .hero-age.stale { color: #f97316; }
     .status-pill {

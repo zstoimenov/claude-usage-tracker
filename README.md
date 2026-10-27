@@ -1,6 +1,6 @@
 # Claude Usage Cycle Tracker
 
-Version 2.5 · last updated 2026-09-27
+Version 2.7 · last updated 2026-10-27
 
 A Progressive Web App (PWA) that tracks your Claude weekly usage and helps you
 use the whole allowance before it resets.
@@ -153,6 +153,8 @@ Bump `CACHE_NAME` in `sw.js` only when you want old caches cleared.
 
 ## Changelog
 
+- **2.7** (2026-10-27): number fields no longer show the browser's up/down
+  arrows on desktop.
 - **2.6** (2026-10-11): sync moved from Supabase to a Neon Function. Same
   encryption and codes; nothing to re-link.
 - **2.5** (2026-09-28): tap-to-update usage, Today line, arrows on status,
