@@ -1816,7 +1816,12 @@
       trackerData.lastSheetTab = tab;
       saveData(trackerData);
       if (tab === "timer")      { renderTimerPane(); if (!trackerData.activeSession) sessionStartInput.focus(); }
-      else if (tab === "log")   sheetBefore.focus();
+      else if (tab === "log")   {
+        // Prefill "Week % Before" with the last recorded weekly % (editable)
+        const w = getWeekly();
+        if (w !== null && !sheetBefore.value) { sheetBefore.value = w.value; updateSheetPreview(); }
+        (sheetBefore.value ? sheetSession : sheetBefore).focus();
+      }
       else                      { sheetSpotInput.focus(); sheetSpotInput.select(); }
     }
     tabTimer.addEventListener("click", () => switchTab("timer"));
