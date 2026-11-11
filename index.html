@@ -304,30 +304,27 @@
       width: 2px; margin-left: -1px; background: #94a3b8; border-radius: 1px;
     }
 
-    /* Slots left, one row per day */
+    /* Slots left: one column per day, one block per session slot */
     .slot-grid {
       display: grid;
-      grid-template-columns: 1.875rem 1fr;
-      gap: 0.25rem 0.5rem;
-      align-items: center;
+      grid-auto-flow: column;
+      grid-auto-columns: 1fr;
+      gap: 0.5rem;
     }
+    .slot-col { display: flex; flex-direction: column; gap: 0.1875rem; min-width: 0; }
     .today-line { font-size: 0.75rem; color: #cbd5e1; }
     .today-line b { color: #e2e8f0; }
-    .slot-day { font-size: 0.6875rem; font-weight: 600; color: #94a3b8; }
-    .slot-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.25rem; }
+    .slot-day { font-size: 0.6875rem; font-weight: 600; color: #94a3b8; text-align: center; }
+    .slot-row { display: flex; gap: 0.125rem; }
     .slot {
-      height: 1rem;
-      border-radius: 0.25rem;
-      border: 1.5px solid #334155;
-      font-size: 0.5938rem;
-      line-height: 1;
-      color: #64748b;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-variant-numeric: tabular-nums;
+      flex: 1;
+      height: 0.625rem;
+      border-radius: 0.1875rem;
+      border: 1.5px solid #475569;
     }
-    .slot.need { color: #0f172a; font-weight: 700; }
+    .slot.need { background: #cbd5e1; border-color: #cbd5e1; }
+    .slot-key { font-size: 0.6875rem; color: #94a3b8; display: flex; gap: 0.75rem; align-items: center; }
+    .slot-key .slot { display: inline-block; width: 0.75rem; margin-right: 0.25rem; vertical-align: -1px; }
 
     /* ── Session Tracker toggle ──────────────────────────────────────────── */
     .tracker-toggle {
@@ -1504,6 +1501,7 @@
           </div>
           <div class="today-line num" id="todayLine"></div>
           <div class="slot-grid" id="slotGrid"></div>
+          <div class="slot-key" id="slotKey" hidden></div>
           <div class="card-warn" id="slotsWarn" hidden></div>
           <div class="info" id="slotsInfo" hidden></div>
         </div>
@@ -2371,7 +2369,7 @@
       placeChartTip();
     }
 
-    function renderNextSession(nowMs, cs, ce, weeklyPct, avg, colour) {
+    function renderNextSession(nowMs, cs, ce, weeklyPct, avg, colour, nSlots) {
       const title = document.getElementById("nextTitle");
       const big   = document.getElementById("nextBig");
       const note  = document.getElementById("nextNote");
@@ -2408,10 +2406,15 @@
       const ratio = p.need / avg;
       if (ratio <= 1) return show(`${(ratio * 100).toFixed(0)}%<small> of a session</small>`, when,
         how + " " + weekly + rest);
+      // More than one session: say how many, never more than are left
+      const cap = nSlots + (p.running ? 1 : 0);
+      if (ratio > cap) return show(`100%<small> of every session</small>`, "can't fully catch up before reset",
+        how + ` Even using all of the ${cap} session${cap === 1 ? "" : "s"} left would not reach the target line. ` + weekly + rest);
       const full = Math.floor(ratio), extra = (ratio - full) * 100;
-      const then = extra >= 0.5 ? `then ${extra.toFixed(0)}% ${full === 1 ? "next" : "more"}` : "";
-      show(`100%<small>${full > 1 ? " × " + full : " max"}</small>`, when + (then ? " · " + then : ""),
-        how + ` One session can't close the gap: max ${full === 1 ? "this one" : "the next " + full}${then ? ", " + then : ""}. ` + weekly + rest);
+      const then = extra >= 0.5 ? `then ${extra.toFixed(0)}% of ${full === 1 ? "the next" : "another"}` : "";
+      show(full > 1 ? `${full}<small> full sessions</small>` : `100%<small> of ${p.running ? "this" : "a"} session</small>`,
+        (then ? then + " · " : "") + when,
+        how + ` One session can't close the gap: use all of ${full === 1 ? "this one" : "the next " + full}${then ? ", " + then : ""}. ` + weekly + rest);
     }
 
     function update() {
@@ -2464,7 +2467,8 @@
         </div>`).join("");
 
       renderChart(cycleStartMs, cycleEndMs, nowMs, weeklyPct, colour, checkIns);
-      renderNextSession(nowMs, cycleStartMs, cycleEndMs, weeklyPct, avg, colour);
+      const slots = listSlots(nowMs, cycleEndMs);
+      renderNextSession(nowMs, cycleStartMs, cycleEndMs, weeklyPct, avg, colour, slots.length);
 
       // Pace gap: %, clock time and sessions
       const gapPct  = document.getElementById("gapPct");
@@ -2491,7 +2495,7 @@
         gapFill.style.borderRadius = gap >= 0 ? "0 4px 4px 0" : "4px 0 0 4px";
         gapText.textContent = weekly.isReset ? "New cycle, set weekly %"
           : abs < 0.05 ? "On the line"
-          : time + (avg ? ` · ${(abs / avg).toFixed(1)} sess` : "") + " " + word;
+          : time + (avg ? ` · ${(abs / avg).toFixed(1)} sessions` : "") + " " + word;
         gapInfo.textContent = gapHow + (abs < 0.05 ? "" : ` You are ${abs.toFixed(1)}% ${word}: ${time}${
           gap >= 0 ? " of buffer" : " to catch up"}${avg ? `, or ${(abs / avg).toFixed(1)} sessions at ${avg.toFixed(1)}% each` : ""}.`)
           + (age === null ? "" : ` Last reading ${formatDuration(age)} ago.`)
@@ -2499,22 +2503,29 @@
       }
 
       // Sessions to 100% vs slots left
-      const slots  = listSlots(nowMs, cycleEndMs);
       const needed = weeklyPct !== null && avg ? Math.max(0, 100 - weeklyPct) / avg : null;
       const needN  = needed === null ? 0 : Math.min(slots.length, Math.ceil(needed - 1e-9));
       const spare  = slots.length - needN;
       document.getElementById("slotsHead").innerHTML = needed === null
         ? `${slots.length} slot${slots.length === 1 ? "" : "s"} left`
-        : `<b>${needed.toFixed(1)}</b> of ${slots.length}${needed <= slots.length ? ` · ${spare} spare` : ""}`;
+        : needed <= slots.length ? `<b>${needed.toFixed(1)}</b> needed · ${slots.length} left`
+        : `<b>${slots.length}</b> left · not enough for 100%`;
       const days = [];
       slots.forEach((sl, i) => {
-        if (!days.length || days[days.length - 1].mid !== sl.mid) days.push({ mid: sl.mid, cells: [] });
-        days[days.length - 1].cells.push(`<span class="slot${i < needN ? " need" : ""}"${
-          i < needN ? ` style="background:${colour};border-color:${colour}"` : ""}>${formatClockTime(sl.start)}</span>`);
+        if (!days.length || days[days.length - 1].mid !== sl.mid) days.push({ mid: sl.mid, cells: [], need: 0 });
+        const d = days[days.length - 1];
+        if (i < needN) d.need++;
+        d.cells.push(`<span class="slot${i < needN ? " need" : ""}" title="${formatClockTime(sl.start)}"></span>`);
       });
-      document.getElementById("slotGrid").innerHTML = days.map(d =>
-        `<span class="slot-day">${new Date(d.mid).toLocaleString("en-AU", { weekday: "short" })}</span>
-         <div class="slot-row">${d.cells.join("")}</div>`).join("");
+      document.getElementById("slotGrid").innerHTML = days.map(d => {
+        const name = new Date(d.mid).toLocaleString("en-AU", { weekday: "short" });
+        return `<div class="slot-col" role="img" aria-label="${name}: ${d.cells.length} slot${d.cells.length === 1 ? "" : "s"}${
+          needed === null ? "" : `, ${d.need} needed`}">
+          <span class="slot-day">${name}</span><div class="slot-row">${d.cells.join("")}</div></div>`;
+      }).join("");
+      const key = document.getElementById("slotKey");
+      key.hidden = needed === null || !slots.length;
+      key.innerHTML = `<span><span class="slot need"></span>needed</span>${spare > 0 ? `<span><span class="slot"></span>${spare} spare</span>` : ""}`;
       // Today: what it takes to be on the target line at the end of your day
       const todayEl = document.getElementById("todayLine");
       if (weeklyPct === null || weeklyPct >= 100) todayEl.textContent = "";
@@ -2523,20 +2534,26 @@
         if (nowMs >= dayEnd) { dayEnd = localAt(addLocalDays(localMidnight(nowMs), 1), prefs().wakeEnd); label = "Tomorrow"; }
         if (dayEnd >= cycleEndMs) { dayEnd = cycleEndMs; label = "Before reset"; }
         const need = ((dayEnd - cycleStartMs) / CYCLE_MS) * 100 - weeklyPct;
+        // Sessions that can still happen before then: a running one plus the open slots
+        const as  = trackerData.activeSession;
+        const fit = slots.filter(sl => sl.start < dayEnd).length + (as && as.startTs + SESSION_MS > nowMs ? 1 : 0);
         todayEl.innerHTML = need < 0.05
           ? `${label}: on track until ${formatClockTime(dayEnd)} with no session`
+          : avg && need / avg > fit + 1e-9
+          ? `${label}: <b>out of reach</b> by ${formatClockTime(dayEnd)} · needs +${need.toFixed(1)}%, ${
+              fit ? `${fit} session${fit === 1 ? "" : "s"} give${fit === 1 ? "s" : ""} about +${(fit * avg).toFixed(1)}%` : "no session fits"}`
           : `${label}: ${avg ? `<b>${(need / avg).toFixed(1)} sessions</b> (+${need.toFixed(1)}%)` : `<b>+${need.toFixed(1)}%</b>`} to be on track by ${formatClockTime(dayEnd)}`;
       }
 
       const warn = document.getElementById("slotsWarn");
       warn.hidden = !(needed !== null && needed > slots.length) && slots.length > 0;
       warn.textContent = !slots.length ? "No waking-hours slots left before the reset"
-        : warn.hidden ? "" : `~${((needed - slots.length) * avg).toFixed(1)}% may go unused, even using every slot`;
+        : warn.hidden ? "" : `Using all ${slots.length} gets you to about ${(weeklyPct + slots.length * avg).toFixed(1)}%, so ~${((needed - slots.length) * avg).toFixed(1)}% will go unused`;
       document.getElementById("slotsInfo").textContent =
-        `A guide to how many 5-hour sessions still fit before the reset: today counts from now, later days show your usual ${usualTimes().join(", ")}. You can start any time; change your day in Settings. `
+        `A guide to how many 5-hour sessions still fit before the reset: today counts from now, later days use your usual ${usualTimes().join(", ")}. One block per session. You can start any time; change your day in Settings. `
         + (needed === null
           ? (avg ? "Set your weekly % to see how many you need." : "Log a session to see how many you need.")
-          : `Filled boxes: the ${needed.toFixed(1)} sessions to reach 100%, at your average of ${avg.toFixed(1)}% weekly per full session.`);
+          : `Filled blocks: the ${needed.toFixed(1)} sessions to reach 100%, at your average of ${avg.toFixed(1)}% weekly per full session.`);
       fitToScreen();
     }
 
