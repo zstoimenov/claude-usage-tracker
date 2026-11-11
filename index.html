@@ -315,16 +315,22 @@
     .today-line { font-size: 0.75rem; color: #cbd5e1; }
     .today-line b { color: #e2e8f0; }
     .slot-day { font-size: 0.6875rem; font-weight: 600; color: #94a3b8; text-align: center; }
-    .slot-row { display: flex; gap: 0.125rem; }
+    .slot-row { display: flex; flex-direction: column; gap: 0.125rem; }
     .slot {
-      flex: 1;
-      height: 0.625rem;
+      height: 0.875rem;
       border-radius: 0.1875rem;
       border: 1.5px solid #475569;
+      font-size: 0.5938rem;
+      line-height: 1;
+      color: #94a3b8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-variant-numeric: tabular-nums;
     }
-    .slot.need { background: #cbd5e1; border-color: #cbd5e1; }
+    .slot.need { background: #cbd5e1; border-color: #cbd5e1; color: #0f172a; font-weight: 700; }
     .slot-key { font-size: 0.6875rem; color: #94a3b8; display: flex; gap: 0.75rem; align-items: center; }
-    .slot-key .slot { display: inline-block; width: 0.75rem; margin-right: 0.25rem; vertical-align: -1px; }
+    .slot-key .slot { display: inline-block; width: 0.75rem; height: 0.625rem; margin-right: 0.25rem; vertical-align: -1px; }
 
     /* ── Session Tracker toggle ──────────────────────────────────────────── */
     .tracker-toggle {
@@ -2515,12 +2521,11 @@
         if (!days.length || days[days.length - 1].mid !== sl.mid) days.push({ mid: sl.mid, cells: [], need: 0 });
         const d = days[days.length - 1];
         if (i < needN) d.need++;
-        d.cells.push(`<span class="slot${i < needN ? " need" : ""}" title="${formatClockTime(sl.start)}"></span>`);
+        d.cells.push(`<span class="slot${i < needN ? " need" : ""}">${formatClockTime(sl.start)}</span>`);
       });
       document.getElementById("slotGrid").innerHTML = days.map(d => {
         const name = new Date(d.mid).toLocaleString("en-AU", { weekday: "short" });
-        return `<div class="slot-col" role="img" aria-label="${name}: ${d.cells.length} slot${d.cells.length === 1 ? "" : "s"}${
-          needed === null ? "" : `, ${d.need} needed`}">
+        return `<div class="slot-col" >
           <span class="slot-day">${name}</span><div class="slot-row">${d.cells.join("")}</div></div>`;
       }).join("");
       const key = document.getElementById("slotKey");
@@ -2550,7 +2555,7 @@
       warn.textContent = !slots.length ? "No waking-hours slots left before the reset"
         : warn.hidden ? "" : `Using all ${slots.length} gets you to about ${(weeklyPct + slots.length * avg).toFixed(1)}%, so ~${((needed - slots.length) * avg).toFixed(1)}% will go unused`;
       document.getElementById("slotsInfo").textContent =
-        `A guide to how many 5-hour sessions still fit before the reset: today counts from now, later days use your usual ${usualTimes().join(", ")}. One block per session. You can start any time; change your day in Settings. `
+        `A guide to how many 5-hour sessions still fit before the reset: today counts from now, later days use your usual ${usualTimes().join(", ")}. One block per session, showing its start time. You can start any time; change your day in Settings. `
         + (needed === null
           ? (avg ? "Set your weekly % to see how many you need." : "Log a session to see how many you need.")
           : `Filled blocks: the ${needed.toFixed(1)} sessions to reach 100%, at your average of ${avg.toFixed(1)}% weekly per full session.`);

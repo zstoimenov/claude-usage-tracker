@@ -155,7 +155,8 @@ Bump `CACHE_NAME` in `sw.js` only when you want old caches cleared.
 
 - **2.8** (2026-11-11): plainer wording on Next session, Pace gap and Sessions
   to 100%; session counts are capped at what still fits ("out of reach"
-  instead of impossible numbers); slots shown as one compact strip.
+  instead of impossible numbers); slots shown as one compact strip, a column
+  per day with the start times.
 - **2.7** (2026-10-27): number fields no longer show the browser's up/down
   arrows on desktop.
 - **2.6** (2026-10-11): sync moved from Supabase to a Neon Function. Same
