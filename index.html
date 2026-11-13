@@ -592,7 +592,20 @@
     .stc-track { background: var(--muted); border-radius: 9999px; height: 0.25rem; overflow: hidden; box-shadow: var(--shadow-well); }
     .stc-fill { height: 100%; border-radius: 9999px; background: var(--foreground); transition: width 1s linear; }
     .session-timer-card.ended .stc-fill { background: var(--warning); }
-    .stc-sub { font-size: 0.75rem; color: var(--muted-foreground); flex: 1; text-align: right; }
+    .stc-sub { font-size: 0.75rem; color: var(--muted-foreground); flex: 1; min-width: 0; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    /* Ended: one calm row (status, details, a "Log now" chip); no progress bar */
+    .session-timer-card.ended { --tone: var(--warning); padding: 0.5rem 0.5rem 0.5rem 0.875rem; border-color: color-mix(in srgb, var(--warning) 40%, transparent); }
+    .session-timer-card.ended .stc-top { align-items: center; margin-bottom: 0; }
+    .session-timer-card.ended .stc-label { font-weight: 600; white-space: nowrap; }
+    .session-timer-card.ended .stc-sub { text-align: left; }
+    .session-timer-card.ended .stc-dot { animation: checkin-pulse 1.6s var(--ease) infinite; }
+    .session-timer-card.ended .stc-track { display: none; }
+    .session-timer-card.ended .stc-time {
+      display: inline-flex; align-items: center; gap: 0.125rem; flex: none; min-height: 2rem; padding: 0 0.5rem 0 0.75rem;
+      border-radius: 0.625rem; background: var(--warning); color: var(--warning-soft);
+      font: 600 0.8125rem/1 var(--font-sans); white-space: nowrap;
+    }
+    .session-timer-card.ended .stc-time .ico { width: 0.875rem; height: 0.875rem; }
 
     .timer-hint { font-size: 14px; color: var(--muted-foreground); margin-top: 12px; line-height: 1.45; }
     .timer-active-display { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 16px; text-align: center; margin-bottom: 12px; }
@@ -1418,7 +1431,7 @@
 
         <button class="session-timer-card" id="sessionTimerCard" style="display:none" aria-label="Active session, tap to manage">
           <div class="stc-top">
-            <span class="stc-label"><span class="stc-dot"></span><span id="stcLabelText">Active Session</span></span>
+            <span class="stc-label"><span class="stc-dot"></span><span id="stcLabelText">Active session</span></span>
             <span class="stc-sub" id="sessionCardSub">—</span>
             <span class="stc-time" id="sessionTimeLeft">5:00:00</span>
           </div>
@@ -2167,12 +2180,15 @@
       sessionTimerCard.style.display = "";
       if (!wasShown) fitToScreen();
       sessionTimerCard.classList.toggle("ended", ended);
-      document.getElementById("stcLabelText").textContent  = ended ? "Session ended" : "Active Session";
-      document.getElementById("sessionTimeLeft").textContent = ended ? "Tap to log" : formatClock(remaining);
+      document.getElementById("stcLabelText").textContent  = ended ? "Session ended" : "Active session";
+      const timeEl = document.getElementById("sessionTimeLeft");
+      if (ended) { if (!timeEl.dataset.ended) { timeEl.innerHTML = 'Log now<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>'; timeEl.dataset.ended = "1"; } }
+      else { delete timeEl.dataset.ended; timeEl.textContent = formatClock(remaining); }
       const pctLeft = Math.max(0, Math.min(100, (remaining / SESSION_MS) * 100));
       document.getElementById("sessionFill").style.width = (ended ? 100 : pctLeft) + "%";
       document.getElementById("sessionCardSub").textContent =
         `from ${as.weekBefore}% · ${ended ? "ended" : "ends"} ${formatClockTime(endTs)}`;
+      sessionTimerCard.setAttribute("aria-label", ended ? "Session ended, tap to log it" : "Active session, tap to manage");
       if (sheetIsOpen() && paneTimer.classList.contains("active")) renderTimerPane();
       if (ended && autoPromptedFor !== as.startTs && !(sheetIsOpen() && paneSettings.classList.contains("active"))) {
         autoPromptedFor = as.startTs;

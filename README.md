@@ -167,6 +167,9 @@ Bump `CACHE_NAME` in `sw.js` only when you want old caches cleared.
 
 ## Changelog
 
+- **3.1.3** (2026-11-13): "Session ended" bar redone: one row with status,
+  details and a "Log now" button, amber border and pulsing dot, no full
+  progress bar. "Active session" in sentence case.
 - **3.1.2** (2026-11-13): end-of-session form: title in sentence case
   ("Log session"), tapping a label focuses its input, even spacing above the button.
 - **3.1.1** (2026-11-13): Log session form tidied on phones. The three inputs
