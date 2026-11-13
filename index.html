@@ -462,6 +462,10 @@
 
     /* ── Forms in the sheet ── */
     .log-inputs { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+    /* Labels can wrap on narrow phones: they grow, so the three inputs stay on one line */
+    .log-field { display: flex; flex-direction: column; min-width: 0; }
+    .log-field label { flex: 1; }
+    .log-field input { text-align: center; }
     .log-field label, .spot-pane-label, .time-left-label { display: block; font: 500 14px/20px var(--font-sans); color: var(--foreground); margin-bottom: 8px; }
     .log-field input, .spot-pane-input, .set-input, .set-select {
       width: 100%; height: 44px; background: var(--background); border: 1px solid var(--input); border-radius: 12px;
@@ -476,7 +480,8 @@
     .set-select { appearance: none; -webkit-appearance: none; padding-right: 36px; cursor: pointer;
       background-image: linear-gradient(45deg, transparent 50%, var(--muted-foreground) 50%), linear-gradient(135deg, var(--muted-foreground) 50%, transparent 50%);
       background-position: calc(100% - 20px) 50%, calc(100% - 15px) 50%; background-size: 5px 5px; background-repeat: no-repeat; }
-    .log-row { display: flex; gap: 8px; align-items: center; }
+    .log-row { display: flex; flex-direction: column; gap: 12px; }
+    .log-row .log-btn { width: 100%; height: 52px; font-size: 16px; margin-bottom: 4px; }
     .log-delta-preview { font-size: 14px; color: var(--muted-foreground); flex: 1; }
     .log-delta-preview span { color: var(--success); font-weight: 500; }
     .spot-pane-field { display: flex; flex-direction: column; margin-bottom: 16px; }
@@ -699,15 +704,15 @@
     <div class="sheet-pane" id="paneLog">
       <div class="log-inputs">
         <div class="log-field">
-          <label>Week % Before</label>
+          <label for="sheetBefore">Week % before</label>
           <input type="number" id="sheetBefore" min="0" max="100" step="0.1" placeholder="e.g. 23" inputmode="decimal" />
         </div>
         <div class="log-field">
-          <label>Session % Used</label>
+          <label for="sheetSession">Session % used</label>
           <input type="number" id="sheetSession" min="1" max="100" step="1" placeholder="e.g. 80" inputmode="decimal" />
         </div>
         <div class="log-field">
-          <label>Week % After</label>
+          <label for="sheetAfter">Week % after</label>
           <input type="number" id="sheetAfter" min="0" max="100" step="0.1" placeholder="e.g. 28" inputmode="decimal" />
         </div>
       </div>

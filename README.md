@@ -167,6 +167,9 @@ Bump `CACHE_NAME` in `sw.js` only when you want old caches cleared.
 
 ## Changelog
 
+- **3.1.1** (2026-11-13): Log session form tidied on phones. The three inputs
+  stay level when a label wraps, values are centred, labels in sentence case,
+  and the Log session button is full width below the preview like the other tabs.
 - **3.1** (2026-11-13): check-ins easier to spot. Bigger target %, countdown
   ("in 3h 12m"), the next check-in tinted by status with a coloured edge,
   "Due soon" state with a pulsing dot within 60 minutes (no animation with
