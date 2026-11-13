@@ -257,6 +257,34 @@
       font: inherit; font-size: 0.75rem; font-weight: 600; padding: 0.375rem 0.625rem; cursor: pointer;
     }
     .info-btn:focus-visible { outline: 2px solid #60a5fa; outline-offset: 2px; }
+
+    /* Free pass */
+    .pass-card { border: 1px solid #78350f; }
+    .pass-card[hidden] { display: none; }
+    .pass-main { display: flex; align-items: baseline; justify-content: space-between; gap: 0.5rem; flex-wrap: wrap; }
+    .pass-when { font-size: 1.125rem; font-weight: 700; color: #fbbf24; }
+    .pass-gain { font-size: 0.75rem; color: #94a3b8; }
+    .pass-gain b { color: #e2e8f0; }
+    .pass-weeks { display: flex; gap: 0.25rem; overflow-x: auto; }
+    .pass-week {
+      flex: 0 0 auto; border: 1px solid #334155; background: none; color: #94a3b8; border-radius: 0.5rem;
+      font: inherit; font-size: 0.6875rem; padding: 0.1875rem 0.4375rem; cursor: pointer; line-height: 1.25;
+      font-variant-numeric: tabular-nums;
+    }
+    .pass-week b { display: block; color: #cbd5e1; font-size: 0.75rem; }
+    .pass-week[aria-pressed="true"] { border-color: #f59e0b; background: #2a1d0a; color: #fcd34d; }
+    .pass-week[aria-pressed="true"] b { color: #fde68a; }
+    .pass-week:focus-visible, .pass-btn:focus-visible { outline: 2px solid #60a5fa; outline-offset: 2px; }
+    .pass-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+    .pass-btn {
+      border: 1px solid #92400e; background: #2a1d0a; color: #fcd34d; border-radius: 1rem;
+      font: inherit; font-size: 0.6875rem; font-weight: 600; padding: 0.125rem 0.5rem; cursor: pointer;
+    }
+    .pass-confirm { display: flex; flex-direction: column; gap: 0.25rem; }
+    .pass-confirm[hidden] { display: none; }
+    .pass-confirm-row { display: grid; grid-template-columns: 1fr auto auto; gap: 0.375rem; }
+    .qe-save.ghost { background: none; border: 1px solid #334155; color: #cbd5e1; }
+    .cycle-pass { color: #fbbf24; font-size: 0.6875rem; margin-left: 0.25rem; }
     .info {
       font-size: 0.75rem;
       color: #cbd5e1;
@@ -972,6 +1000,17 @@
       </div>
 
       <div class="set-section">
+        <div class="set-title">Free pass</div>
+        <div class="set-hint">A reset Anthropic sometimes gives that sets weekly and session usage to 0. Add it with its expiry and the app plans the best week and time to use it. The weekly reset day does not change.</div>
+        <div class="set-status" id="passStatus"></div>
+        <div class="set-row"><label class="set-field" style="flex:1">Expires<input class="set-input" type="datetime-local" id="passExpiresInput" /></label></div>
+        <div class="set-row">
+          <button class="set-btn" id="passAddBtn">Add pass</button>
+          <button class="set-btn danger" id="passRemoveBtn" hidden>Remove pass</button>
+        </div>
+      </div>
+
+      <div class="set-section">
         <div class="set-title">Sync between devices</div>
         <div id="syncOff">
           <div class="set-hint">Keeps your sessions and weekly % in step across devices. No account needed: a private sync code links them. Data is encrypted on your device with a key derived from the code, so the server only stores scrambled data. Anyone with the code can see and change it, so only share it with your own devices.</div>
@@ -1199,9 +1238,12 @@
     }
     function setWeekly(value, ts) {
       trackerData.spotWeekly = { value, ts };
-      const key = String(cycleStartFor(ts));
+      const cs = cycleStartFor(ts), key = String(cs);
+      // After a free pass the week's total is usage before it plus usage since, capped at 100%
+      const used = usedPassIn(cs);
+      const total = used && ts >= used.usedTs ? Math.min(100, used.weekAtUse + value) : value;
       const cur = trackerData.cycles[key];
-      if (!cur || cur.ts <= ts) trackerData.cycles[key] = { value, ts };
+      if (!cur || cur.ts <= ts) trackerData.cycles[key] = { value: total, ts };
     }
 
     // ─── Calculations ─────────────────────────────────────────────────────────
@@ -1254,8 +1296,9 @@
     // Next-session target: weekly % a session must add so that you are back on
     // the target line when it ends. A running session counts from its start
     // reading. When ahead, the next session starts once time catches up.
-    function planNextSession(nowMs, cycleStartMs, cycleEndMs, weeklyPct) {
-      const target = ms => Math.min(100, ((ms - cycleStartMs) / CYCLE_MS) * 100);
+    function planNextSession(nowMs, m, weeklyPct) {
+      const cycleEndMs = m.ce;
+      const target = ms => targetTotal(m, ms);
       const as = trackerData.activeSession;
       if (as && as.startTs + SESSION_MS > nowMs) {
         const end = Math.min(as.startTs + SESSION_MS, cycleEndMs);
@@ -1263,8 +1306,8 @@
       }
       let from = nowMs, restUntil = null;
       if (weeklyPct > target(nowMs)) {
-        restUntil = cycleStartMs + (weeklyPct / 100) * CYCLE_MS;
-        if (restUntil >= cycleEndMs) return { none: true };
+        restUntil = m.start + (weeklyPct / 100) * (m.end - m.start);
+        if (restUntil >= m.end) return { none: true };
         from = restUntil;
       }
       // Starts now, or when the rest ends: not tied to any slot
@@ -1280,9 +1323,107 @@
       return pts.sort((a, b) => a[0] - b[0]);
     }
 
+    // ─── Free pass ────────────────────────────────────────────────────────────
+    // A one-off reset of weekly and session usage to 0. You choose the week and
+    // the time, before it expires; the weekly reset day does not move. One
+    // unused pass at a time.
+    const PASS_WEEKS_MAX = 8;
+    function activePass(nowMs) {
+      return trackerData.passes.filter(p => !p.usedTs && p.expiresTs > nowMs)
+        .sort((a, b) => b.addedTs - a.addedTs)[0] || null;
+    }
+    function usedPassIn(cs) {
+      return trackerData.passes.find(p => p.usedTs && p.usedTs >= cs && p.usedTs < cs + CYCLE_MS) || null;
+    }
+    // Best time in one week: the latest slot that still leaves enough sessions
+    // after it to use another 100%, no later than the expiry. In the current
+    // week, sooner if you will hit 100% before then at your pace so far.
+    function planPassWeek(pass, cs, nowMs, weekly, per) {
+      const ce = cs + CYCLE_MS, current = cs <= nowMs;
+      const from = Math.max(nowMs, cs);
+      if (pass.expiresTs <= from) return null;
+      const slots = listSlots(from, ce);
+      const deadline = Math.min(pass.expiresTs, ce);
+      const needAfter = Math.max(1, Math.ceil(100 / per - 1e-9));
+      const base = current && weekly ? weekly.value : 0;
+      const as = trackerData.activeSession;
+      const running = current && as && as.startTs + SESSION_MS > nowMs ? 1 : 0;
+      const latest = lim => {
+        for (let i = slots.length - 1; i >= 0; i--) if (slots[i].start <= lim && slots.length - i >= needAfter) return i;
+        return -1;
+      };
+      let i = latest(deadline), at, reason = "slots";
+      const ideal = latest(ce);
+      if (i >= 0) at = slots[i].start;
+      else {   // Not enough time left for a full 100% after it: the sooner the better
+        i = 0; reason = "short";
+        at = current ? from : slots.length && slots[0].start <= deadline ? slots[0].start : null;
+        if (at === null) return null;
+      }
+      if (current && weekly) {
+        if (weekly.value >= 100) { at = nowMs; reason = "full"; }
+        else if (weekly.value > 0 && weekly.ts - cs > 3600000) {
+          const t100 = weekly.ts + (100 - weekly.value) / (weekly.value / (weekly.ts - cs));
+          if (t100 < at) { at = Math.max(nowMs, t100); reason = "pace"; }
+        }
+        if (reason !== "slots" && reason !== "short") i = slots.filter(sl => sl.start < at).length;
+      }
+      const pre = Math.min(100, base + (i + running) * per);
+      const post = Math.min(100, (slots.length - i) * per);
+      const without = Math.min(100, base + (slots.length + running) * per);
+      return { cs, at, reason, gain: Math.max(0, pre + post - without),
+               limited: reason === "slots" && ideal > i };
+    }
+    // Every week you could use the pass in, and the one planned: yours if you
+    // picked one, else the latest week that still gets (nearly) the full gain.
+    function passPlan(nowMs, weekly, avg) {
+      const pass = activePass(nowMs);
+      if (!pass) return null;
+      const per = avg || 100;
+      const weeks = [];
+      for (let cs = cycleStartFor(nowMs), n = 0; cs < pass.expiresTs && n < PASS_WEEKS_MAX; cs += CYCLE_MS, n++) {
+        const w = planPassWeek(pass, cs, nowMs, weekly, per);
+        if (w && (w.gain >= 1 || w.cs === pass.week)) weeks.push(w);   // skip weeks it would add nothing to
+      }
+      if (!weeks.length) return { pass, weeks, sel: null };
+      const best = Math.max(...weeks.map(w => w.gain));
+      let sel = weeks.find(w => w.cs === pass.week), auto = false;
+      if (!sel) {
+        // Locked out at 100% this week: using it now is the surest gain. Otherwise keep it in reserve.
+        sel = weeks.find(w => w.reason === "full" && w.gain >= Math.min(99.5, best - 0.5))
+          || weeks.filter(w => w.gain >= Math.min(99.5, best - 0.5)).pop();
+        auto = true;
+      }
+      return { pass, weeks, sel, auto, estimated: !avg };
+    }
+    // The target line. Normally 0% at the reset to 100% at the next. In the
+    // week a pass is planned: 0 to 100% by the pass, then 0 to 100% again by
+    // the reset. After a pass: 0% at the pass to 100% at the reset.
+    function paceModel(cs, nowMs, plan) {
+      const ce = cs + CYCLE_MS;
+      const used = usedPassIn(cs);
+      if (used && nowMs >= used.usedTs) return { kind: "used", cs, ce, start: used.usedTs, end: ce, passAt: used.usedTs };
+      if (plan && plan.sel && plan.sel.cs === cs) {
+        const at = Math.min(ce - 60000, Math.max(plan.sel.at, nowMs, cs + 3600000));
+        return { kind: "plan", cs, ce, start: cs, end: at, passAt: at };
+      }
+      return { kind: "normal", cs, ce, start: cs, end: ce };
+    }
+    // Target as % of its own segment (what the chart and check-ins show)
+    function targetAt(m, ms) {
+      const f = (a, b) => Math.min(100, Math.max(0, (ms - a) / Math.max(1, b - a) * 100));
+      if (m.kind === "plan" && ms > m.end) return f(m.end, m.ce);
+      if (m.kind === "used" && ms < m.start) return f(m.cs, m.start);
+      return f(m.start, m.end);
+    }
+    // Usage the target asks for by ms, counting both halves of a planned pass
+    function targetTotal(m, ms) {
+      return m.kind === "plan" && ms > m.end ? 100 + targetAt(m, ms) : targetAt(m, ms);
+    }
+
     // ─── Storage & data model ─────────────────────────────────────────────────
     // Synced fields: sessions, deleted (tombstones), spotWeekly, activeSession(+Ts),
-    // cycles, settings. Everything else is per-device.
+    // cycles, settings, readings, prefs, passes. Everything else is per-device.
     function newId() {
       const b = new Uint8Array(8);
       crypto.getRandomValues(b);
@@ -1305,10 +1446,16 @@
       if (s.fromTimer) out.fromTimer = true;
       return out;
     }
+    function cleanPass(p) {
+      if (!p || typeof p.id !== "string" || num(p.expiresTs) === null) return null;
+      return { id: p.id, addedTs: num(p.addedTs) || 0, expiresTs: num(p.expiresTs), week: num(p.week),
+               usedTs: num(p.usedTs), weekAtUse: num(p.weekAtUse), ts: num(p.ts) || 0 };
+    }
     function normalizeSynced(d) {
       d = d && typeof d === "object" ? d : {};
       const out = {};
       out.sessions = (Array.isArray(d.sessions) ? d.sessions : []).map(cleanSession).filter(Boolean);
+      out.passes = (Array.isArray(d.passes) ? d.passes : []).map(cleanPass).filter(Boolean);
       out.deleted = {};
       if (d.deleted && typeof d.deleted === "object") {
         for (const [k, v] of Object.entries(d.deleted)) if (num(v) !== null) out.deleted[k] = num(v);
@@ -1343,7 +1490,7 @@
       return out;
     }
     function emptyData() {
-      return Object.assign(normalizeSynced({}), { trackerOpen: false, lastSheetTab: "spot", sync: null, notifiedFor: null });
+      return Object.assign(normalizeSynced({}), { trackerOpen: false, lastSheetTab: "spot", sync: null, notifiedFor: null, passNotified: null });
     }
     function loadData() {
       try {
@@ -1356,6 +1503,7 @@
         out.sync         = d.sync && typeof d.sync.code === "string" ? d.sync : null;
         // Migrate the old per-session "notified" flag to a per-device field
         out.notifiedFor  = d.notifiedFor || (d.activeSession && d.activeSession.notified ? d.activeSession.startTs : null);
+        out.passNotified = typeof d.passNotified === "string" ? d.passNotified : null;
         // Seed the per-cycle log from an existing reading
         if (out.spotWeekly && out.spotWeekly.ts && !Object.keys(out.cycles).length) {
           const a = out.settings.resetAnchor;
@@ -1397,6 +1545,13 @@
       const rById = new Map();
       [...a.readings, ...b.readings].forEach(r => { if (!out.deleted[r.id] && !rById.has(r.id)) rById.set(r.id, r); });
       out.readings = [...rById.values()].sort((x, y) => x.ts - y.ts);
+      const pById = new Map();
+      [...a.passes, ...b.passes].forEach(p => {
+        if (out.deleted[p.id]) return;
+        const cur = pById.get(p.id);
+        if (!cur || p.ts > cur.ts) pById.set(p.id, p);
+      });
+      out.passes = [...pById.values()];
       const aw = a.spotWeekly, bw = b.spotWeekly;
       out.spotWeekly = !aw ? bw : !bw ? aw : (bw.ts > aw.ts ? bw : aw);
       if (b.activeSessionTs > a.activeSessionTs) {
@@ -1414,7 +1569,7 @@
       return {
         sessions: d.sessions, deleted: d.deleted, spotWeekly: d.spotWeekly,
         activeSession: d.activeSession, activeSessionTs: d.activeSessionTs,
-        cycles: d.cycles, settings: d.settings, readings: d.readings, prefs: d.prefs
+        cycles: d.cycles, settings: d.settings, readings: d.readings, prefs: d.prefs, passes: d.passes
       };
     }
     function stableStringify(v) {
@@ -1445,7 +1600,7 @@
       <div class="hero">
         <div>
           <div class="hero-pct" id="pctNumber">0.00<span class="unit">%</span></div>
-          <div class="hero-sub">of the week elapsed</div>
+          <div class="hero-sub" id="heroSub">of the week elapsed</div>
         </div>
         <div class="hero-side">
           <button class="used-btn" id="heroUsed" aria-haspopup="dialog" aria-expanded="false" aria-controls="quickEdit">— used</button>
@@ -1473,6 +1628,32 @@
           </div>
           <div class="stc-track"><div class="stc-fill" id="sessionFill" style="width:100%"></div></div>
         </button>
+
+        <div class="card pass-card after" id="passCard" hidden>
+          <div class="card-head">
+            <span class="card-label">Free pass</span>
+            <span class="card-head-right">
+              <span class="num" id="passExpiry"></span>
+              <button class="info-btn" aria-expanded="false" aria-controls="passInfo" aria-label="About the free pass">i</button>
+            </span>
+          </div>
+          <div class="pass-main"><span class="pass-when num" id="passWhen"></span><span class="pass-gain num" id="passGain"></span></div>
+          <div class="pass-weeks" id="passWeeks" role="group" aria-label="Week to use the pass"></div>
+          <div class="card-warn" id="passWarn" hidden></div>
+          <div class="pass-actions">
+            <button class="remind-btn" id="passRemindBtn" aria-expanded="false" aria-controls="passInfo">Remind me</button>
+            <button class="pass-btn" id="passUseBtn">I used it now</button>
+          </div>
+          <div class="pass-confirm" id="passConfirm" hidden>
+            <label class="qe-title" for="passBefore">Weekly % just before you used it</label>
+            <div class="pass-confirm-row">
+              <input class="qe-input" id="passBefore" type="number" inputmode="decimal" min="0" max="100" step="0.1" />
+              <button class="qe-save" id="passConfirmBtn">Confirm</button>
+              <button class="qe-save ghost" id="passCancelBtn">Cancel</button>
+            </div>
+          </div>
+          <div class="info" id="passInfo" hidden></div>
+        </div>
 
         <div class="pair after">
           <div class="card">
@@ -1557,6 +1738,7 @@
             Solid grey line: the target, rising evenly from 0% at the reset to 100% at the next.
             Coloured line: your readings. Dashed line: your average rate so far, extended to the reset.
             Circles: your next check-ins. Shaded bands: outside your day (see Settings). Tap the chart to read a value.
+            With a free pass planned this week, the target reaches 100% at the pass (amber line), then climbs from 0% again to the reset.
           </div>
         </div>
       </div>
@@ -1634,7 +1816,7 @@
       });
       if (!best) {
         const ms = g.cs + Math.min(1, Math.max(0, (px - g.L) / (g.W - g.L - g.R))) * CYCLE_MS;
-        best = { ms, pct: ((ms - g.cs) / CYCLE_MS) * 100, kind: "target" };
+        best = { ms, pct: targetAt(g.m, ms), kind: "target" };
       }
       chartSel = Object.assign(best, { cs: g.cs });
       renderChart(...chartArgs);
@@ -2116,9 +2298,9 @@
       const as = trackerData.activeSession;
       if (!as) return;
       showSpecialPane(paneComplete, "Log Session");
-      const crossed = as.startTs < getCycleStartUTC();
+      const crossed = completionBefore(as) === 0 && as.weekBefore !== 0;
       completeBanner.textContent = crossed
-        ? "Session ended. The weekly limit reset during it, so enter your weekly % now."
+        ? "Session ended. Your usage reset during it (weekly reset or free pass), so enter your weekly % now."
         : `Session ended. Weekly was ${as.weekBefore}% at the start. Enter what you used.`;
       completeSession.value = "";
       completeAfter.value   = crossed ? "" : as.weekBefore;
@@ -2126,7 +2308,12 @@
       setTimeout(() => completeSession.focus(), 60);
     }
     // If the reset happened mid-session, usage before it belonged to the old cycle
-    function completionBefore(as) { return as.startTs < getCycleStartUTC() ? 0 : as.weekBefore; }
+    // A free pass used during the session reset it too
+    function completionBefore(as) {
+      if (as.startTs < getCycleStartUTC()) return 0;
+      const used = usedPassIn(getCycleStartUTC());
+      return used && used.usedTs > as.startTs ? 0 : as.weekBefore;
+    }
     function updateCompletePreview() {
       const as = trackerData.activeSession;
       if (!as) return;
@@ -2293,7 +2480,7 @@
         .sort((a, b) => a.start - b.start)
         .slice(-8);
       document.getElementById("cyclesTrend").innerHTML = trend.map(c => `
-        <div class="trend-col" title="${formatDayDate(c.start)}: ${c.value.toFixed(1)}% used">
+        <div class="trend-col" title="${formatDayDate(c.start)}: ${c.value.toFixed(1)}% used${usedPassIn(c.start) ? ", free pass used" : ""}">
           <span class="trend-val num">${Math.round(c.value)}</span>
           <div class="trend-track"><div class="trend-bar" style="height:${Math.min(100, c.value)}%;background:${colour(c.value)}"></div></div>
           <span class="trend-lbl">${new Date(c.start).toLocaleString("en-AU", { day: "numeric", month: "short" })}</span>
@@ -2302,7 +2489,8 @@
         const cls = c.value >= 95 ? "good" : c.value >= 80 ? "ok" : "bad";
         const lastBefore = c.start + CYCLE_MS - c.ts;
         const note = lastBefore > 12 * 3600000 ? `<span class="cycle-sub">logged ${formatDuration(lastBefore)} before reset</span>` : "";
-        return `<div class="cycle-row"><span>${formatDayDate(c.start)}</span>
+        const pass = usedPassIn(c.start) ? `<span class="cycle-pass" title="Free pass used this week">★ pass</span>` : "";
+        return `<div class="cycle-row"><span>${formatDayDate(c.start)}${pass}</span>
           <span><span class="cycle-val ${cls}">${c.value.toFixed(1)}% used</span>${note}</span></div>`;
       }).join("");
     }
@@ -2315,15 +2503,15 @@
     // Drawn at the box's real pixel size, so text stays crisp and the chart
     // fills whatever height the layout gives it. Marks scale with the root font.
     let chartArgs = null, chartGeom = null, chartSel = null, chartSelTimer = null;
-    function renderChart(cs, ce, nowMs, weeklyPct, colour, checkIns) {
-      chartArgs = [cs, ce, nowMs, weeklyPct, colour, checkIns];
+    function renderChart(cs, ce, nowMs, weeklyPct, colour, checkIns, m) {
+      chartArgs = [cs, ce, nowMs, weeklyPct, colour, checkIns, m];
       const box = document.getElementById("burnChart");
       const k = (parseFloat(getComputedStyle(document.documentElement).fontSize) || 16) / 16;
       const W = Math.max(200, box.clientWidth), H = Math.max(90, box.clientHeight);
       const L = 30 * k, R = 10 * k, T = 13 * k, B = 19 * k, fs = 9 * k;
       const x = ms => L + Math.min(1, Math.max(0, (ms - cs) / CYCLE_MS)) * (W - L - R);
       const y = p => T + (1 - Math.min(100, Math.max(0, p)) / 100) * (H - T - B);
-      chartGeom = { x, y, cs, ce, L, R, W, k, pts: weeklyPct !== null ? cycleReadings(cs) : [] };
+      chartGeom = { x, y, cs, ce, L, R, W, k, m, pts: weeklyPct !== null ? cycleReadings(cs) : [] };
       let s = "";
       // Nights (outside waking hours) shaded
       for (let mid = addLocalDays(localMidnight(cs), -1); mid < ce; mid = addLocalDays(mid, 1)) {
@@ -2341,17 +2529,28 @@
         s += `<text x="${x(noon)}" y="${H - 6 * k}" font-size="${fs}" fill="#64748b" text-anchor="middle">${
           new Date(noon).toLocaleString("en-AU", { weekday: "short" })}</text>`;
       }
-      s += `<line x1="${x(cs)}" y1="${y(0)}" x2="${x(ce)}" y2="${y(100)}" stroke="#94a3b8" stroke-width="${1.5 * k}"/>`;
-      s += `<text x="${x(cs + 0.155 * CYCLE_MS)}" y="${y(15.5) - 6 * k}" font-size="${fs}" fill="#94a3b8" text-anchor="end">target</text>`;
+      // Target line: one segment, or two around a free pass (planned or used)
+      const tline = (a, b, extra) => s += `<line x1="${x(a)}" y1="${y(0)}" x2="${x(b)}" y2="${y(100)}" stroke="#94a3b8" stroke-width="${1.5 * k}"${extra || ""}/>`;
+      if (m.kind === "normal") tline(cs, ce);
+      else {
+        if (m.kind === "plan") { tline(cs, m.passAt); tline(m.passAt, ce, ` stroke-dasharray="${5 * k} ${3 * k}"`); }
+        else { tline(cs, m.passAt, ` opacity="0.35"`); tline(m.passAt, ce); }
+        s += `<line x1="${x(m.passAt)}" x2="${x(m.passAt)}" y1="${T}" y2="${H - B}" stroke="#f59e0b" stroke-width="${1.5 * k}"${
+          m.kind === "plan" ? ` stroke-dasharray="${3 * k} ${3 * k}"` : ""}/>`;
+        s += `<text x="${x(m.passAt) + 3 * k}" y="${T + 9 * k}" font-size="${fs}" fill="#f59e0b">pass</text>`;
+      }
+      const tx = m.start + 0.155 * (m.end - m.start);
+      s += `<text x="${x(tx)}" y="${y(15.5) - 6 * k}" font-size="${fs}" fill="#94a3b8" text-anchor="end">target</text>`;
       checkIns.filter(c => !c.nextCycle).forEach(c =>
         s += `<circle cx="${x(c.ms)}" cy="${y(c.pct)}" r="${3.5 * k}" fill="#0f172a" stroke="#94a3b8" stroke-width="${1.5 * k}"/>`);
 
       if (weeklyPct !== null) {
         const pts  = cycleReadings(cs);
         const last = pts[pts.length - 1];
-        // Projection at the average rate so far, from the latest reading
-        if (last[1] > 0 && last[1] < 100 && last[0] - cs > 3600000) {
-          const rate   = last[1] / (last[0] - cs);
+        // Projection at the average rate so far (since the pass, if used), from the latest reading
+        const from = m.kind === "used" ? m.start : cs;
+        if (last[1] > 0 && last[1] < 100 && last[0] - from > 3600000) {
+          const rate   = last[1] / (last[0] - from);
           const endVal = last[1] + rate * (ce - last[0]);
           const hits   = endVal >= 100;
           const endMs  = hits ? last[0] + (100 - last[1]) / rate : ce;
@@ -2375,7 +2574,7 @@
       placeChartTip();
     }
 
-    function renderNextSession(nowMs, cs, ce, weeklyPct, avg, colour, nSlots) {
+    function renderNextSession(nowMs, m, weeklyPct, avg, colour, nSlots) {
       const title = document.getElementById("nextTitle");
       const big   = document.getElementById("nextBig");
       const note  = document.getElementById("nextNote");
@@ -2393,8 +2592,10 @@
       title.textContent = "Next session";
       const how = "How much of your next 5-hour session to use so you are back on the target line when it ends.";
       if (weeklyPct === null) return show("—", "Set weekly % with +", how);
+      if (weeklyPct >= 100 && m.kind === "plan") return show("Pass", "Weekly at 100%: use your free pass now",
+        how + " You have used this week's allowance and your free pass is planned for this week, so use it now to start again from 0%.");
       if (weeklyPct >= 100)   return show("Done", "Allowance fully used", how);
-      const p = planNextSession(nowMs, cs, ce, weeklyPct);
+      const p = planNextSession(nowMs, m, weeklyPct);
       if (p.none) return show("0%", "Nothing needed before reset", how);
       if (p.restUntil) restMs = p.restUntil;
 
@@ -2423,18 +2624,70 @@
         how + ` One session can't close the gap: use all of ${full === 1 ? "this one" : "the next " + full}${then ? ", " + then : ""}. ` + weekly + rest);
     }
 
+    // ─── Free pass card ───────────────────────────────────────────────────────
+    const passDate = ms => new Date(ms).toLocaleString("en-AU", { weekday: "short", day: "numeric", month: "short" }) + " " + formatClockTime(ms);
+    let passReminders = null;   // { best, expiry } times for the calendar buttons
+    function renderPass(nowMs, plan, weeklyPct) {
+      const card = document.getElementById("passCard");
+      card.hidden = !plan;
+      if (!plan) { passReminders = null; return; }
+      const p = plan.pass, sel = plan.sel, cur = cycleStartFor(nowMs);
+      const weekName = cs => cs === cur ? "this week" : "week of " + new Date(cs).toLocaleString("en-AU", { day: "numeric", month: "short" });
+      document.getElementById("passExpiry").textContent = `expires ${passDate(p.expiresTs)} · ${formatDuration(p.expiresTs - nowMs)}`;
+      const whenEl = document.getElementById("passWhen"), gainEl = document.getElementById("passGain");
+      const warn = document.getElementById("passWarn");
+      const useNow = sel && sel.cs === cur && sel.at <= nowMs + 60000;
+      if (!sel) {
+        whenEl.textContent = "Use it before " + passDate(p.expiresTs);
+        gainEl.textContent = "";
+      } else {
+        whenEl.textContent = useNow ? "Use it now" : "Use " + passDate(sel.at);
+        gainEl.innerHTML = `${plan.estimated ? "about " : ""}<b>+${sel.gain.toFixed(0)}%</b> extra · ${weekName(sel.cs)}${plan.auto ? " (auto)" : ""}`;
+      }
+      document.getElementById("passWeeks").innerHTML = plan.weeks.length > 1 ? plan.weeks.map(w => `
+        <button class="pass-week" data-week="${w.cs}" aria-pressed="${sel && w.cs === sel.cs}">
+          <b>${w.cs === cur ? "This wk" : new Date(w.cs).toLocaleString("en-AU", { day: "numeric", month: "short" })}</b>+${w.gain.toFixed(0)}%</button>`).join("") : "";
+      const warnText = !sel ? "No session slot fits before it expires"
+        : sel.limited ? `It expires before the best time in this week, so this is the last slot before it expires`
+        : sel.reason === "short" ? "Not enough sessions left after it to use another full 100%"
+        : "";
+      warn.hidden = !warnText;
+      warn.textContent = warnText;
+      // Remind: best time (if still ahead) and a day before it expires
+      const best = sel && !useNow ? sel.at : null;
+      const expiry = p.expiresTs - DAY_MS > nowMs ? p.expiresTs - DAY_MS : null;
+      passReminders = { best, expiry };
+      document.getElementById("passRemindBtn").hidden = !best && !expiry;
+      const why = !sel ? "" : sel.reason === "full" ? "You are at 100% this week, so using it now loses nothing."
+        : sel.reason === "pace" ? "At your pace so far you will hit 100% before the usual best time, so use it when you get there."
+        : "That is the latest session slot that still leaves enough sessions before the reset to use another 100%.";
+      const info = document.getElementById("passInfo");
+      info.innerHTML = `Using the pass sets your weekly and session usage to 0%; the weekly reset day stays the same. `
+        + `The extra is how much more of a week's allowance you can use with the pass than without it, from your usual session times and your average of `
+        + `${plan.estimated ? "about 100% per session until you log sessions" : "weekly % per full session"}. ${why} `
+        + `Tap a week to plan it there${plan.auto ? "; until you do, it plans the latest week that still gets the full extra, so the pass stays in reserve" : ""}. `
+        + `In the planned week the target line reaches 100% at the pass, then starts again from 0%. The best time can move a little as your average changes.`
+        + (best || expiry ? `<div class="info-actions">${best ? `<button data-pcal="google" data-pkind="best">+ Google: use pass</button><button data-pcal="ics" data-pkind="best">+ .ics: use pass</button>` : ""}`
+          + `${expiry ? `<button data-pcal="google" data-pkind="expiry">+ Google: day before expiry</button><button data-pcal="ics" data-pkind="expiry">+ .ics: day before expiry</button>` : ""}</div>` : "");
+      maybeNotifyPass(plan, nowMs);
+    }
+
     function update() {
       const nowMs        = Date.now();
       const cycleStartMs = getCycleStartUTC();
       const cycleEndMs   = cycleStartMs + CYCLE_MS;
-      const pct          = Math.min(100, Math.max(0, ((nowMs - cycleStartMs) / CYCLE_MS) * 100));
       const weekly       = getWeekly();
       const weeklyPct    = weekly ? weekly.value : null;
-      const status       = getDriftStatus(weeklyPct, pct);
-      const colour       = barColour(status);
       const avgData      = calcAvg(trackerData.sessions);
       const avg          = avgData && avgData.avg > 0 ? avgData.avg : null;
+      const plan         = passPlan(nowMs, weekly, avg);
+      const m            = paceModel(cycleStartMs, nowMs, plan);
+      const pct          = targetAt(m, nowMs);   // the target now (% of the week elapsed, without a pass)
+      const status       = getDriftStatus(weeklyPct, pct);
+      const colour       = barColour(status);
       const checkIns     = getNextCheckIns();
+      // Check-ins this week follow the target line, including a free pass
+      checkIns.forEach(c => { if (!c.nextCycle) { c.pct = targetAt(m, c.ms); c.total = targetTotal(m, c.ms); } });
 
       const tz = tzAbbrev(cycleEndMs);
       document.getElementById("headerReset").textContent =
@@ -2446,6 +2699,8 @@
       const pctEl = document.getElementById("pctNumber");
       pctEl.style.color = colour;
       pctEl.innerHTML   = pct.toFixed(2) + '<span class="unit">%</span>';
+      document.getElementById("heroSub").textContent = m.kind === "plan" ? "target · free pass plan"
+        : m.kind === "used" ? "target since free pass" : "of the week elapsed";
       document.getElementById("heroUsed").innerHTML =
         weeklyPct === null ? "— used" : `<b>${weeklyPct.toFixed(1)}%</b> used`;
       const pill = document.getElementById("statusPill");
@@ -2460,7 +2715,7 @@
       // Check-ins: target at that time and how much more usage to be on it
       function checkInGap(c) {
         if (weeklyPct === null) return "";
-        const gap = c.pct - (c.nextCycle ? 0 : weeklyPct);
+        const gap = c.nextCycle ? c.pct : c.total - weeklyPct;
         if (gap >= 0.05)  return `<span class="checkin-gap">+${gap.toFixed(1)} to go</span>`;
         if (gap <= -0.05) return `<span class="checkin-gap ahead">${Math.abs(gap).toFixed(1)} ahead</span>`;
         return `<span class="checkin-gap ahead">on pace</span>`;
@@ -2472,17 +2727,21 @@
           ${checkInGap(c)}
         </div>`).join("");
 
-      renderChart(cycleStartMs, cycleEndMs, nowMs, weeklyPct, colour, checkIns);
+      renderChart(cycleStartMs, cycleEndMs, nowMs, weeklyPct, colour, checkIns, m);
       const slots = listSlots(nowMs, cycleEndMs);
-      renderNextSession(nowMs, cycleStartMs, cycleEndMs, weeklyPct, avg, colour, slots.length);
+      renderPass(nowMs, plan, weeklyPct);
+      renderNextSession(nowMs, m, weeklyPct, avg, colour, slots.length);
 
       // Pace gap: %, clock time and sessions
       const gapPct  = document.getElementById("gapPct");
       const gapFill = document.getElementById("gapFill");
       const gapText = document.getElementById("gapText");
       const gapInfo = document.getElementById("gapInfo");
-      const gapHow  = "Your usage minus the target line (the % of the week elapsed). "
-        + "As time, 1% of the week is 1h 41m. As sessions, the gap ÷ your average weekly % per full session.";
+      const segMs   = m.end - m.start;   // the target line's current stretch: the week, or up to / since a free pass
+      const gapHow  = (m.kind === "normal"
+        ? "Your usage minus the target line (the % of the week elapsed). As time, 1% of the week is 1h 41m."
+        : `Your usage minus the target line, which runs ${m.kind === "plan" ? "to 100% at your planned free pass" : "from 0% at your free pass to 100% at the reset"}. As time, 1% is ${formatDuration(segMs / 100)}.`)
+        + " As sessions, the gap ÷ your average weekly % per full session.";
       if (weeklyPct === null) {
         gapPct.textContent = "—";
         gapFill.style.width = "0";
@@ -2491,7 +2750,7 @@
       } else {
         const gap = weeklyPct - pct, abs = Math.abs(gap);
         const word = gap >= 0 ? "ahead" : "behind";
-        const time = formatDuration(abs / 100 * CYCLE_MS);
+        const time = formatDuration(abs / 100 * segMs);
         gapPct.innerHTML = `<span class="arrow">${abs < 0.05 ? "●" : gap >= 0 ? "▲" : "▼"}</span>${gap >= 0 ? "+" : "−"}${abs.toFixed(1)}%`;
         gapPct.style.color = colour;
         gapFill.style.background   = colour;
@@ -2508,8 +2767,9 @@
           + " The bar is centred on the target and runs to 20% either side.";
       }
 
-      // Sessions to 100% vs slots left
-      const needed = weeklyPct !== null && avg ? Math.max(0, 100 - weeklyPct) / avg : null;
+      // Sessions to 100% vs slots left (with a pass planned this week: 100% before it and 100% after)
+      const passSecond = m.kind === "plan" ? 100 : 0;
+      const needed = weeklyPct !== null && avg ? (Math.max(0, 100 - weeklyPct) + passSecond) / avg : null;
       const needN  = needed === null ? 0 : Math.min(slots.length, Math.ceil(needed - 1e-9));
       const spare  = slots.length - needN;
       document.getElementById("slotsHead").innerHTML = needed === null
@@ -2538,7 +2798,7 @@
         let dayEnd = localAt(localMidnight(nowMs), prefs().wakeEnd), label = "Today";
         if (nowMs >= dayEnd) { dayEnd = localAt(addLocalDays(localMidnight(nowMs), 1), prefs().wakeEnd); label = "Tomorrow"; }
         if (dayEnd >= cycleEndMs) { dayEnd = cycleEndMs; label = "Before reset"; }
-        const need = ((dayEnd - cycleStartMs) / CYCLE_MS) * 100 - weeklyPct;
+        const need = targetTotal(m, dayEnd) - weeklyPct;
         // Sessions that can still happen before then: a running one plus the open slots
         const as  = trackerData.activeSession;
         const fit = slots.filter(sl => sl.start < dayEnd).length + (as && as.startTs + SESSION_MS > nowMs ? 1 : 0);
@@ -2553,14 +2813,114 @@
       const warn = document.getElementById("slotsWarn");
       warn.hidden = !(needed !== null && needed > slots.length) && slots.length > 0;
       warn.textContent = !slots.length ? "No waking-hours slots left before the reset"
-        : warn.hidden ? "" : `Using all ${slots.length} gets you to about ${(weeklyPct + slots.length * avg).toFixed(1)}%, so ~${((needed - slots.length) * avg).toFixed(1)}% will go unused`;
+        : warn.hidden ? "" : `Using all ${slots.length} gives about +${(slots.length * avg).toFixed(1)}%, so ~${((needed - slots.length) * avg).toFixed(1)}% will go unused`;
       document.getElementById("slotsInfo").textContent =
         `A guide to how many 5-hour sessions still fit before the reset: today counts from now, later days use your usual ${usualTimes().join(", ")}. One block per session, showing its start time. You can start any time; change your day in Settings. `
         + (needed === null
           ? (avg ? "Set your weekly % to see how many you need." : "Log a session to see how many you need.")
-          : `Filled blocks: the ${needed.toFixed(1)} sessions to reach 100%, at your average of ${avg.toFixed(1)}% weekly per full session.`);
+          : `Filled blocks: the ${needed.toFixed(1)} sessions to reach 100%${passSecond ? ", then 100% again after your free pass" : ""}, at your average of ${avg.toFixed(1)}% weekly per full session.`);
       fitToScreen();
     }
+
+    // ─── Free pass actions ────────────────────────────────────────────────────
+    document.getElementById("passWeeks").addEventListener("click", e => {
+      const b = e.target.closest("[data-week]");
+      const p = activePass(Date.now());
+      if (!b || !p) return;
+      p.week = Number(b.dataset.week);
+      p.ts = Date.now();
+      commit();
+      update();
+    });
+    document.getElementById("passInfo").addEventListener("click", e => {
+      const b = e.target.closest("[data-pcal]");
+      if (!b || !passReminders) return;
+      const ms = passReminders[b.dataset.pkind];
+      if (!ms) return;
+      if (b.dataset.pkind === "best") addToCalendar(b.dataset.pcal, ms, "Claude: use your free pass now",
+        "Best time to use your free pass. Open Claude Cycle, use the pass, then tap 'I used it now'.", "pass-best" + ms);
+      else addToCalendar(b.dataset.pcal, ms, "Claude: free pass expires tomorrow",
+        "Your Claude free pass expires in 24 hours. Open Claude Cycle to see when to use it.", "pass-exp" + ms);
+    });
+    const passConfirm = document.getElementById("passConfirm"), passBefore = document.getElementById("passBefore");
+    document.getElementById("passUseBtn").addEventListener("click", () => {
+      const w = getWeekly();
+      passBefore.value = w ? w.value : "";
+      passConfirm.hidden = false;
+      passBefore.focus();
+      passBefore.select();
+    });
+    document.getElementById("passCancelBtn").addEventListener("click", () => { passConfirm.hidden = true; });
+    function confirmPassUse() {
+      const v = Math.round(parseFloat(passBefore.value) * 10) / 10;
+      const p = activePass(Date.now());
+      if (!inPct(v) || !p) { passBefore.focus(); return; }
+      passConfirm.hidden = true;
+      const now = Date.now(), key = String(cycleStartFor(now));
+      const prevCycle = trackerData.cycles[key];
+      const r1 = addReading(v, now - 1);
+      Object.assign(p, { usedTs: now, weekAtUse: v, ts: now });
+      setWeekly(0, now);
+      const r2 = addReading(0, now);
+      commit();
+      renderAll();
+      showToast("Free pass used: weekly back to 0%", () => {
+        const t = Date.now();
+        Object.assign(p, { usedTs: null, weekAtUse: null, ts: t });
+        trackerData.spotWeekly = { value: v, ts: t };
+        removeReading(r1);
+        removeReading(r2);
+        trackerData.cycles[key] = { value: prevCycle ? Math.max(prevCycle.value, v) : v, ts: t };
+        commit();
+        renderAll();
+      });
+    }
+    document.getElementById("passConfirmBtn").addEventListener("click", confirmPassUse);
+    passBefore.addEventListener("keydown", e => {
+      if (e.key === "Enter") confirmPassUse();
+      if (e.key === "Escape") passConfirm.hidden = true;
+    });
+
+    // Settings: add or remove the pass
+    const passExpiresInput = document.getElementById("passExpiresInput");
+    function renderPassSettings() {
+      const p = activePass(Date.now());
+      document.getElementById("passStatus").textContent = p
+        ? `Pass expires ${passDate(p.expiresTs)}. Adding a new one replaces it.` : "No pass added.";
+      document.getElementById("passRemoveBtn").hidden = !p;
+      if (!passExpiresInput.value) {
+        const d = new Date(Date.now() + 14 * DAY_MS);
+        d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+        passExpiresInput.value = d.toISOString().slice(0, 16);
+      }
+    }
+    function dropUnusedPasses() {
+      const now = Date.now();
+      trackerData.passes = trackerData.passes.filter(p => {
+        if (p.usedTs) return true;
+        trackerData.deleted[p.id] = now;
+        return false;
+      });
+    }
+    document.getElementById("passAddBtn").addEventListener("click", () => {
+      const ms = new Date(passExpiresInput.value).getTime();
+      if (!isFinite(ms) || ms <= Date.now()) { showToast("Pick an expiry in the future"); return; }
+      dropUnusedPasses();
+      const now = Date.now();
+      trackerData.passes.push({ id: newId(), addedTs: now, expiresTs: ms, week: null, usedTs: null, weekAtUse: null, ts: now });
+      commit();
+      renderAll();
+      renderPassSettings();
+      showToast("Free pass added");
+      requestNotifyPermission();
+    });
+    document.getElementById("passRemoveBtn").addEventListener("click", () => {
+      dropUnusedPasses();
+      commit();
+      renderAll();
+      renderPassSettings();
+      showToast("Free pass removed");
+    });
 
     // ─── Settings (C9 reset time, sync, backup) ───────────────────────────────
     const resetDay  = document.getElementById("resetDay");
@@ -2579,6 +2939,7 @@
       prefCi1.value   = hhmm(pf.checkins[0]);
       prefCi2.value   = hhmm(pf.checkins[1]);
       updatePrefHint();
+      renderPassSettings();
       renderSyncUI();
       showSpecialPane(paneSettings, "Settings");
     }
@@ -2966,6 +3327,23 @@
       trackerData.notifiedFor = as.startTs;
       saveData(trackerData);
       showSessionEndNotification();
+    }
+    // Free pass: once per pass per device, when its best time arrives (best effort)
+    function maybeNotifyPass(plan, nowMs) {
+      const p = plan.pass, sel = plan.sel;
+      if (!sel || sel.cs !== cycleStartFor(nowMs) || nowMs < sel.at) return;
+      if (trackerData.passNotified === p.id || nowMs - p.addedTs < 5 * 60000) return;
+      if (!("Notification" in window) || Notification.permission !== "granted") return;
+      trackerData.passNotified = p.id;
+      saveData(trackerData);
+      const title = "Use your free pass", opts = {
+        body: "Now is the best time to use your Claude free pass. Then tap 'I used it now'.",
+        tag: "free-pass", icon: "icons/icon-192.png", badge: "icons/icon-192.png"
+      };
+      if (navigator.serviceWorker && navigator.serviceWorker.ready) {
+        navigator.serviceWorker.ready.then(reg => reg.showNotification(title, opts))
+          .catch(() => { try { new Notification(title, opts); } catch (e) {} });
+      } else { try { new Notification(title, opts); } catch (e) {} }
     }
     function clearSessionNotifyTimer() {
       if (sessionNotifyTimer) { clearTimeout(sessionNotifyTimer); sessionNotifyTimer = null; }

@@ -1,6 +1,6 @@
 # Claude Usage Cycle Tracker
 
-Version 2.8 · last updated 2026-11-11
+Version 2.9 · last updated 2026-11-13
 
 A Progressive Web App (PWA) that tracks your Claude weekly usage and helps you
 use the whole allowance before it resets.
@@ -11,6 +11,9 @@ Live at `https://zstoimenov.github.io/claude-usage-tracker/`
 
 ## Features
 
+- Free pass planner: add a pass with its expiry (Settings → Free pass); the
+  app suggests the week and time to use it for the most extra usage, with
+  calendar reminders and an "I used it now" button
 - Live countdown; all times shown in your device's time zone
 - Main number: % of the week elapsed, coloured by pace
   (blue = ahead, green = on track, amber / orange / red = under-using)
@@ -53,6 +56,11 @@ Live at `https://zstoimenov.github.io/claude-usage-tracker/`
 | Next session target | (target at the session's end - weekly %) ÷ avg session value. Assumes you start now; when ahead, when the target line catches up (the rest time). Not tied to any slot. A running session is measured from its starting reading. Over 100% it shows how many sessions to max out |
 | Projection | Average rate so far, extended from the latest reading to the reset |
 | Check-in "to go" | % of week elapsed at that time minus your current weekly % |
+| Free pass: best time | In a week, the latest session slot (before expiry) that still leaves enough slots before the reset to use another 100% (100 ÷ avg session value). In the current week, sooner if your pace hits 100% first, or now if you are at 100% |
+| Free pass: extra | (usage before the pass, up to 100%) + (usage after, up to 100%) - (usage without a pass, up to 100%), from slots left × avg session value |
+| Free pass: week | The week you tap. Until then: this week if you are at 100%, else the latest week before expiry that still gets the full extra |
+| Target with a pass | Planned week: 0% at the reset to 100% at the pass, then 0% to 100% at the reset. After using it: 0% at the pass to 100% at the reset. Pace, gap, check-ins and next session follow this line |
+| Week total with a pass | Usage before the pass + usage after, capped at 100% |
 
 ## Sync
 
@@ -153,6 +161,12 @@ Bump `CACHE_NAME` in `sw.js` only when you want old caches cleared.
 
 ## Changelog
 
+- **2.9** (2026-11-13): free pass planner. Add a pass with its expiry; the
+  app shows the best week and time to use it and the extra you would get,
+  lets you pick the week, adds calendar reminders (best time, a day before
+  expiry), notifies you in the app at the best time, and resets weekly % to
+  0 when you use it. The target line, pace and session counts follow the
+  plan; past cycles cap a pass week at 100% and mark it.
 - **2.8** (2026-11-11): plainer wording on Next session, Pace gap and Sessions
   to 100%; session counts are capped at what still fits ("out of reach"
   instead of impossible numbers); slots shown as one compact strip, a column
