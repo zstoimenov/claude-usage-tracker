@@ -324,17 +324,45 @@
     .pass-confirm-row .qe-save { padding: 0 0.875rem; }
     .cycle-pass { margin-left: 0.375rem; vertical-align: 1px; }
 
-    /* Check-ins */
+    /* Check-ins: target % leads; the nearest one carries its status tone,
+       and "due soon" (within 60 min) adds a full-tone border and a pulsing dot. */
     .checkin-tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
     .checkin-tile {
+      --tone: var(--muted-foreground);
       background: linear-gradient(180deg, var(--card-top), var(--card-bottom));
       border: 1px solid var(--border); border-radius: 1rem; box-shadow: var(--shadow-card);
-      padding: 0.4375rem 0.75rem; display: grid; grid-template-columns: 1fr auto; align-items: baseline; gap: 0 0.375rem;
+      padding: 0.5rem 0.75rem 0.5625rem; display: grid; grid-template-columns: 1fr auto; align-items: baseline; gap: 0.125rem 0.375rem;
+      transition: border-color 200ms var(--ease), background-color 200ms var(--ease);
     }
-    .checkin-time { font-size: 0.8125rem; color: var(--muted-foreground); }
-    .checkin-pct { font-size: 1rem; font-weight: 600; color: var(--foreground); font-variant-numeric: tabular-nums; text-align: right; }
-    .checkin-gap { grid-column: 1 / -1; font-size: 0.75rem; font-weight: 500; color: var(--warning); font-variant-numeric: tabular-nums; }
-    .checkin-gap.ahead { color: var(--info); }
+    .checkin-tile.behind   { --tone: var(--warning); --tint: var(--warning-soft); }
+    .checkin-tile.ahead    { --tone: var(--info);    --tint: var(--info-soft); }
+    .checkin-tile.on-pace  { --tone: var(--success); --tint: var(--success-soft); }
+    .checkin-tile.next { border-color: var(--border-highlight); }
+    .checkin-tile.next.behind, .checkin-tile.next.ahead, .checkin-tile.next.on-pace {
+      background: linear-gradient(180deg, var(--tint), var(--card-bottom));
+      border-color: color-mix(in srgb, var(--tone) 40%, transparent);
+      box-shadow: inset 3px 0 0 var(--tone), var(--shadow-card);
+    }
+    .checkin-tile.soon { border-color: var(--tone); }
+    .checkin-eyebrow { white-space: nowrap;
+      display: inline-flex; align-items: center; gap: 0.375rem;
+      font: 600 0.625rem/1rem var(--font-sans); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted-foreground);
+    }
+    .checkin-tile.next .checkin-eyebrow { color: var(--tone); }
+    .checkin-in { font-size: 0.75rem; color: var(--muted-foreground); font-variant-numeric: tabular-nums; text-align: right; }
+    .checkin-tile.soon .checkin-in { color: var(--tone); font-weight: 600; }
+    .checkin-dot { width: 0.4375rem; height: 0.4375rem; border-radius: 50%; background: var(--tone); animation: checkin-pulse 1.6s var(--ease) infinite; }
+    @keyframes checkin-pulse {
+      0%   { box-shadow: 0 0 0 0 color-mix(in srgb, var(--tone) 60%, transparent); }
+      100% { box-shadow: 0 0 0 0.375rem transparent; }
+    }
+    .checkin-time { font: 600 0.9375rem/1.2 var(--font-display); color: var(--foreground); }
+    .checkin-pct {
+      font: 700 1.5rem/1 var(--font-display); letter-spacing: -0.02em; color: var(--foreground);
+      font-variant-numeric: tabular-nums; text-align: right;
+    }
+    .checkin-pct .unit { font-size: 0.875rem; font-weight: 600; margin-left: 1px; color: var(--muted-foreground); }
+    .checkin-gap { grid-column: 1 / -1; font-size: 0.75rem; font-weight: 600; color: var(--tone); font-variant-numeric: tabular-nums; }
 
     /* Chart */
     .chart-card { padding: 0.5rem 0.5rem 2px; gap: 0; position: relative; }
@@ -2469,19 +2497,27 @@
       ageEl.textContent = age === null ? "" : `read ${formatDuration(age)} ago${stale ? ", tap +" : ""}`;
 
       // Check-ins: target at that time and how much more usage to be on it
+      const CHECKIN_SOON_MS = 60 * 60000;
       function checkInGap(c) {
-        if (weeklyPct === null) return "";
+        if (weeklyPct === null) return { tone: "", text: "" };
         const gap = c.nextCycle ? c.pct : c.total - weeklyPct;
-        if (gap >= 0.05)  return `<span class="checkin-gap">+${gap.toFixed(1)} to go</span>`;
-        if (gap <= -0.05) return `<span class="checkin-gap ahead">${Math.abs(gap).toFixed(1)} ahead</span>`;
-        return `<span class="checkin-gap ahead">on pace</span>`;
+        if (gap >= 0.05)  return { tone: "behind", text: `+${gap.toFixed(1)} to go` };
+        if (gap <= -0.05) return { tone: "ahead",  text: `${Math.abs(gap).toFixed(1)} ahead` };
+        return { tone: "on-pace", text: "on pace" };
       }
-      document.getElementById("checkInsList").innerHTML = checkIns.map(c => `
-        <div class="checkin-tile">
+      document.getElementById("checkInsList").innerHTML = checkIns.map((c, i) => {
+        const g    = checkInGap(c);
+        const soon = c.ms - nowMs <= CHECKIN_SOON_MS;
+        const cls  = ["checkin-tile", g.tone, i === 0 ? "next" : "", soon ? "soon" : ""].filter(Boolean).join(" ");
+        return `
+        <div class="${cls}" role="group" aria-label="${i === 0 ? "Next check-in" : "Following check-in"} ${c.label}">
+          <span class="checkin-eyebrow">${soon ? '<span class="checkin-dot" aria-hidden="true"></span>Due soon' : i === 0 ? "Next" : "Then"}</span>
+          <span class="checkin-in">in ${formatDuration(c.ms - nowMs)}</span>
           <span class="checkin-time">${c.label}</span>
-          <span class="checkin-pct">${c.pct.toFixed(1)}%</span>
-          ${checkInGap(c)}
-        </div>`).join("");
+          <span class="checkin-pct">${c.pct.toFixed(1)}<span class="unit">%</span></span>
+          ${g.text ? `<span class="checkin-gap">${g.text}</span>` : ""}
+        </div>`;
+      }).join("");
 
       renderChart(cycleStartMs, cycleEndMs, nowMs, weeklyPct, colour, checkIns, m);
       const slots = listSlots(nowMs, cycleEndMs);

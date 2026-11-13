@@ -28,7 +28,9 @@ Live at `https://zstoimenov.github.io/claude-usage-tracker/`
   on the target line when it ends
 - Pace gap in %, clock time and sessions
 - Sessions to 100%: slots left before reset, by day, with the ones you need filled
-- Check-ins (default 07:30 and 19:30) with how much usage is still to go
+- Check-ins (default 07:30 and 19:30): target %, countdown and how much usage
+  is still to go. The next one is tinted by status (amber to go, blue ahead,
+  teal on pace) and shows "Due soon" with a pulsing dot in its last hour
 - Tap "% used" to update your weekly % in place (the + button still works)
 - "Today" line: sessions needed to be on track by the end of your day
 - Status and gap show ▲ / ● / ▼ as well as colour
@@ -165,6 +167,10 @@ Bump `CACHE_NAME` in `sw.js` only when you want old caches cleared.
 
 ## Changelog
 
+- **3.1** (2026-11-13): check-ins easier to spot. Bigger target %, countdown
+  ("in 3h 12m"), the next check-in tinted by status with a coloured edge,
+  "Due soon" state with a pulsing dot within 60 minutes (no animation with
+  reduced motion).
 - **3.0** (2026-11-13): redesign on Zak's App Design System. New type
   (Geologica, Onest), lit cards, lime "Update usage" button, dark and light
   themes with a setting, status shown as a badge (ahead blue, on track teal,
