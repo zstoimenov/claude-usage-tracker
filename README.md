@@ -1,6 +1,6 @@
 # Claude Usage Cycle Tracker
 
-Version 2.9 · last updated 2026-11-13
+Version 3.0 · last updated 2026-11-13
 
 A Progressive Web App (PWA) that tracks your Claude weekly usage and helps you
 use the whole allowance before it resets.
@@ -10,6 +10,10 @@ Live at `https://zstoimenov.github.io/claude-usage-tracker/`
 **Default reset: Wednesday 13:00 AWST (UTC+8).** Change it in Settings (⚙).
 
 ## Features
+
+- Built on Zak's App Design System: Geologica and Onest type, lime accent on
+  the one main action, dark and light themes (Settings → Appearance; follows
+  the device by default)
 
 - Free pass planner: add a pass with its expiry (Settings → Free pass); the
   app suggests the week and time to use it for the most extra usage, with
@@ -161,6 +165,11 @@ Bump `CACHE_NAME` in `sw.js` only when you want old caches cleared.
 
 ## Changelog
 
+- **3.0** (2026-11-13): redesign on Zak's App Design System. New type
+  (Geologica, Onest), lit cards, lime "Update usage" button, dark and light
+  themes with a setting, status shown as a badge (ahead blue, on track teal,
+  behind amber, under-using and critical red), neutral chart, Free pass week
+  picker as a segmented control, History and Settings as full screens.
 - **2.9** (2026-11-13): free pass planner. Add a pass with its expiry; the
   app shows the best week and time to use it and the extra you would get,
   lets you pick the week, adds calendar reminders (best time, a day before

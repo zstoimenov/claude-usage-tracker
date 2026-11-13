@@ -7,7 +7,7 @@
 
   <!-- PWA Meta -->
   <meta name="description" content="Track your Claude weekly usage cycle — resets every Wednesday at 13:00 AWST" />
-  <meta name="theme-color" content="#0f172a" />
+  <meta name="theme-color" content="#0a0b0d" id="themeColor" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Claude Cycle" />
@@ -16,26 +16,91 @@
   <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png" />
   <link rel="apple-touch-icon" href="icons/icon-192.png" />
   <link rel="manifest" href="manifest.json" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geologica:wght@500;600;700&family=Onest:wght@400;500;600&display=swap" />
+  <script>
+    // Theme (per device): "system" (default), "dark" or "light". Set before paint.
+    (function () {
+      var t = "system";
+      try { t = localStorage.getItem("claude-tracker-theme") || "system"; } catch (e) {}
+      if (t === "dark" || t === "light") document.documentElement.setAttribute("data-theme", t);
+    })();
+  </script>
 
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    /* Keyboard focus ring — visible for keyboard users only, not on mouse click */
-    .fab:focus-visible,
-    .tracker-toggle:focus-visible,
-    .sheet-tab:focus-visible,
-    .time-pill:focus-visible,
-    .log-btn:focus-visible,
-    .spot-save-btn:focus-visible,
-    .clear-btn:focus-visible,
-    .sheet-close:focus-visible,
-    .session-timer-card:focus-visible,
-    .timer-cancel-btn:focus-visible {
-      outline: 2px solid #60a5fa;
-      outline-offset: 2px;
+    /* Zak's App Design System: tokens (lime accent), dark first, light mirror.
+       data-theme on <html> is set by Settings → Appearance (default: match device). */
+    :root, [data-theme="dark"] {
+      color-scheme: dark;
+      --background: #0a0b0d; --foreground: #f3f4f6; --card: #13151a; --popover: #1b1d23;
+      --muted: #252830; --muted-foreground: #a1a6b2;
+      --brand: #c8f542; --brand-foreground: #0a0a0b; --brand-text: #c8f542;
+      --primary: #c8f542; --primary-foreground: #0a0a0b; --secondary: #252830; --accent: #252830;
+      --border: rgba(255, 255, 255, 0.08); --input: #696e7b; --ring: #c8f542;
+      --card-top: #1c1f25; --card-bottom: #121419; --edge-highlight: rgba(255, 255, 255, 0.09);
+      --border-highlight: rgba(255, 255, 255, 0.2); --dot: rgba(255, 255, 255, 0.14); --overlay: rgba(0, 0, 0, 0.64);
+      --destructive: #ff7a7a; --destructive-foreground: #0a0a0b; --destructive-soft: #331616;
+      --success: #34d3b4; --success-soft: #0f2a26; --warning: #f5b83d; --warning-soft: #2e2410;
+      --info: #7ab8ff; --info-soft: #122438;
+      --shadow-card: inset 0 1px 0 rgba(255, 255, 255, 0.09), 0 1px 2px rgba(0, 0, 0, 0.5), 0 16px 32px -16px rgba(0, 0, 0, 0.8);
+      --shadow-raised: inset 0 1px 0 rgba(255, 255, 255, 0.09), 0 1px 2px rgba(0, 0, 0, 0.5);
+      --shadow-well: inset 0 1px 3px rgba(0, 0, 0, 0.28);
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+      --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.5);
+      --shadow-lg: 0 24px 64px rgba(0, 0, 0, 0.6);
+      --night: rgba(255, 255, 255, 0.035);
+    }
+    @media (prefers-color-scheme: light) {
+      :root:not([data-theme="dark"]) {
+        color-scheme: light;
+        --background: #fafafb; --foreground: #0b0c0f; --card: #ffffff; --popover: #ffffff;
+        --muted: #eff0f3; --muted-foreground: #5a5f6c; --brand-text: #3f6b00;
+        --secondary: #eff0f3; --accent: #eff0f3;
+        --border: rgba(11, 12, 20, 0.1); --input: #82879a; --ring: #3f6b00;
+        --card-top: #ffffff; --card-bottom: #f4f5f7; --edge-highlight: rgba(255, 255, 255, 0.9);
+        --border-highlight: rgba(11, 12, 20, 0.22); --dot: rgba(10, 10, 11, 0.16); --overlay: rgba(10, 10, 11, 0.4);
+        --destructive: #b3261e; --destructive-foreground: #ffffff; --destructive-soft: #fde8e6;
+        --success: #0b6b62; --success-soft: #e0f5f1; --warning: #8a5a00; --warning-soft: #fdf1d7;
+        --info: #1a5fb4; --info-soft: #e3effc;
+        --shadow-card: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 1px 2px rgba(10, 10, 11, 0.06), 0 16px 32px -16px rgba(10, 10, 11, 0.22);
+        --shadow-raised: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 1px 2px rgba(10, 10, 11, 0.14);
+        --shadow-well: inset 0 1px 3px rgba(10, 10, 11, 0.12);
+        --shadow-sm: 0 1px 2px rgba(10, 10, 11, 0.06);
+        --shadow-md: 0 8px 24px rgba(10, 10, 11, 0.1);
+        --shadow-lg: 0 24px 64px rgba(10, 10, 11, 0.16);
+        --night: rgba(10, 10, 11, 0.04);
+      }
+    }
+    :root[data-theme="light"] {
+      color-scheme: light;
+      --background: #fafafb; --foreground: #0b0c0f; --card: #ffffff; --popover: #ffffff;
+      --muted: #eff0f3; --muted-foreground: #5a5f6c; --brand-text: #3f6b00;
+      --secondary: #eff0f3; --accent: #eff0f3;
+      --border: rgba(11, 12, 20, 0.1); --input: #82879a; --ring: #3f6b00;
+      --card-top: #ffffff; --card-bottom: #f4f5f7; --edge-highlight: rgba(255, 255, 255, 0.9);
+      --border-highlight: rgba(11, 12, 20, 0.22); --dot: rgba(10, 10, 11, 0.16); --overlay: rgba(10, 10, 11, 0.4);
+      --destructive: #b3261e; --destructive-foreground: #ffffff; --destructive-soft: #fde8e6;
+      --success: #0b6b62; --success-soft: #e0f5f1; --warning: #8a5a00; --warning-soft: #fdf1d7;
+      --info: #1a5fb4; --info-soft: #e3effc;
+      --shadow-card: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 1px 2px rgba(10, 10, 11, 0.06), 0 16px 32px -16px rgba(10, 10, 11, 0.22);
+      --shadow-raised: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 1px 2px rgba(10, 10, 11, 0.14);
+      --shadow-well: inset 0 1px 3px rgba(10, 10, 11, 0.12);
+      --shadow-sm: 0 1px 2px rgba(10, 10, 11, 0.06);
+      --shadow-md: 0 8px 24px rgba(10, 10, 11, 0.1);
+      --shadow-lg: 0 24px 64px rgba(10, 10, 11, 0.16);
+      --night: rgba(10, 10, 11, 0.04);
+    }
+    :root {
+      --font-display: "Geologica", "Onest", system-ui, sans-serif;
+      --font-sans: "Onest", system-ui, -apple-system, "Segoe UI", sans-serif;
+      --ease: cubic-bezier(0.2, 0, 0, 1);
     }
 
-    /* Respect reduced-motion preference */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    button, input, select { font-family: inherit; }
+    :focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after {
         transition-duration: 0.01ms !important;
@@ -48,37 +113,26 @@
        16px on a ~412 x 780 phone, larger on tablets and desktops, so the
        same layout scales up instead of sitting small in the middle. */
     html {
-      background: #0f172a;
+      background: var(--background);
       font-size: clamp(13px, min(3.9vw, 2.05vh), 24px);
     }
-    /* Fill the visible screen. dvh excludes the phone's address bar (100vh
-       doesn't, which would add a small scroll); browsers without dvh skip it. */
     body {
-      background: #0f172a;
+      background: var(--background);
       min-height: 100dvh;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: flex-start;
-      font-family: -apple-system, 'Inter', 'Helvetica Neue', sans-serif;
+      font-family: var(--font-sans);
+      -webkit-font-smoothing: antialiased;
       padding: 12px 16px;
       padding-top: max(12px, env(safe-area-inset-top));
       padding-bottom: max(12px, env(safe-area-inset-bottom));
-      color: #e2e8f0;
+      color: var(--foreground);
     }
+    #app { position: relative; width: 100%; max-width: 40rem; flex: 1; display: flex; flex-direction: column; }
 
-    #app {
-      position: relative;
-      width: 100%;
-      max-width: 40rem;
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-    }
-
-    /* ── Layout ──────────────────────────────────────────────────────────
-       Narrow screens: one column, the chart takes whatever height is left.
-       Wide screens: numbers on the left, the chart fills the right. */
+    /* ── Layout ── */
     .layout { flex: 1; display: flex; flex-direction: column; gap: 0.5rem; }
     .col-main, .col-chart { display: contents; }
     .col-main > * { order: 0; }
@@ -86,791 +140,490 @@
     .col-chart > .chart-card { order: 1; flex: 1 1 0; min-height: 10rem; }
     #burnChart { position: relative; flex: 1; min-height: 6rem; }
     #burnChart svg { position: absolute; inset: 0; display: block; }
+    #burnChart text { font-family: var(--font-sans); font-weight: 500; }
     @media (min-width: 700px) and (min-aspect-ratio: 5/4) {
-      html { font-size: clamp(13px, min(2.65vh, 2.1vw), 28px); }   /* left column fills the height */
+      html { font-size: clamp(13px, min(2.65vh, 2.1vw), 28px); }
       #app { max-width: 100rem; }
       .layout { display: grid; grid-template-columns: minmax(0, 25rem) minmax(0, 1fr); gap: 1rem; }
       .col-main { display: flex; flex-direction: column; justify-content: space-between; gap: 0.5rem; min-width: 0; }
       .col-chart { display: flex; flex-direction: column; min-width: 0; }
       .col-chart > .chart-card { flex: 1; }
-      /* + button sits at the bottom right of the left column, beside History */
-      .fab { right: auto; left: calc(max(16px, (100vw - 100rem) / 2) + 25rem - 52px); }
     }
 
-    /* ── Header ──────────────────────────────────────────────────────────── */
+    .num { font-variant-numeric: tabular-nums; }
+    .ico { width: 1em; height: 1em; flex: none; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+
+    /* ── Header ── */
     .header {
-      font-size: 0.75rem;
-      color: #64748b;
-      min-height: 1.375rem;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 0.5rem;
+      font-size: 0.8125rem; color: var(--muted-foreground);
+      min-height: 2.5rem; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
     }
-    .header-countdown { color: #94a3b8; margin-left: 0.25rem; }
+    .header-brand { display: flex; flex-direction: column; line-height: 1.3; }
+    .app-name { font: 600 1rem/1.4 var(--font-display); color: var(--foreground); }
+    .header-countdown { margin-left: 0.25rem; }
 
-    /* ── Hero: time elapsed (main number) + usage ────────────────────────── */
+    /* ── Hero (feature card) ── */
     .hero {
-      display: grid;
-      grid-template-columns: 1fr auto;
-      align-items: end;
-      gap: 0.75rem;
+      position: relative; display: grid; grid-template-columns: 1fr auto; align-items: end; gap: 0.75rem;
+      padding: 0.75rem 0.875rem; border-radius: 1rem; border: 1px solid transparent;
+      background: linear-gradient(180deg, var(--card-top), var(--card-bottom)) padding-box,
+                  linear-gradient(150deg, var(--border-highlight), var(--border) 40%) border-box;
+      box-shadow: var(--shadow-card);
+    }
+    .hero::before {
+      content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+      background-image: radial-gradient(var(--dot) 1px, transparent 1.5px); background-size: 16px 16px; background-position: 8px 8px;
+      -webkit-mask-image: linear-gradient(200deg, #000, transparent 55%); mask-image: linear-gradient(200deg, #000, transparent 55%);
+    }
+    .hero > * { position: relative; }
+    .hero-sub {
+      font: 600 0.6875rem/1rem var(--font-sans); letter-spacing: 0.08em; text-transform: uppercase;
+      color: var(--muted-foreground); margin-bottom: 0.375rem;
     }
     .hero-pct {
-      font-size: 2.85rem;
-      font-weight: 700;
-      letter-spacing: -2px;
-      line-height: 1;
-      transition: color 1s;
-      font-variant-numeric: tabular-nums;
+      font: 700 2.75rem/1 var(--font-display); letter-spacing: -0.035em;
+      font-variant-numeric: tabular-nums; color: var(--foreground);
     }
-    .hero-pct .unit {
-      font-size: 1.4rem;
-      font-weight: 400;
-      color: #cbd5e1;
-      letter-spacing: 0;
-    }
-    .hero-sub { font-size: 0.75rem; color: #94a3b8; margin-top: 0.25rem; }
+    .hero-pct .unit { font-size: 0.5em; font-weight: 500; color: var(--muted-foreground); letter-spacing: 0; margin-left: 2px; }
     .hero-side {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-      gap: 0.25rem;
-      font-size: 0.75rem;
-      color: #94a3b8;
-      font-variant-numeric: tabular-nums;
+      display: flex; flex-direction: column; align-items: flex-end; gap: 0.375rem;
+      font-size: 0.75rem; color: var(--muted-foreground); font-variant-numeric: tabular-nums;
     }
-    .hero-side b { font-size: 1.0625rem; color: #e2e8f0; }
-    .hero { position: relative; }
     .used-btn {
-      background: none; border: 0; border-bottom: 1px dashed #475569; border-radius: 0;
-      color: #94a3b8; font: inherit; padding: 0 0 1px; cursor: pointer;
+      display: inline-flex; align-items: baseline; gap: 0.25rem;
+      background: none; border: 1px solid var(--input); border-radius: 0.75rem;
+      color: var(--muted-foreground); font: 400 0.8125rem var(--font-sans); padding: 0.1875rem 0.5rem; cursor: pointer;
+      transition: border-color 120ms var(--ease);
     }
-    .used-btn::after { content: " ✎"; font-size: 0.75rem; color: #64748b; }
-    .used-btn:focus-visible { outline: 2px solid #60a5fa; outline-offset: 2px; }
+    .used-btn:hover { border-color: var(--foreground); }
+    .used-btn b { font: 600 1.25rem/1.4 var(--font-display); color: var(--foreground); font-variant-numeric: tabular-nums; }
     .quick-edit {
       position: absolute; top: 100%; right: 0; z-index: 60; margin-top: 0.375rem;
       width: 15rem; max-width: 100%;
-      background: #1e293b; border: 1px solid #334155; border-radius: 0.75rem;
-      box-shadow: 0 0.75rem 2rem rgba(0,0,0,0.5);
+      background: var(--popover); border: 1px solid var(--border); border-radius: 1rem;
+      box-shadow: inset 0 1px 0 var(--edge-highlight), var(--shadow-md);
       padding: 0.75rem; display: flex; flex-direction: column; gap: 0.5rem;
     }
     .quick-edit[hidden] { display: none; }
-    .qe-title { font-size: 0.6875rem; color: #94a3b8; }
-    .qe-row { display: grid; grid-template-columns: 2.5rem 1fr 2.5rem; gap: 0.375rem; }
+    .qe-title { font: 500 0.75rem/1.3 var(--font-sans); color: var(--muted-foreground); }
+    .qe-row { display: grid; grid-template-columns: 2.75rem 1fr 2.75rem; gap: 0.375rem; }
     .qe-step, .qe-save {
-      border: 0; border-radius: 0.5rem; font: inherit; cursor: pointer;
-      background: #334155; color: #e2e8f0; font-size: 1.125rem; font-weight: 700;
+      border: 0; border-radius: 0.75rem; cursor: pointer; min-height: 2.75rem;
+      background: var(--secondary); color: var(--foreground); font: 500 1.125rem var(--font-sans);
+      box-shadow: var(--shadow-raised);
     }
     .qe-input {
-      width: 100%; min-width: 0; text-align: center; font: inherit; font-size: 1.25rem; font-weight: 700;
-      background: #0f172a; color: #e2e8f0; border: 1px solid #334155; border-radius: 0.5rem; padding: 0.375rem;
+      width: 100%; min-width: 0; text-align: center; font: 600 1.25rem var(--font-display);
+      font-variant-numeric: tabular-nums;
+      background: var(--background); color: var(--foreground); border: 1px solid var(--input); border-radius: 0.75rem; padding: 0.375rem;
     }
-    .qe-save { background: #0f4c81; color: #bfdbfe; font-size: 0.8125rem; padding: 0.5rem; }
-    .qe-step:focus-visible, .qe-save:focus-visible, .qe-input:focus { outline: 2px solid #60a5fa; outline-offset: 1px; }
-    /* No browser up/down arrows on number fields (issue #9) */
+    .qe-save {
+      background: linear-gradient(180deg, color-mix(in srgb, var(--primary) 82%, white), var(--primary));
+      color: var(--primary-foreground); font-size: 0.875rem;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 1px 2px rgba(0, 0, 0, 0.3);
+    }
+    .qe-save.ghost { background: none; border: 1px solid var(--input); color: var(--foreground); box-shadow: none; }
     input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
     input[type="number"]::-webkit-inner-spin-button,
     input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
-    .hero-age { font-size: 0.6875rem; color: #64748b; }
-    .hero-age.stale { color: #f97316; }
+    .hero-age { font: 500 0.75rem/1rem var(--font-sans); color: var(--muted-foreground); }
+    .hero-age.stale { color: var(--warning); }
+
+    /* Status badge */
     .status-pill {
-      font-size: 0.6875rem;
-      font-weight: 700;
-      padding: 2px 0.5625rem;
-      border-radius: 1.25rem;
-      letter-spacing: 0.5px;
-      white-space: nowrap;
+      display: inline-flex; align-items: center; gap: 0.25rem; height: 1.5rem; padding: 0 0.5rem;
+      border-radius: 0.5rem; font: 500 0.75rem/1 var(--font-sans); letter-spacing: 0.01em; white-space: nowrap;
+      background: var(--muted); color: var(--foreground);
     }
-    .status-pill.on-track  { background: #14532d; color: #4ade80; }
-    .status-pill.drifting  { background: #422006; color: #eab308; }
-    .status-pill.at-risk   { background: #431407; color: #f97316; }
-    .status-pill.critical  { background: #450a0a; color: #ef4444; }
-    .status-pill.ahead     { background: #0c2d4a; color: #60a5fa; }
-    .status-pill.no-data   { background: #1e293b; color: #94a3b8; border: 1px solid #334155; }
+    .status-pill.ahead     { background: var(--info-soft); color: var(--info); }
+    .status-pill.on-track  { background: var(--success-soft); color: var(--success); }
+    .status-pill.drifting  { background: var(--warning-soft); color: var(--warning); }
+    .status-pill.at-risk,
+    .status-pill.critical  { background: var(--destructive-soft); color: var(--destructive); }
+    .status-pill.no-data   { background: none; border: 1px solid var(--input); color: var(--muted-foreground); }
+    .badge {
+      display: inline-flex; align-items: center; gap: 0.25rem; height: 1.5rem; padding: 0 0.5rem;
+      border-radius: 0.5rem; font: 500 0.75rem/1 var(--font-sans); white-space: nowrap;
+      background: var(--info-soft); color: var(--info);
+    }
+    .badge .ico { width: 0.75rem; height: 0.75rem; stroke-width: 2; }
 
-    /* ── Main cards ──────────────────────────────────────────────────────── */
-
+    /* ── Cards ── */
     .card {
-      background: #1e293b;
-      border-radius: 0.625rem;
-      padding: 0.625rem 0.75rem;
-      display: flex;
-      flex-direction: column;
-      gap: 0.375rem;
-      min-width: 0;
+      background: linear-gradient(180deg, var(--card-top), var(--card-bottom));
+      border: 1px solid var(--border); border-radius: 1rem; box-shadow: var(--shadow-card);
+      padding: 0.625rem 0.875rem; display: flex; flex-direction: column; gap: 0.375rem; min-width: 0;
     }
-    .card-label {
-      font-size: 0.625rem;
-      color: #64748b;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-    }
-    .card-head {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 0.5rem;
-    }
-    .card-head-right { display: flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; color: #94a3b8; }
-    .card-head-right b { color: #e2e8f0; font-size: 0.9375rem; }
-    .card-sub { font-size: 0.75rem; color: #94a3b8; line-height: 1.35; }
-    .card-warn { font-size: 0.75rem; color: #f87171; line-height: 1.35; }
-    .num { font-variant-numeric: tabular-nums; }
+    .card-label { font: 500 0.8125rem/1.3 var(--font-sans); color: var(--muted-foreground); }
+    .card-head { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; }
+    .card-head-right { display: flex; align-items: center; gap: 0.5rem; font-size: 0.8125rem; color: var(--muted-foreground); }
+    .card-head-right b { color: var(--foreground); font-size: 1rem; font-weight: 600; }
+    .card-sub { font-size: 0.8125rem; color: var(--muted-foreground); line-height: 1.35; }
+    .card-warn { font-size: 0.8125rem; color: var(--destructive); line-height: 1.35; }
     .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
     .big-val {
-      font-size: 1.75rem;
-      font-weight: 700;
-      letter-spacing: -1px;
-      line-height: 1;
-      font-variant-numeric: tabular-nums;
+      font: 600 1.625rem/1.15 var(--font-display); letter-spacing: -0.01em;
+      font-variant-numeric: tabular-nums; color: var(--foreground);
     }
     .big-val .arrow { font-size: 0.55em; vertical-align: 0.2em; margin-right: 0.2em; }
-    .big-val small { font-size: 0.75rem; font-weight: 500; color: #94a3b8; letter-spacing: 0; }
+    .big-val small { font: 400 0.8125rem var(--font-sans); color: var(--muted-foreground); letter-spacing: 0; }
 
-    /* "i" buttons reveal the explanation under a card */
     .info-btn {
-      flex: 0 0 auto;
-      width: 1.25rem; height: 1.25rem;
-      border-radius: 50%;
-      border: 1px solid #334155;
-      background: none;
-      color: #94a3b8;
-      font: italic 700 0.6875rem Georgia, serif;
-      line-height: 1;
-      cursor: pointer;
-      display: inline-flex; align-items: center; justify-content: center;
-      position: relative;
+      flex: 0 0 auto; width: 1.375rem; height: 1.375rem; border-radius: 50%;
+      border: 1.5px solid var(--muted-foreground); background: none; color: var(--muted-foreground);
+      font: 600 0.75rem/1 var(--font-sans); cursor: pointer;
+      display: inline-flex; align-items: center; justify-content: center; position: relative;
+      transition: background-color 120ms var(--ease), color 120ms var(--ease);
     }
-    .info-btn::after { content: ""; position: absolute; inset: -10px; }   /* bigger tap target */
-    .info-btn[aria-expanded="true"] { background: #334155; color: #e2e8f0; }
-    .remind-btn {
-      align-self: flex-start;
-      border: 1px solid #1d4e7a; background: #12233b; color: #93c5fd; border-radius: 1rem;
-      font: inherit; font-size: 0.6875rem; font-weight: 600; padding: 0.125rem 0.5rem; cursor: pointer;
+    .info-btn::after { content: ""; position: absolute; inset: -10px; }
+    .info-btn[aria-expanded="true"] { background: var(--foreground); border-color: var(--foreground); color: var(--background); }
+    .remind-btn, .pass-btn, .info-actions button {
+      display: inline-flex; align-items: center; gap: 0.375rem; align-self: flex-start;
+      min-height: 2.25rem; padding: 0 0.75rem; border-radius: 0.75rem; cursor: pointer;
+      font: 500 0.8125rem var(--font-sans); white-space: nowrap;
+      transition: background-color 120ms var(--ease), filter 120ms var(--ease);
     }
+    .remind-btn, .info-actions button { border: 0; background: var(--secondary); color: var(--foreground); box-shadow: var(--shadow-raised); }
+    .pass-btn { border: 1px solid var(--input); background: none; color: var(--foreground); }
+    .remind-btn:hover, .pass-btn:hover, .info-actions button:hover { background: var(--accent); filter: brightness(1.08); }
     .remind-btn[hidden] { display: none; }
-    .remind-btn:focus-visible { outline: 2px solid #60a5fa; outline-offset: 2px; }
     .info-actions { display: flex; gap: 0.5rem; margin-top: 0.5rem; flex-wrap: wrap; }
-    .info-actions button {
-      border: 1px solid #334155; background: #1e293b; color: #bfdbfe; border-radius: 0.5rem;
-      font: inherit; font-size: 0.75rem; font-weight: 600; padding: 0.375rem 0.625rem; cursor: pointer;
+    .info {
+      font-size: 0.8125rem; color: var(--foreground); line-height: 1.45;
+      background: var(--muted); border-radius: 0.75rem; padding: 0.625rem 0.75rem;
     }
-    .info-btn:focus-visible { outline: 2px solid #60a5fa; outline-offset: 2px; }
+    .info a { color: var(--brand-text); }
 
     /* Free pass */
-    .pass-card { border: 1px solid #78350f; }
     .pass-card[hidden] { display: none; }
     .pass-main { display: flex; align-items: baseline; justify-content: space-between; gap: 0.5rem; flex-wrap: wrap; }
-    .pass-when { font-size: 1.125rem; font-weight: 700; color: #fbbf24; }
-    .pass-gain { font-size: 0.75rem; color: #94a3b8; }
-    .pass-gain b { color: #e2e8f0; }
-    .pass-weeks { display: flex; gap: 0.25rem; overflow-x: auto; }
+    .pass-when { font: 600 1.125rem/1.35 var(--font-display); color: var(--foreground); }
+    .pass-gain { font-size: 0.8125rem; color: var(--muted-foreground); }
+    .pass-gain b { color: var(--foreground); font-weight: 500; }
+    .pass-weeks {
+      display: inline-flex; align-self: flex-start; gap: 0.25rem; padding: 0.25rem; max-width: 100%; overflow-x: auto;
+      border-radius: 0.75rem; background: var(--muted); box-shadow: var(--shadow-well);
+    }
+    .pass-weeks:empty { display: none; }
     .pass-week {
-      flex: 0 0 auto; border: 1px solid #334155; background: none; color: #94a3b8; border-radius: 0.5rem;
-      font: inherit; font-size: 0.6875rem; padding: 0.1875rem 0.4375rem; cursor: pointer; line-height: 1.25;
-      font-variant-numeric: tabular-nums;
+      flex: 0 0 auto; min-height: 2.25rem; padding: 0 0.75rem; border: 0; border-radius: 0.5rem; background: none;
+      color: var(--muted-foreground); font: 500 0.8125rem var(--font-sans); cursor: pointer; font-variant-numeric: tabular-nums;
+      transition: background-color 120ms var(--ease), color 120ms var(--ease);
     }
-    .pass-week b { display: block; color: #cbd5e1; font-size: 0.75rem; }
-    .pass-week[aria-pressed="true"] { border-color: #f59e0b; background: #2a1d0a; color: #fcd34d; }
-    .pass-week[aria-pressed="true"] b { color: #fde68a; }
-    .pass-week:focus-visible, .pass-btn:focus-visible { outline: 2px solid #60a5fa; outline-offset: 2px; }
+    .pass-week:hover { color: var(--foreground); }
+    .pass-week b { font-weight: 500; color: inherit; }
+    .pass-week small { margin-left: 0.375rem; font-size: 0.75rem; color: var(--muted-foreground); }
+    .pass-week[aria-pressed="true"] {
+      color: var(--foreground);
+      background: linear-gradient(180deg, var(--card-top), var(--card-bottom)); box-shadow: var(--shadow-raised);
+    }
     .pass-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
-    .pass-btn {
-      border: 1px solid #92400e; background: #2a1d0a; color: #fcd34d; border-radius: 1rem;
-      font: inherit; font-size: 0.6875rem; font-weight: 600; padding: 0.125rem 0.5rem; cursor: pointer;
-    }
-    .pass-confirm { display: flex; flex-direction: column; gap: 0.25rem; }
+    .pass-confirm { display: flex; flex-direction: column; gap: 0.375rem; }
     .pass-confirm[hidden] { display: none; }
     .pass-confirm-row { display: grid; grid-template-columns: 1fr auto auto; gap: 0.375rem; }
-    .qe-save.ghost { background: none; border: 1px solid #334155; color: #cbd5e1; }
-    .cycle-pass { color: #fbbf24; font-size: 0.6875rem; margin-left: 0.25rem; }
-    .info {
-      font-size: 0.75rem;
-      color: #cbd5e1;
-      line-height: 1.45;
-      background: #0f172a;
-      border: 1px solid #334155;
-      border-radius: 0.5rem;
-      padding: 0.5rem 0.625rem;
-    }
+    .pass-confirm-row .qe-save { padding: 0 0.875rem; }
+    .cycle-pass { margin-left: 0.375rem; vertical-align: 1px; }
 
-    /* Check-ins (pinned under the hero) */
+    /* Check-ins */
     .checkin-tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
     .checkin-tile {
-      background: #1e293b;
-      border-radius: 0.625rem;
-      padding: 0.4375rem 0.75rem;
-      display: grid;
-      grid-template-columns: 1fr auto;
-      align-items: baseline;
-      gap: 0 0.375rem;
+      background: linear-gradient(180deg, var(--card-top), var(--card-bottom));
+      border: 1px solid var(--border); border-radius: 1rem; box-shadow: var(--shadow-card);
+      padding: 0.4375rem 0.75rem; display: grid; grid-template-columns: 1fr auto; align-items: baseline; gap: 0 0.375rem;
     }
-    .checkin-time { font-size: 0.6875rem; color: #94a3b8; font-weight: 600; }
-    .checkin-pct { font-size: 0.9375rem; font-weight: 700; color: #e2e8f0; font-variant-numeric: tabular-nums; text-align: right; }
-    .checkin-gap { grid-column: 1 / -1; font-size: 0.6875rem; font-weight: 700; color: #eab308; }
-    .checkin-gap.ahead { color: #60a5fa; }
+    .checkin-time { font-size: 0.8125rem; color: var(--muted-foreground); }
+    .checkin-pct { font-size: 1rem; font-weight: 600; color: var(--foreground); font-variant-numeric: tabular-nums; text-align: right; }
+    .checkin-gap { grid-column: 1 / -1; font-size: 0.75rem; font-weight: 500; color: var(--warning); font-variant-numeric: tabular-nums; }
+    .checkin-gap.ahead { color: var(--info); }
 
-    /* Burn-up chart */
-    .chart-card { padding: 0.375rem 0.375rem 2px; gap: 0; position: relative; }
+    /* Chart */
+    .chart-card { padding: 0.5rem 0.5rem 2px; gap: 0; position: relative; }
     #burnChart { cursor: crosshair; touch-action: manipulation; }
     .chart-tip {
       position: absolute; z-index: 5; pointer-events: none; white-space: nowrap;
-      background: #0f172a; border: 1px solid #475569; border-radius: 0.375rem;
-      color: #e2e8f0; font-size: 0.75rem; font-weight: 600; padding: 0.25rem 0.5rem;
-      box-shadow: 0 0.25rem 0.75rem rgba(0,0,0,0.5);
+      background: var(--popover); border: 1px solid var(--border); border-radius: 0.5rem;
+      color: var(--foreground); font-size: 0.75rem; font-weight: 500; padding: 0.25rem 0.5rem;
+      box-shadow: inset 0 1px 0 var(--edge-highlight), var(--shadow-md);
     }
     .chart-tip[hidden] { display: none; }
     .chart-card .card-head { padding: 2px 0.375rem 0; }
     .chart-card .info { margin: 0.25rem 0.375rem 0.375rem; }
 
-    /* Pace gap bar, centred on 0 */
-    .gap-bar { position: relative; height: 0.5rem; background: #0f172a; border-radius: 0.25rem; }
+    /* Pace gap bar, centred on the target */
+    .gap-bar { position: relative; height: 0.5rem; background: var(--muted); border-radius: 9999px; box-shadow: var(--shadow-well); }
     .gap-bar-fill { position: absolute; top: 0; bottom: 0; width: 0; transition: width 0.5s; }
-    .gap-bar-centre {
-      position: absolute; left: 50%; top: -3px; bottom: -3px;
-      width: 2px; margin-left: -1px; background: #94a3b8; border-radius: 1px;
-    }
+    .gap-bar-centre { position: absolute; left: 50%; top: -3px; bottom: -3px; width: 2px; margin-left: -1px; background: var(--foreground); border-radius: 1px; }
 
-    /* Slots left: one column per day, one block per session slot */
-    .slot-grid {
-      display: grid;
-      grid-auto-flow: column;
-      grid-auto-columns: 1fr;
-      gap: 0.5rem;
-    }
+    /* Slots */
+    .slot-grid { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 0.375rem; }
     .slot-col { display: flex; flex-direction: column; gap: 0.1875rem; min-width: 0; }
-    .today-line { font-size: 0.75rem; color: #cbd5e1; }
-    .today-line b { color: #e2e8f0; }
-    .slot-day { font-size: 0.6875rem; font-weight: 600; color: #94a3b8; text-align: center; }
-    .slot-row { display: flex; flex-direction: column; gap: 0.125rem; }
+    .today-line { font-size: 0.8125rem; color: var(--muted-foreground); }
+    .today-line b { color: var(--foreground); font-weight: 500; }
+    .slot-day { font-size: 0.75rem; font-weight: 500; color: var(--muted-foreground); text-align: center; }
+    .slot-row { display: flex; flex-direction: column; gap: 0.1875rem; }
     .slot {
-      height: 0.875rem;
-      border-radius: 0.1875rem;
-      border: 1.5px solid #475569;
-      font-size: 0.5938rem;
-      line-height: 1;
-      color: #94a3b8;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-variant-numeric: tabular-nums;
+      height: 1rem; border-radius: 0.3125rem; border: 1px solid var(--input);
+      font-size: 0.625rem; line-height: 1; color: var(--muted-foreground);
+      display: flex; align-items: center; justify-content: center; font-variant-numeric: tabular-nums;
     }
-    .slot.need { background: #cbd5e1; border-color: #cbd5e1; color: #0f172a; font-weight: 700; }
-    .slot-key { font-size: 0.6875rem; color: #94a3b8; display: flex; gap: 0.75rem; align-items: center; }
+    .slot.need { background: var(--foreground); border-color: var(--foreground); color: var(--background); font-weight: 600; }
+    .slot-key { font-size: 0.75rem; color: var(--muted-foreground); display: flex; gap: 0.75rem; align-items: center; }
     .slot-key .slot { display: inline-block; width: 0.75rem; height: 0.625rem; margin-right: 0.25rem; vertical-align: -1px; }
 
-    /* ── Session Tracker toggle ──────────────────────────────────────────── */
+    /* History button on the main screen */
     .tracker-toggle {
-      width: calc(100% - 9rem);  /* centred, clear of the floating + button */
-      margin: 0 auto;
-      background: none;
-      border: 1px solid #1e293b;
-      border-radius: 0.625rem;
-      color: #94a3b8;
-      font-size: 0.6875rem;
-      letter-spacing: 1px;
-      white-space: nowrap;
-      text-transform: uppercase;
-      padding: 0.5625rem 0.75rem;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.5rem;
-      transition: border-color 0.2s, color 0.2s;
+      align-self: flex-start; margin-left: -0.5rem; padding: 0 0.75rem; min-height: 2.75rem;
+      background: none; border: 0; border-radius: 0.75rem; color: var(--muted-foreground);
+      font: 500 0.875rem var(--font-sans); white-space: nowrap; cursor: pointer;
+      display: inline-flex; align-items: center; justify-content: center; gap: 0.375rem;
+      transition: background-color 120ms var(--ease), color 120ms var(--ease);
     }
-    .tracker-toggle:hover {
-      border-color: #334155;
-      color: #64748b;
-    }
-    .tracker-toggle .arrow {
-      display: inline-block;
-      transition: transform 0.25s;
-      font-style: normal;
-    }
-    .tracker-toggle.open .arrow {
-      transform: rotate(180deg);
-    }
+    .tracker-toggle:hover { background: var(--accent); color: var(--foreground); }
+    .tracker-inner { display: flex; flex-direction: column; gap: 0.875rem; padding-bottom: 1rem; }
 
-    .tracker-panel {
-      overflow: hidden;
-      max-height: 0;
-      transition: max-height 0.35s ease, opacity 0.25s ease;
-      opacity: 0;
+    /* History screen */
+    .sessions-card, .history-card, .cycles-card {
+      background: linear-gradient(180deg, var(--card-top), var(--card-bottom));
+      border: 1px solid var(--border); border-radius: 16px; box-shadow: var(--shadow-card); padding: 16px;
     }
-    .tracker-panel.open {
-      max-height: 87.5rem;
-      opacity: 1;
-    }
-
-    .tracker-inner {
-      padding-top: 1rem;
-      padding-bottom: 1rem;
-      display: flex;
-      flex-direction: column;
-      gap: 0.875rem;
-    }
-
-    /* ── History card ────────────────────────────────────────────────────── */
-    .sessions-card {
-      background: #1e293b; border-radius: 0.625rem; padding: 1rem;
-      display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;
-    }
-    .sessions-stat-label {
-      font-size: 0.6875rem; color: #94a3b8;
-      text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.25rem;
-    }
-    .sessions-stat-value { font-size: 1.375rem; font-weight: 700; color: #e2e8f0; }
-    .sessions-stat-sub { font-size: 0.625rem; color: #94a3b8; margin-top: 2px; }
-
-    .log-inputs {
-      display: grid; grid-template-columns: 1fr 1fr 1fr;
-      gap: 0.5rem; margin-bottom: 0.625rem;
-    }
-    .log-field label {
-      display: block; font-size: 0.625rem; color: #64748b;
-      margin-bottom: 0.25rem; letter-spacing: 0.5px;
-    }
-    .log-field input {
-      width: 100%; background: #0f172a; border: 1px solid #334155;
-      border-radius: 0.5rem; color: #e2e8f0; font-size: 0.875rem;
-      padding: 0.5rem 0.625rem; outline: none; transition: border-color 0.2s;
-    }
-    .log-field input:focus { border-color: #475569; }
-    .log-field input::placeholder { color: #64748b; }
-    .log-row { display: flex; gap: 0.5rem; align-items: center; }
-    .log-delta-preview { font-size: 0.6875rem; color: #94a3b8; flex: 1; }
-    .log-delta-preview span { color: #22c55e; font-weight: 600; }
-    .log-btn {
-      background: #0f4c81; border: none; border-radius: 0.5rem;
-      color: #bfdbfe; font-size: 0.75rem; font-weight: 600;
-      padding: 0.5625rem 1rem; cursor: pointer; transition: background 0.2s; white-space: nowrap;
-    }
-    .log-btn:hover { background: #1e5f9a; }
-    .log-btn:disabled { background: #1e293b; color: #64748b; cursor: not-allowed; }
-
-    /* ── History card ────────────────────────────────────────────────────── */
-    .history-card { background: #1e293b; border-radius: 0.625rem; padding: 1rem; }
-    .history-header {
-      display: flex; justify-content: space-between;
-      align-items: center; margin-bottom: 0.75rem;
-    }
-    .history-title {
-      font-size: 0.6875rem; color: #64748b;
-      text-transform: uppercase; letter-spacing: 1px;
-    }
+    .sessions-card { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .sessions-stat-label, .history-title { font: 500 14px/20px var(--font-sans); color: var(--muted-foreground); }
+    .sessions-stat-value { margin-top: 4px; font: 600 24px/32px var(--font-display); color: var(--foreground); font-variant-numeric: tabular-nums; }
+    .sessions-stat-sub { font-size: 14px; line-height: 20px; color: var(--muted-foreground); }
+    .history-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
     .clear-btn {
-      background: none; border: 1px solid #334155; border-radius: 0.375rem;
-      color: #94a3b8; font-size: 0.625rem; padding: 0.3125rem 0.625rem;
-      cursor: pointer; transition: color 0.2s, border-color 0.2s;
+      min-height: 36px; padding: 0 12px; border: 0; border-radius: 12px; background: none;
+      color: var(--destructive); font: 500 14px var(--font-sans); cursor: pointer;
     }
-    .clear-btn:hover { color: #f87171; border-color: #f87171; }
-    /* Compact stacked rows — fit any width, never scroll horizontally */
+    .clear-btn:hover { background: var(--accent); }
     .hist-list { display: flex; flex-direction: column; }
-    .hist-row {
-      display: flex; flex-direction: column; gap: 2px;
-      padding: 0.5625rem 0; border-top: 1px solid #0f172a;
-    }
+    .hist-row { display: flex; flex-direction: column; gap: 2px; padding: 10px 0; border-top: 1px solid var(--border); }
     .hist-row:first-child { border-top: none; padding-top: 2px; }
-    .hist-row-top {
-      display: flex; align-items: baseline; justify-content: space-between; gap: 0.625rem;
+    .hist-row-top { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+    .hist-date { font-size: 14px; color: var(--foreground); font-weight: 500; }
+    .hist-delta { font-size: 14px; font-weight: 500; flex-shrink: 0; font-variant-numeric: tabular-nums; }
+    .hist-delta.pos { color: var(--success); }
+    .hist-delta.neg { color: var(--destructive); }
+    .hist-detail { font-size: 13px; color: var(--muted-foreground); font-variant-numeric: tabular-nums; }
+    .hist-detail .sep { margin: 0 2px; }
+    .history-empty { text-align: center; color: var(--muted-foreground); font-size: 14px; padding: 16px 0 4px; }
+    .hist-row-top .hist-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+    .hist-del {
+      display: inline-grid; place-items: center; width: 36px; height: 36px; margin: -8px -8px -8px 0;
+      background: none; border: 0; border-radius: 9999px; color: var(--muted-foreground); cursor: pointer;
     }
-    .hist-date { font-size: 0.75rem; color: #cbd5e1; font-weight: 600; }
-    .hist-delta { font-size: 0.875rem; font-weight: 700; flex-shrink: 0; }
-    .hist-delta.pos { color: #4ade80; }
-    .hist-delta.neg { color: #f87171; }
-    .hist-detail { font-size: 0.6875rem; color: #94a3b8; }
-    .hist-detail .sep { color: #475569; margin: 0 2px; }
-    .history-empty {
-      text-align: center; color: #94a3b8;
-      font-size: 0.75rem; padding: 1rem 0 0.25rem;
+    .hist-del:hover { background: var(--accent); color: var(--destructive); }
+    .hist-del .ico { width: 16px; height: 16px; }
+    .hist-more { width: 100%; background: none; border: none; color: var(--brand-text); font: 500 14px var(--font-sans); padding: 10px 0 2px; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+    .cycle-row {
+      display: flex; justify-content: space-between; align-items: baseline;
+      font-size: 14px; color: var(--foreground); padding: 10px 0; border-top: 1px solid var(--border);
     }
+    .cycle-row:first-of-type { border-top: none; }
+    .trend { display: flex; gap: 8px; align-items: flex-end; margin: 12px 0; }
+    .trend-col { flex: 1; max-width: 48px; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+    .trend-val { font-size: 12px; color: var(--foreground); font-weight: 500; font-variant-numeric: tabular-nums; }
+    .trend-track { width: 100%; max-width: 28px; height: 72px; background: var(--muted); border-radius: 8px; display: flex; align-items: flex-end; overflow: hidden; }
+    .trend-bar { width: 100%; border-radius: 8px 8px 0 0; background: var(--foreground); }
+    .trend-lbl { font-size: 12px; color: var(--muted-foreground); white-space: nowrap; }
+    .cycle-val { font-weight: 500; font-variant-numeric: tabular-nums; }
+    .cycle-val.good { color: var(--success); }
+    .cycle-val.ok   { color: var(--warning); }
+    .cycle-val.bad  { color: var(--destructive); }
+    .cycle-sub { display: block; font-size: 12px; color: var(--muted-foreground); font-weight: 400; text-align: right; }
 
-    /* ── Time-left pill selector ─────────────────────────────────────────── */
-    .time-left-row {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      margin-bottom: 10px;
+    /* ── Forms in the sheet ── */
+    .log-inputs { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+    .log-field label, .spot-pane-label, .time-left-label { display: block; font: 500 14px/20px var(--font-sans); color: var(--foreground); margin-bottom: 8px; }
+    .log-field input, .spot-pane-input, .set-input, .set-select {
+      width: 100%; height: 44px; background: var(--background); border: 1px solid var(--input); border-radius: 12px;
+      color: var(--foreground); font: 400 16px var(--font-sans); padding: 0 12px; outline: none;
+      font-variant-numeric: tabular-nums; transition: border-color 120ms var(--ease);
     }
-    .time-left-label {
-      font-size: 10px;
-      color: #64748b;
-      letter-spacing: 0.5px;
-    }
-    .time-left-pills {
-      display: flex;
-      gap: 6px;
-    }
+    .log-field input:hover, .spot-pane-input:hover, .set-input:hover, .set-select:hover { border-color: var(--foreground); }
+    .log-field input::placeholder, .spot-pane-input::placeholder { color: var(--muted-foreground); }
+    .log-field input:focus-visible, .spot-pane-input:focus-visible, .set-input:focus-visible, .set-select:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+    .spot-pane-input { height: 52px; font: 600 24px var(--font-display); text-align: center; }
+    .spot-pane-input::placeholder { font: 400 16px var(--font-sans); }
+    .set-select { appearance: none; -webkit-appearance: none; padding-right: 36px; cursor: pointer;
+      background-image: linear-gradient(45deg, transparent 50%, var(--muted-foreground) 50%), linear-gradient(135deg, var(--muted-foreground) 50%, transparent 50%);
+      background-position: calc(100% - 20px) 50%, calc(100% - 15px) 50%; background-size: 5px 5px; background-repeat: no-repeat; }
+    .log-row { display: flex; gap: 8px; align-items: center; }
+    .log-delta-preview { font-size: 14px; color: var(--muted-foreground); flex: 1; }
+    .log-delta-preview span { color: var(--success); font-weight: 500; }
+    .spot-pane-field { display: flex; flex-direction: column; margin-bottom: 16px; }
+    .time-left-row { display: flex; flex-direction: column; margin-bottom: 12px; }
+    .time-left-pills { display: flex; gap: 4px; padding: 4px; border-radius: 12px; background: var(--muted); box-shadow: var(--shadow-well); }
     .time-pill {
-      flex: 1;
-      background: #0f172a;
-      border: 1px solid #334155;
-      border-radius: 6px;
-      color: #94a3b8;
-      font-size: 11px;
-      font-weight: 500;
-      padding: 9px 0;
-      text-align: center;
-      cursor: pointer;
-      transition: background 0.15s, color 0.15s, border-color 0.15s;
-      user-select: none;
+      flex: 1; min-height: 36px; background: none; border: 0; border-radius: 8px; color: var(--muted-foreground);
+      font: 500 14px var(--font-sans); cursor: pointer; user-select: none;
+      transition: background-color 120ms var(--ease), color 120ms var(--ease);
     }
-    .time-pill:hover { border-color: #475569; color: #e2e8f0; }
-    .time-pill.selected {
-      background: #0f4c81;
-      border-color: #1d6fa8;
-      color: #bfdbfe;
-    }
+    .time-pill:hover { color: var(--foreground); }
+    .time-pill.selected { color: var(--foreground); background: linear-gradient(180deg, var(--card-top), var(--card-bottom)); box-shadow: var(--shadow-raised); }
 
-    /* ── FAB (Log a Session shortcut) ────────────────────────────────────── */
-    .fab {
-      position: fixed;
-      bottom: max(16px, env(safe-area-inset-bottom));
-      right: 16px;
-      width: 52px;
-      height: 52px;
-      border-radius: 50%;
-      background: #0f4c81;
-      border: none;
-      color: #bfdbfe;
-      font-size: 26px;
-      line-height: 1;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-      transition: background 0.2s, transform 0.15s, opacity 0.25s;
-      z-index: 100;
+    /* Buttons: one primary per view (lime), the rest secondary or outline */
+    .log-btn, .spot-save-btn, .set-btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 0 16px;
+      border: 1px solid transparent; border-radius: 12px; cursor: pointer; white-space: nowrap;
+      font: 500 15px var(--font-sans);
+      transition: box-shadow 200ms var(--ease), filter 120ms var(--ease), background-color 120ms var(--ease);
     }
-    .fab:hover { background: #1e5f9a; transform: scale(1.07); }
-    .fab:active { transform: scale(0.95); }
+    .log-btn, .spot-save-btn {
+      background: linear-gradient(180deg, color-mix(in srgb, var(--primary) 82%, white), var(--primary));
+      color: var(--primary-foreground);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 1px 2px rgba(0, 0, 0, 0.3);
+    }
+    .log-btn:hover, .spot-save-btn:hover { box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 16px -6px color-mix(in srgb, var(--primary) 30%, transparent); }
+    .spot-save-btn { width: 100%; height: 52px; font-size: 16px; margin-bottom: 4px; }
+    .log-btn:disabled, .spot-save-btn:disabled, .set-btn:disabled { opacity: 0.5; pointer-events: none; }
+    .set-btn { background: var(--secondary); color: var(--foreground); box-shadow: var(--shadow-raised); font-size: 14px; min-height: 40px; }
+    .set-btn:hover { filter: brightness(1.08); }
+    .set-btn.ghost { background: none; border-color: var(--input); box-shadow: none; }
+    .set-btn.danger { background: none; color: var(--destructive); box-shadow: none; }
+    .set-btn.danger:hover { background: var(--accent); }
+
+    /* ── Primary action: Update usage ── */
+    .fab {
+      position: fixed; bottom: max(16px, env(safe-area-inset-bottom)); right: 16px; z-index: 100;
+      display: inline-flex; align-items: center; gap: 8px; height: 52px; padding: 0 20px;
+      border: 0; border-radius: 9999px; cursor: pointer;
+      background: linear-gradient(180deg, color-mix(in srgb, var(--primary) 82%, white), var(--primary));
+      color: var(--primary-foreground); font: 500 16px var(--font-sans);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 1px 2px rgba(0, 0, 0, 0.3), var(--shadow-md);
+      transition: box-shadow 200ms var(--ease), opacity 0.25s;
+    }
+    .fab .ico { width: 20px; height: 20px; transition: transform 300ms cubic-bezier(0.3, 1.6, 0.5, 1); }
+    .fab:hover .ico { transform: rotate(90deg); }
+    .fab:hover { box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 16px -6px color-mix(in srgb, var(--primary) 30%, transparent), var(--shadow-md); }
     .fab.hidden { opacity: 0; pointer-events: none; }
 
-    /* ── Log sheet (bottom sheet) ────────────────────────────────────────── */
-    .sheet-backdrop {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0);
-      z-index: 200;
-      pointer-events: none;
-      transition: background 0.3s;
-    }
-    .sheet-backdrop.open {
-      background: rgba(0,0,0,0.6);
-      pointer-events: all;
-    }
+    /* ── Sheet: bottom sheet for entry, full screen for Settings and History ── */
+    .sheet-backdrop { position: fixed; inset: 0; background: transparent; z-index: 200; pointer-events: none; transition: background 280ms var(--ease); }
+    .sheet-backdrop.open { background: var(--overlay); pointer-events: all; }
     .sheet {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      background: #1e293b;
-      border-radius: 16px 16px 0 0;
-      padding: 0 20px max(20px, env(safe-area-inset-bottom));
-      z-index: 201;
-      transform: translateY(100%);
-      transition: transform 0.32s cubic-bezier(0.32, 0.72, 0, 1);
-      max-width: 560px;
-      margin: 0 auto;
-      max-height: 88vh;
-      max-height: 88dvh;
-      overflow-y: auto;
-      overscroll-behavior: contain;
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 201;
+      background: var(--popover); color: var(--foreground);
+      border: 1px solid var(--border); border-bottom: 0; border-radius: 24px 24px 0 0;
+      box-shadow: inset 0 1px 0 var(--edge-highlight), var(--shadow-lg);
+      padding: 0 16px max(20px, env(safe-area-inset-bottom));
+      transform: translateY(100%); transition: transform 280ms var(--ease);
+      max-width: 560px; margin: 0 auto; max-height: 88vh; max-height: 88dvh;
+      overflow-y: auto; overscroll-behavior: contain;
     }
-    .sheet.open {
-      transform: translateY(0);
+    .sheet.open { transform: translateY(0); }
+    .sheet.full {
+      top: 0; max-height: none; height: 100vh; height: 100dvh; max-width: 40rem;
+      border: 0; border-radius: 0; background: var(--background); box-shadow: none;
+      padding-top: env(safe-area-inset-top);
     }
-    .sheet-handle-row {
-      display: flex;
-      justify-content: center;
-      padding: 12px 0 4px;
+    .sheet-handle-row { display: flex; justify-content: center; padding: 8px 0 4px; }
+    .sheet.full .sheet-handle-row { display: none; }
+    .sheet-handle { width: 40px; height: 4px; background: var(--input); border-radius: 9999px; }
+    .sheet-header { display: flex; align-items: center; gap: 4px; min-height: 56px; }
+    .sheet-title { flex: 1; font: 500 20px/28px var(--font-display); color: var(--foreground); }
+    .sheet-back, .sheet-close {
+      display: inline-grid; place-items: center; width: 44px; height: 44px; flex: none;
+      background: none; border: 0; border-radius: 9999px; color: var(--muted-foreground); cursor: pointer;
     }
-    .sheet-handle {
-      width: 36px;
-      height: 4px;
-      background: #334155;
-      border-radius: 2px;
-    }
-    .sheet-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 10px 0 14px;
-    }
-    .sheet-title {
-      font-size: 13px;
-      color: #94a3b8;
-      text-transform: uppercase;
-      letter-spacing: 2px;
-      font-weight: 500;
-    }
-    .sheet-close {
-      background: none;
-      border: none;
-      color: #94a3b8;
-      font-size: 20px;
-      cursor: pointer;
-      padding: 6px 8px;
-      margin: -6px -8px;
-      line-height: 1;
-      transition: color 0.2s;
-    }
-    .sheet-close:hover { color: #94a3b8; }
+    .sheet-back { margin-left: -12px; }
+    .sheet-close { margin-right: -10px; }
+    .sheet-back:hover, .sheet-close:hover { background: var(--accent); color: var(--foreground); }
+    .sheet-back .ico, .sheet-close .ico { width: 20px; height: 20px; }
+    .sheet-back[hidden], .sheet-close[hidden] { display: none; }
+    .sheet.full .sheet-title { font-weight: 600; }
 
-    /* Sheet reuses .log-inputs / .log-field / .log-row / .log-btn styles */
-
-    /* ── Sheet tabs ──────────────────────────────────────────────────────── */
-    .sheet-tabs {
-      display: flex;
-      gap: 4px;
-      background: #0f172a;
-      border-radius: 8px;
-      padding: 3px;
-      margin-bottom: 16px;
-    }
+    .sheet-tabs { display: flex; gap: 4px; padding: 4px; margin-bottom: 20px; border-radius: 12px; background: var(--muted); box-shadow: var(--shadow-well); }
     .sheet-tab {
-      flex: 1;
-      background: none;
-      border: none;
-      border-radius: 6px;
-      color: #94a3b8;
-      font-size: 12px;
-      font-weight: 600;
-      letter-spacing: 0.5px;
-      padding: 9px 0;
-      cursor: pointer;
-      transition: background 0.15s, color 0.15s;
+      flex: 1; min-height: 36px; background: none; border: 0; border-radius: 8px; color: var(--muted-foreground);
+      font: 500 14px var(--font-sans); cursor: pointer; transition: background-color 120ms var(--ease), color 120ms var(--ease);
     }
-    .sheet-tab.active {
-      background: #1e293b;
-      color: #e2e8f0;
-    }
+    .sheet-tab:hover { color: var(--foreground); }
+    .sheet-tab.active { color: var(--foreground); background: linear-gradient(180deg, var(--card-top), var(--card-bottom)); box-shadow: var(--shadow-raised); }
     .sheet-pane { display: none; }
     .sheet-pane.active { display: block; }
 
-    /* ── Spot check pane ─────────────────────────────────────────────────── */
-    .spot-pane-field {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      margin-bottom: 14px;
-    }
-    .spot-pane-label {
-      font-size: 10px;
-      color: #64748b;
-      letter-spacing: 0.5px;
-    }
-    .spot-pane-input {
-      width: 100%;
-      background: #0f172a;
-      border: 1px solid #334155;
-      border-radius: 8px;
-      color: #e2e8f0;
-      font-size: 20px;
-      font-weight: 600;
-      padding: 10px 14px;
-      outline: none;
-      transition: border-color 0.2s;
-    }
-    .spot-pane-input:focus { border-color: #475569; }
-    .spot-pane-input::placeholder { color: #64748b; font-weight: 400; font-size: 16px; }
-    .spot-save-btn {
-      width: 100%;
-      background: #0f4c81;
-      border: none;
-      border-radius: 8px;
-      color: #bfdbfe;
-      font-size: 13px;
-      font-weight: 600;
-      padding: 11px 0;
-      cursor: pointer;
-      transition: background 0.2s;
-      margin-bottom: 4px;
-    }
-    .spot-save-btn:hover { background: #1e5f9a; }
-    .spot-save-btn:disabled { background: #1e293b; color: #64748b; cursor: not-allowed; }
-
-    /* ── Active-session timer card (main screen) ─────────────────────────────── */
+    /* ── Active-session timer card ── */
     .session-timer-card {
-      display: block;
-      width: 100%;
-      text-align: left;
-      font-family: inherit;
-      background: #12233b;
-      border: 1px solid #1d4e7a;
-      border-radius: 0.75rem;
-      padding: 0.5rem 0.75rem;
-      cursor: pointer;
-      transition: border-color 0.2s, background 0.2s;
+      display: block; width: 100%; text-align: left; cursor: pointer; color: var(--foreground);
+      background: linear-gradient(180deg, var(--card-top), var(--card-bottom));
+      border: 1px solid var(--border); border-radius: 1rem; box-shadow: var(--shadow-card); padding: 0.5rem 0.875rem;
     }
-    .session-timer-card:hover { border-color: #2b6aa5; background: #142842; }
-    .session-timer-card.ended { border-color: #b45309; background: #2a1c0c; }
-    .stc-top {
-      display: flex; align-items: baseline; justify-content: space-between; gap: 0.625rem;
-      margin-bottom: 0.375rem;
-    }
-    .stc-label {
-      font-size: 0.6875rem; letter-spacing: 1px; text-transform: uppercase;
-      color: #60a5fa; font-weight: 600; display: flex; align-items: center; gap: 0.375rem;
-    }
-    .session-timer-card.ended .stc-label { color: #fb923c; }
-    .stc-dot {
-      width: 0.4375rem; height: 0.4375rem; border-radius: 50%; background: #60a5fa;
-      box-shadow: 0 0 0 0 rgba(96,165,250,0.6); animation: stc-pulse 2s infinite;
-    }
-    .session-timer-card.ended .stc-dot { background: #fb923c; animation: none; }
-    @keyframes stc-pulse {
-      0%   { box-shadow: 0 0 0 0 rgba(96,165,250,0.5); }
-      70%  { box-shadow: 0 0 0 0.375rem rgba(96,165,250,0); }
-      100% { box-shadow: 0 0 0 0 rgba(96,165,250,0); }
-    }
-    .stc-time {
-      font-size: 1.125rem; font-weight: 700; color: #e2e8f0; line-height: 1;
-      font-variant-numeric: tabular-nums; letter-spacing: 0.5px;
-    }
-    .stc-track {
-      background: #0f172a; border-radius: 0.25rem; height: 0.25rem; overflow: hidden;
-    }
-    .stc-fill {
-      height: 100%; border-radius: 0.25rem; background: #3b82f6; transition: width 1s linear;
-    }
-    .session-timer-card.ended .stc-fill { background: #f97316; }
-    .stc-sub { font-size: 0.6875rem; color: #94a3b8; flex: 1; text-align: right; }
+    .session-timer-card.ended { background: var(--warning-soft); border-color: transparent; }
+    .stc-top { display: flex; align-items: baseline; justify-content: space-between; gap: 0.625rem; margin-bottom: 0.375rem; }
+    .stc-label { font-size: 0.8125rem; font-weight: 500; color: var(--foreground); display: flex; align-items: center; gap: 0.375rem; }
+    .session-timer-card.ended .stc-label { color: var(--warning); }
+    .stc-dot { width: 0.5rem; height: 0.5rem; border-radius: 50%; background: var(--success); }
+    .session-timer-card.ended .stc-dot { background: var(--warning); }
+    .stc-time { font: 600 1.125rem/1 var(--font-display); color: var(--foreground); font-variant-numeric: tabular-nums; }
+    .stc-track { background: var(--muted); border-radius: 9999px; height: 0.25rem; overflow: hidden; box-shadow: var(--shadow-well); }
+    .stc-fill { height: 100%; border-radius: 9999px; background: var(--foreground); transition: width 1s linear; }
+    .session-timer-card.ended .stc-fill { background: var(--warning); }
+    .stc-sub { font-size: 0.75rem; color: var(--muted-foreground); flex: 1; text-align: right; }
 
-    /* ── Timer pane (in sheet) ───────────────────────────────────────────────── */
-    .timer-hint { font-size: 11px; color: #94a3b8; margin-top: 10px; line-height: 1.5; }
-    .timer-active-display {
-      background: #0f172a; border: 1px solid #1d4e7a; border-radius: 10px;
-      padding: 16px; text-align: center; margin-bottom: 12px;
-    }
-    .ta-time {
-      font-size: 40px; font-weight: 700; color: #e2e8f0; line-height: 1;
-      font-variant-numeric: tabular-nums; letter-spacing: 1px;
-    }
-    .ta-time.ended { color: #fb923c; font-size: 22px; }
-    .ta-sub { font-size: 11px; color: #94a3b8; margin-top: 8px; }
-    .timer-cancel-btn {
-      width: 100%; background: none; border: none; color: #64748b;
-      font-size: 12px; padding: 8px 0 2px; cursor: pointer; transition: color 0.2s;
-    }
-    .timer-cancel-btn:hover { color: #f87171; }
-    .complete-banner {
-      font-size: 12px; color: #fb923c; background: #2a1c0c; border: 1px solid #7c3d0f;
-      border-radius: 8px; padding: 9px 12px; margin-bottom: 14px;
-    }
+    .timer-hint { font-size: 14px; color: var(--muted-foreground); margin-top: 12px; line-height: 1.45; }
+    .timer-active-display { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 16px; text-align: center; margin-bottom: 12px; }
+    .ta-time { font: 700 44px/1 var(--font-display); letter-spacing: -0.02em; color: var(--foreground); font-variant-numeric: tabular-nums; }
+    .ta-time.ended { color: var(--warning); font-size: 24px; }
+    .ta-sub { font-size: 14px; color: var(--muted-foreground); margin-top: 8px; }
+    .timer-cancel-btn { width: 100%; min-height: 44px; background: none; border: 0; border-radius: 12px; color: var(--destructive); font: 500 14px var(--font-sans); margin-top: 4px; cursor: pointer; }
+    .timer-cancel-btn:hover { background: var(--accent); }
+    .complete-banner { font-size: 14px; color: var(--warning); background: var(--warning-soft); border-radius: 12px; padding: 10px 12px; margin-bottom: 16px; }
 
-    /* ── Settings button ─────────────────────────────────────────────────── */
+    /* ── Settings button ── */
     .settings-btn {
-      position: relative; margin: -0.5rem -0.5rem -0.5rem 0;
-      background: none; border: none; color: #64748b;
-      font-size: 1.25rem; line-height: 1; padding: 0.5rem; cursor: pointer;
-      border-radius: 0.5rem; transition: color 0.2s;
+      position: relative; display: inline-grid; place-items: center; width: 2.75rem; height: 2.75rem; margin-right: -0.625rem;
+      background: none; border: 0; border-radius: 9999px; color: var(--muted-foreground); cursor: pointer;
     }
-    .settings-btn:hover { color: #cbd5e1; }
-    .sync-dot {
-      position: absolute; top: 0.5rem; right: 0.4375rem; width: 0.4375rem; height: 0.4375rem;
-      border-radius: 50%; background: transparent; pointer-events: none;
-    }
-    .sync-dot.ok { background: #22c55e; }
-    .sync-dot.syncing { background: #60a5fa; }
-    .sync-dot.error { background: #f59e0b; }
+    .settings-btn:hover { background: var(--accent); color: var(--foreground); }
+    .settings-btn .ico { width: 1.25rem; height: 1.25rem; }
+    .sync-dot { position: absolute; top: 0.5rem; right: 0.5rem; width: 0.5rem; height: 0.5rem; border-radius: 50%; background: transparent; pointer-events: none; }
+    .sync-dot.ok { background: var(--success); }
+    .sync-dot.syncing { background: var(--info); }
+    .sync-dot.error { background: var(--warning); }
 
-    /* ── History delete + show more ──────────────────────────────────────── */
-    .hist-row-top .hist-right { display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0; }
-    .hist-del {
-      background: none; border: 1px solid transparent; border-radius: 0.375rem;
-      color: #64748b; font-size: 0.8125rem; line-height: 1; padding: 0.3125rem 0.4375rem;
-      cursor: pointer; transition: color 0.2s, border-color 0.2s;
-    }
-    .hist-del:hover, .hist-del:focus-visible { color: #f87171; border-color: #7f1d1d; outline: none; }
-    .hist-more {
-      width: 100%; background: none; border: none; color: #60a5fa;
-      font-size: 0.6875rem; padding: 0.625rem 0 2px; cursor: pointer;
-    }
-
-    /* ── Past cycles card ────────────────────────────────────────────────── */
-    .cycles-card { background: #1e293b; border-radius: 0.625rem; padding: 1rem; }
-    .cycle-row {
-      display: flex; justify-content: space-between; align-items: baseline;
-      font-size: 0.75rem; color: #cbd5e1; padding: 0.375rem 0; border-top: 1px solid #0f172a;
-    }
-    .cycle-row:first-of-type { border-top: none; }
-    .trend { display: flex; gap: 0.375rem; align-items: flex-end; margin-bottom: 0.75rem; }
-    .trend-col { flex: 1; max-width: 3rem; display: flex; flex-direction: column; align-items: center; gap: 0.25rem; }
-    .trend-val { font-size: 0.6875rem; color: #cbd5e1; font-weight: 700; }
-    .trend-track {
-      width: 100%; height: 3.5rem; background: #0f172a; border-radius: 0.25rem;
-      border-top: 1px dashed #475569; display: flex; align-items: flex-end; overflow: hidden;
-    }
-    .trend-bar { width: 100%; border-radius: 0.25rem 0.25rem 0 0; }
-    .trend-lbl { font-size: 0.625rem; color: #64748b; white-space: nowrap; }
-    .cycle-val { font-weight: 700; }
-    .cycle-val.good { color: #4ade80; }
-    .cycle-val.ok   { color: #eab308; }
-    .cycle-val.bad  { color: #f87171; }
-    .cycle-sub { font-size: 0.625rem; color: #64748b; margin-left: 0.375rem; font-weight: 400; }
-
-    /* ── Toast ───────────────────────────────────────────────────────────── */
+    /* ── Toast ── */
     .toast {
-      position: fixed; left: 50%; bottom: max(88px, calc(env(safe-area-inset-bottom) + 64px));
+      position: fixed; left: 50%; bottom: max(88px, calc(env(safe-area-inset-bottom) + 72px));
       transform: translate(-50%, 20px); opacity: 0; pointer-events: none;
-      background: #334155; color: #e2e8f0; font-size: 13px;
-      border-radius: 10px; padding: 10px 14px; z-index: 300;
-      display: flex; align-items: center; gap: 14px;
-      box-shadow: 0 6px 24px rgba(0,0,0,0.5);
-      transition: opacity 0.2s, transform 0.2s; max-width: calc(100vw - 32px);
+      background: var(--popover); color: var(--foreground); font-size: 14px;
+      border: 1px solid var(--border); border-radius: 12px; padding: 12px 16px; z-index: 300;
+      display: flex; align-items: center; gap: 16px;
+      box-shadow: inset 0 1px 0 var(--edge-highlight), var(--shadow-md);
+      transition: opacity 200ms var(--ease), transform 200ms var(--ease); max-width: calc(100vw - 32px);
     }
     .toast.show { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
-    .toast button {
-      background: none; border: none; color: #60a5fa; font-weight: 700;
-      font-size: 13px; cursor: pointer; padding: 2px 4px;
-    }
+    .toast button { background: none; border: none; color: var(--foreground); font: 500 14px var(--font-sans); cursor: pointer; padding: 2px 4px; text-decoration: underline; text-underline-offset: 3px; }
 
-    /* ── Settings pane ───────────────────────────────────────────────────── */
-    .set-section { padding: 4px 0 18px; border-bottom: 1px solid #0f172a; margin-bottom: 16px; }
-    .set-section:last-child { border-bottom: none; margin-bottom: 0; }
-    .set-title {
-      font-size: 11px; color: #94a3b8; text-transform: uppercase;
-      letter-spacing: 1px; margin-bottom: 10px; font-weight: 600;
-    }
-    .set-row { display: flex; gap: 8px; margin-bottom: 10px; }
-    .set-field { display: flex; flex-direction: column; gap: 4px; font-size: 11px; color: #94a3b8; }
+    /* ── Settings screen ── */
+    .set-section { padding: 20px 0; border-top: 1px solid var(--border); }
+    .set-section:first-child { border-top: none; padding-top: 4px; }
+    .set-title { font: 500 16px/24px var(--font-display); color: var(--foreground); margin-bottom: 4px; }
+    .set-row { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+    .set-field { display: flex; flex-direction: column; gap: 8px; font: 500 14px/20px var(--font-sans); color: var(--foreground); }
     .set-row > * { flex: 1; }
-    .set-input, .set-select {
-      width: 100%; background: #0f172a; border: 1px solid #334155; border-radius: 8px;
-      color: #e2e8f0; font-size: 14px; padding: 9px 10px; outline: none; font-family: inherit;
-    }
-    .set-input:focus, .set-select:focus { border-color: #475569; }
-    .set-btn {
-      background: #0f4c81; border: none; border-radius: 8px; color: #bfdbfe;
-      font-size: 12px; font-weight: 600; padding: 10px 12px; cursor: pointer;
-      transition: background 0.2s; font-family: inherit;
-    }
-    .set-btn:hover { background: #1e5f9a; }
-    .set-btn:disabled { background: #1e293b; color: #64748b; cursor: not-allowed; }
-    .set-btn.ghost { background: none; border: 1px solid #334155; color: #cbd5e1; }
-    .set-btn.ghost:hover { border-color: #475569; }
-    .set-btn.danger { background: none; border: 1px solid #334155; color: #f87171; }
-    .set-hint { font-size: 11px; color: #94a3b8; line-height: 1.5; margin-bottom: 10px; }
-    .set-status { font-size: 12px; color: #cbd5e1; margin-bottom: 10px; }
-    .set-status .err { color: #f59e0b; }
+    .set-hint { font-size: 14px; color: var(--muted-foreground); line-height: 20px; margin-bottom: 12px; }
+    .set-status { font-size: 14px; color: var(--foreground); margin-bottom: 12px; }
+    .set-status .err { color: var(--warning); }
     .set-code {
-      font-family: ui-monospace, Menlo, monospace; font-size: 11px; color: #94a3b8;
-      word-break: break-all; background: #0f172a; border-radius: 8px; padding: 8px 10px; margin-bottom: 10px;
+      font-family: "JetBrains Mono", ui-monospace, Menlo, monospace; font-size: 13px; color: var(--muted-foreground);
+      word-break: break-all; background: var(--muted); border-radius: 12px; padding: 8px 12px; margin-bottom: 12px;
     }
     .qr-box { display: flex; justify-content: center; margin: 4px 0 12px; }
-    .qr-box svg { background: #fff; border-radius: 8px; width: 200px; height: 200px; }
-    .reminder-row { display: flex; gap: 8px; margin-top: 10px; }
+    .qr-box svg { background: #ffffff; border-radius: 12px; width: 200px; height: 200px; }
+    .reminder-row { display: flex; gap: 8px; margin-top: 12px; }
     .reminder-row .set-btn { flex: 1; }
+
+    /* Wide screens: the primary button sits at the bottom right of the left column, beside History */
+    @media (min-width: 700px) and (min-aspect-ratio: 5/4) {
+      .fab { right: auto; left: calc(max(16px, (100vw - 100rem) / 2) + 25rem); transform: translateX(-100%); }
+    }
   </style>
 <body>
   <div id="app"></div>
 
   <!-- FAB -->
-  <button class="fab" id="fab" aria-label="Log a session">+</button>
+  <button class="fab" id="fab"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M12 5v14"/></svg>Update usage</button>
 
   <!-- Bottom sheet backdrop -->
   <div class="sheet-backdrop" id="sheetBackdrop"></div>
@@ -879,20 +632,21 @@
   <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="Quick Entry">
     <div class="sheet-handle-row"><div class="sheet-handle"></div></div>
     <div class="sheet-header">
-      <span class="sheet-title" id="sheetTitle">Quick Entry</span>
-      <button class="sheet-close" id="sheetClose" aria-label="Close">✕</button>
+      <button class="sheet-back" id="sheetBack" aria-label="Back" hidden><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg></button>
+      <h2 class="sheet-title" id="sheetTitle">Update usage</h2>
+      <button class="sheet-close" id="sheetClose" aria-label="Close"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
     </div>
     <div class="sheet-tabs" id="sheetTabs">
-      <button class="sheet-tab active" id="tabSpot" data-tab="spot">Spot</button>
-      <button class="sheet-tab" id="tabTimer" data-tab="timer">Timer</button>
-      <button class="sheet-tab" id="tabLog" data-tab="log">Log</button>
+      <button class="sheet-tab active" id="tabSpot" data-tab="spot">Weekly %</button>
+      <button class="sheet-tab" id="tabTimer" data-tab="timer">Session timer</button>
+      <button class="sheet-tab" id="tabLog" data-tab="log">Log session</button>
     </div>
 
     <!-- Timer pane -->
     <div class="sheet-pane" id="paneTimer">
       <div id="timerIdle">
         <div class="spot-pane-field">
-          <div class="spot-pane-label">Current weekly usage %</div>
+          <label class="spot-pane-label" for="sessionStartInput">Weekly usage now, from Claude</label>
           <input type="number" class="spot-pane-input" id="sessionStartInput" min="0" max="100" step="0.1" placeholder="e.g. 34" inputmode="decimal" />
         </div>
         <button class="spot-save-btn" id="sessionStartBtn" disabled>Start 5-hour session</button>
@@ -941,17 +695,17 @@
       </div>
       <div class="log-row">
         <div class="log-delta-preview" id="sheetPreview">Fill in all three fields to preview</div>
-        <button class="log-btn" id="sheetLogBtn" disabled>+ Log Session</button>
+        <button class="log-btn" id="sheetLogBtn" disabled>Log session</button>
       </div>
     </div>
 
     <!-- Spot Check pane -->
     <div class="sheet-pane active" id="paneSpot">
       <div class="spot-pane-field">
-        <div class="spot-pane-label">Current weekly usage %</div>
+        <label class="spot-pane-label" for="sheetSpotInput">Weekly usage now, from Claude</label>
         <input type="number" class="spot-pane-input" id="sheetSpotInput" min="0" max="100" step="0.1" placeholder="e.g. 34" inputmode="decimal" />
       </div>
-      <button class="spot-save-btn" id="sheetSpotBtn" disabled>Save &amp; Check Drift</button>
+      <button class="spot-save-btn" id="sheetSpotBtn" disabled>Save weekly %</button>
     </div>
 
     <!-- Complete Session pane (opened when a timed session ends) -->
@@ -971,6 +725,15 @@
 
     <!-- Settings pane -->
     <div class="sheet-pane" id="paneSettings">
+      <div class="set-section">
+        <div class="set-title">Appearance</div>
+        <label class="set-field">Theme
+          <select class="set-select" id="themeSelect">
+            <option value="system">Match device</option><option value="dark">Dark</option><option value="light">Light</option>
+          </select>
+        </label>
+      </div>
+
       <div class="set-section">
         <div class="set-title">Weekly reset</div>
         <div class="set-hint">When your Claude weekly limit resets, in your time zone (<span id="tzName"></span>).</div>
@@ -1206,12 +969,12 @@
     }
     function barColour(driftStatus) {
       switch (driftStatus) {
-        case "ahead":    return "#60a5fa";
-        case "on-track": return "#22c55e";
-        case "drifting": return "#eab308";
-        case "at-risk":  return "#f97316";
-        case "critical": return "#ef4444";
-        default:         return "#94a3b8";
+        case "ahead":    return "var(--info)";
+        case "on-track": return "var(--success)";
+        case "drifting": return "var(--warning)";
+        case "at-risk":
+        case "critical": return "var(--destructive)";
+        default:         return "var(--muted-foreground)";
       }
     }
 
@@ -1593,14 +1356,14 @@
       <div class="layout">
       <div class="col-main">
       <div class="header">
-        <span><span id="headerReset">Resets</span><span class="header-countdown" id="headerCountdown"></span></span>
-        <button class="settings-btn" id="settingsBtn" aria-label="Settings">⚙<span class="sync-dot" id="syncDot"></span></button>
+        <span class="header-brand"><span class="app-name">Claude Cycle</span><span class="num"><span id="headerReset">Resets</span><span class="header-countdown" id="headerCountdown"></span></span></span>
+        <button class="settings-btn" id="settingsBtn" aria-label="Settings"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg><span class="sync-dot" id="syncDot"></span></button>
       </div>
 
       <div class="hero">
         <div>
+          <div class="hero-sub" id="heroSub">Week elapsed</div>
           <div class="hero-pct" id="pctNumber">0.00<span class="unit">%</span></div>
-          <div class="hero-sub" id="heroSub">of the week elapsed</div>
         </div>
         <div class="hero-side">
           <button class="used-btn" id="heroUsed" aria-haspopup="dialog" aria-expanded="false" aria-controls="quickEdit">— used</button>
@@ -1631,7 +1394,7 @@
 
         <div class="card pass-card after" id="passCard" hidden>
           <div class="card-head">
-            <span class="card-label">Free pass</span>
+            <span class="badge"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M13 5v2M13 17v2M13 11v2"/></svg>Free pass</span>
             <span class="card-head-right">
               <span class="num" id="passExpiry"></span>
               <button class="info-btn" aria-expanded="false" aria-controls="passInfo" aria-label="About the free pass">i</button>
@@ -1695,15 +1458,15 @@
 
       <!-- ── Layer 2 ──────────────────────────────────────────────────────── -->
       <div class="history-wrap after">
-      <button class="tracker-toggle" id="trackerToggle" aria-expanded="false" aria-controls="trackerPanel">
-        History &amp; Past Cycles <i class="arrow">▾</i>
+      <button class="tracker-toggle" id="trackerToggle">
+        History <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
       </button>
 
       <div class="tracker-panel" id="trackerPanel">
         <div class="tracker-inner">
           <div class="sessions-card" style="grid-template-columns:1fr">
             <div class="sessions-stat">
-              <div class="sessions-stat-label">Avg Session Value</div>
+              <div class="sessions-stat-label">Avg session value</div>
               <div class="sessions-stat-value" id="avgSessionVal">—</div>
               <div class="sessions-stat-sub" id="avgSessionSub">no data yet</div>
             </div>
@@ -1711,14 +1474,14 @@
 
           <div class="history-card">
             <div class="history-header">
-              <span class="history-title">Session History</span>
-              <button class="clear-btn" id="clearBtn">Clear All</button>
+              <span class="history-title">Session history</span>
+              <button class="clear-btn" id="clearBtn">Clear all</button>
             </div>
             <div id="historyBody"></div>
           </div>
 
           <div class="cycles-card" id="cyclesCard" style="display:none">
-            <div class="history-title" style="margin-bottom:8px">Past Cycles</div>
+            <div class="history-title">Past cycles</div>
             <div class="trend" id="cyclesTrend" aria-label="Weekly usage for past cycles"></div>
             <div id="cyclesBody"></div>
           </div>
@@ -1752,29 +1515,14 @@
     const trackerToggle = document.getElementById("trackerToggle");
     const trackerPanel  = document.getElementById("trackerPanel");
     const fab           = document.getElementById("fab");
-
-    function updateFabVisibility() {
-      fab.classList.toggle("hidden", trackerPanel.classList.contains("open"));
-    }
-    updateFabVisibility();
-
-    trackerToggle.addEventListener("click", () => {
-      const isOpen = trackerPanel.classList.toggle("open");
-      trackerToggle.classList.toggle("open", isOpen);
-      trackerToggle.setAttribute("aria-expanded", String(isOpen));
-      trackerData.trackerOpen = isOpen;
-      saveData(trackerData);
-      updateFabVisibility();
-      if (isOpen) {
-        setTimeout(() => {
-          const top = trackerToggle.getBoundingClientRect().top + window.scrollY;
-          window.scrollTo({ top, behavior: "smooth" });
-        }, 20);
-      } else {
-        window.scrollTo({ top: 0, behavior: "smooth" });
-        setTimeout(fitToScreen, 400);   // after the panel's closing transition
-      }
-    });
+    // History lives in the sheet as a full screen (moved there once the sheet exists)
+    const paneHistory = document.createElement("div");
+    paneHistory.className = "sheet-pane";
+    paneHistory.id = "paneHistory";
+    paneHistory.appendChild(trackerPanel.querySelector(".tracker-inner"));
+    document.getElementById("paneSettings").before(paneHistory);
+    trackerPanel.remove();
+    trackerToggle.addEventListener("click", () => { renderLayer2(); showSpecialPane(paneHistory, "History"); });
 
     // "i" buttons show or hide the explanation they point at
     app.addEventListener("click", e => {
@@ -1871,7 +1619,7 @@
     // Skipped while History or an explanation is open: those may scroll.
     function fitToScreen() {
       const root = document.documentElement;
-      if (trackerPanel.classList.contains("open") || document.querySelector(".info:not([hidden])")) return;
+      if (document.querySelector("#app .info:not([hidden])")) return;
       // Fill exactly the visible height (the CSS 100dvh is only a first guess)
       document.body.style.minHeight = window.innerHeight + "px";
       root.style.fontSize = "";
@@ -1985,14 +1733,24 @@
     let sheetTimeLeftMs = null;
     let autoPromptedFor = null;   // startTs we've already auto-opened completion for
 
-    const ALL_PANES = () => [paneTimer, paneLog, paneSpot, paneComplete, paneSettings];
+    const ALL_PANES = () => [paneTimer, paneLog, paneSpot, paneComplete, paneSettings, paneHistory];
+    const sheetBack = document.getElementById("sheetBack");
+    // Settings and History fill the screen with a back arrow; entry panes are a bottom sheet
+    function setSheetFull(full) {
+      sheet.classList.toggle("full", full);
+      sheetBack.hidden = !full;
+      sheetClose.hidden = full;
+    }
+    sheetBack.addEventListener("click", () => closeSheet());
 
     // ── Tab switching ─────────────────────────────────────────────────────────
     function switchTab(tab) {
       sheetTabs.style.display = "";
-      sheetTitle.textContent = "Quick Entry";
+      sheetTitle.textContent = "Update usage";
+      setSheetFull(false);
       paneComplete.classList.remove("active");
       paneSettings.classList.remove("active");
+      paneHistory.classList.remove("active");
       tabTimer.classList.toggle("active", tab === "timer");
       tabLog.classList.toggle("active",   tab === "log");
       tabSpot.classList.toggle("active",  tab === "spot");
@@ -2017,6 +1775,7 @@
     function showSpecialPane(pane, title) {
       sheetTabs.style.display = "none";
       sheetTitle.textContent = title;
+      setSheetFull(pane === paneSettings || pane === paneHistory);
       ALL_PANES().forEach(p => p.classList.remove("active"));
       pane.classList.add("active");
       if (!sheetIsOpen()) {
@@ -2119,9 +1878,9 @@
       if (isNaN(b) || isNaN(s) || isNaN(a)) {
         sheetPreview.textContent = "Fill in all three fields to preview";
       } else if (!inPct(b) || !inPct(a) || !inSession(s)) {
-        sheetPreview.innerHTML = `<span style="color:#f87171">⚠ Values must be between 0 and 100</span>`;
+        sheetPreview.innerHTML = `<span style="color:var(--destructive)">⚠ Values must be between 0 and 100</span>`;
       } else if (a < b) {
-        sheetPreview.innerHTML = `<span style="color:#f87171">⚠ Week % after is less than before</span>`;
+        sheetPreview.innerHTML = `<span style="color:var(--destructive)">⚠ Week % after is less than before</span>`;
       } else {
         const delta = a - b;
         sheetPreview.innerHTML = `Δ <span>+${delta.toFixed(1)}%</span> · <span>${(delta / (s / 100)).toFixed(2)}%</span>/full session`;
@@ -2324,9 +2083,9 @@
       if (isNaN(s) || isNaN(a)) {
         completePreview.textContent = "Enter both to preview";
       } else if (!inSession(s) || !inPct(a)) {
-        completePreview.innerHTML = `<span style="color:#f87171">⚠ Values must be between 0 and 100</span>`;
+        completePreview.innerHTML = `<span style="color:var(--destructive)">⚠ Values must be between 0 and 100</span>`;
       } else if (a < b) {
-        completePreview.innerHTML = `<span style="color:#f87171">⚠ Weekly % is below the ${b}% you started at</span>`;
+        completePreview.innerHTML = `<span style="color:var(--destructive)">⚠ Weekly % is below the ${b}% you started at</span>`;
       } else {
         const delta = a - b;
         completePreview.innerHTML = `Δ <span>+${delta.toFixed(1)}%</span> · <span>${(delta / (s / 100)).toFixed(2)}%</span>/full session`;
@@ -2453,7 +2212,7 @@
                 <span class="hist-date">${formatShortDate(s.ts)}</span>
                 <span class="hist-right">
                   <span class="hist-delta ${sign}">${deltaStr}</span>
-                  <button class="hist-del" data-id="${s.id}" aria-label="Delete session from ${formatShortDate(s.ts)}">✕</button>
+                  <button class="hist-del" data-id="${s.id}" aria-label="Delete session from ${formatShortDate(s.ts)}"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg></button>
                 </span>
               </div>
               <div class="hist-detail">${s.weekBefore}%→${s.weekAfter}%<span class="sep">·</span>${s.sessionUsed}% session<span class="sep">·</span>${s.normalizedDelta.toFixed(2)}%/100%</div>
@@ -2473,7 +2232,6 @@
       if (!rows.length) { card.style.display = "none"; return; }
       card.style.display = "";
       // Trend: one bar per past week (oldest left), full height = 100% used
-      const colour = v => v >= 95 ? "#22c55e" : v >= 80 ? "#eab308" : "#f87171";
       const trend = Object.entries(trackerData.cycles)
         .map(([k, v]) => ({ start: +k, value: v.value }))
         .filter(c => c.start < currentStart)
@@ -2482,14 +2240,14 @@
       document.getElementById("cyclesTrend").innerHTML = trend.map(c => `
         <div class="trend-col" title="${formatDayDate(c.start)}: ${c.value.toFixed(1)}% used${usedPassIn(c.start) ? ", free pass used" : ""}">
           <span class="trend-val num">${Math.round(c.value)}</span>
-          <div class="trend-track"><div class="trend-bar" style="height:${Math.min(100, c.value)}%;background:${colour(c.value)}"></div></div>
+          <div class="trend-track"><div class="trend-bar" style="height:${Math.min(100, c.value)}%"></div></div>
           <span class="trend-lbl">${new Date(c.start).toLocaleString("en-AU", { day: "numeric", month: "short" })}</span>
         </div>`).join("");
       document.getElementById("cyclesBody").innerHTML = rows.map(c => {
         const cls = c.value >= 95 ? "good" : c.value >= 80 ? "ok" : "bad";
         const lastBefore = c.start + CYCLE_MS - c.ts;
         const note = lastBefore > 12 * 3600000 ? `<span class="cycle-sub">logged ${formatDuration(lastBefore)} before reset</span>` : "";
-        const pass = usedPassIn(c.start) ? `<span class="cycle-pass" title="Free pass used this week">★ pass</span>` : "";
+        const pass = usedPassIn(c.start) ? `<span class="badge cycle-pass">Free pass</span>` : "";
         return `<div class="cycle-row"><span>${formatDayDate(c.start)}${pass}</span>
           <span><span class="cycle-val ${cls}">${c.value.toFixed(1)}% used</span>${note}</span></div>`;
       }).join("");
@@ -2517,32 +2275,31 @@
       for (let mid = addLocalDays(localMidnight(cs), -1); mid < ce; mid = addLocalDays(mid, 1)) {
         const a = Math.max(localAt(mid, prefs().wakeEnd), cs);
         const b = Math.min(localAt(addLocalDays(mid, 1), prefs().wakeStart), ce);
-        if (b > a) s += `<rect x="${x(a)}" y="${T}" width="${x(b) - x(a)}" height="${H - T - B}" fill="#0f172a" opacity="0.7"/>`;
+        if (b > a) s += `<rect x="${x(a)}" y="${T}" width="${x(b) - x(a)}" height="${H - T - B}" style="fill:var(--night)"/>`;
       }
       [0, 25, 50, 75, 100].forEach(p => {
-        s += `<line x1="${L}" x2="${W - R}" y1="${y(p)}" y2="${y(p)}" stroke="#334155" stroke-width="${p === 0 ? 1 : 0.5}"/>`;
-        s += `<text x="${L - 6 * k}" y="${y(p) + 3.5 * k}" font-size="${fs}" fill="#64748b" text-anchor="end">${p}%</text>`;
+        s += `<line x1="${L}" x2="${W - R}" y1="${y(p)}" y2="${y(p)}" style="stroke:${p === 0 ? "var(--input)" : "var(--border)"}" stroke-width="${p === 0 ? 1 : 0.75}"/>`;
+        s += `<text x="${L - 6 * k}" y="${y(p) + 3.5 * k}" font-size="${fs}" style="fill:var(--muted-foreground)" text-anchor="end">${p}%</text>`;
       });
       for (let mid = localMidnight(cs); mid < ce; mid = addLocalDays(mid, 1)) {
         const noon = localAt(mid, 12);
         if (noon <= cs || noon >= ce) continue;
-        s += `<text x="${x(noon)}" y="${H - 6 * k}" font-size="${fs}" fill="#64748b" text-anchor="middle">${
+        s += `<text x="${x(noon)}" y="${H - 6 * k}" font-size="${fs}" style="fill:var(--muted-foreground)" text-anchor="middle">${
           new Date(noon).toLocaleString("en-AU", { weekday: "short" })}</text>`;
       }
       // Target line: one segment, or two around a free pass (planned or used)
-      const tline = (a, b, extra) => s += `<line x1="${x(a)}" y1="${y(0)}" x2="${x(b)}" y2="${y(100)}" stroke="#94a3b8" stroke-width="${1.5 * k}"${extra || ""}/>`;
+      const tline = (a, b, extra) => s += `<line x1="${x(a)}" y1="${y(0)}" x2="${x(b)}" y2="${y(100)}" style="stroke:var(--muted-foreground)" stroke-width="${1.5 * k}"${extra || ""}/>`;
       if (m.kind === "normal") tline(cs, ce);
       else {
         if (m.kind === "plan") { tline(cs, m.passAt); tline(m.passAt, ce, ` stroke-dasharray="${5 * k} ${3 * k}"`); }
         else { tline(cs, m.passAt, ` opacity="0.35"`); tline(m.passAt, ce); }
-        s += `<line x1="${x(m.passAt)}" x2="${x(m.passAt)}" y1="${T}" y2="${H - B}" stroke="#f59e0b" stroke-width="${1.5 * k}"${
-          m.kind === "plan" ? ` stroke-dasharray="${3 * k} ${3 * k}"` : ""}/>`;
-        s += `<text x="${x(m.passAt) + 3 * k}" y="${T + 9 * k}" font-size="${fs}" fill="#f59e0b">pass</text>`;
+        s += `<line x1="${x(m.passAt)}" x2="${x(m.passAt)}" y1="${T}" y2="${H - B}" style="stroke:var(--foreground)" stroke-width="${k}" stroke-dasharray="${2 * k} ${3 * k}"/>`;
+        s += `<text x="${x(m.passAt) + 3 * k}" y="${H - B - 4 * k}" font-size="${fs}" style="fill:var(--foreground)">Free pass</text>`;
       }
       const tx = m.start + 0.155 * (m.end - m.start);
-      s += `<text x="${x(tx)}" y="${y(15.5) - 6 * k}" font-size="${fs}" fill="#94a3b8" text-anchor="end">target</text>`;
+      s += `<text x="${x(tx)}" y="${y(15.5) - 6 * k}" font-size="${fs}" style="fill:var(--muted-foreground)" text-anchor="end">target</text>`;
       checkIns.filter(c => !c.nextCycle).forEach(c =>
-        s += `<circle cx="${x(c.ms)}" cy="${y(c.pct)}" r="${3.5 * k}" fill="#0f172a" stroke="#94a3b8" stroke-width="${1.5 * k}"/>`);
+        s += `<circle cx="${x(c.ms)}" cy="${y(c.pct)}" r="${3.5 * k}" style="fill:var(--card);stroke:var(--muted-foreground)" stroke-width="${1.5 * k}"/>`);
 
       if (weeklyPct !== null) {
         const pts  = cycleReadings(cs);
@@ -2555,19 +2312,19 @@
           const hits   = endVal >= 100;
           const endMs  = hits ? last[0] + (100 - last[1]) / rate : ce;
           const endPct = hits ? 100 : endVal;
-          s += `<line x1="${x(last[0])}" y1="${y(last[1])}" x2="${x(endMs)}" y2="${y(endPct)}" stroke="${colour}" stroke-width="${1.5 * k}" stroke-dasharray="${4 * k} ${4 * k}" opacity="0.8"/>`;
-          s += `<text x="${x(endMs) - 4 * k}" y="${y(endPct) + 14 * k}" font-size="${fs * 1.05}" font-weight="700" fill="${colour}" text-anchor="end">${
+          s += `<line x1="${x(last[0])}" y1="${y(last[1])}" x2="${x(endMs)}" y2="${y(endPct)}" style="stroke:var(--foreground)" stroke-width="${1.5 * k}" stroke-dasharray="${4 * k} ${4 * k}" opacity="0.5"/>`;
+          s += `<text x="${x(endMs) - 4 * k}" y="${y(endPct) + 14 * k}" font-size="${fs * 1.05}" font-weight="600" style="fill:var(--foreground)" text-anchor="end">${
             hits ? "100% by " + dayTime(endMs) : "→ " + endVal.toFixed(0) + "% at reset"}</text>`;
         }
-        s += `<polyline points="${pts.map(([t, p]) => x(t) + "," + y(p)).join(" ")}" fill="none" stroke="${colour}" stroke-width="${2.5 * k}" stroke-linejoin="round"/>`;
-        pts.slice(1, -1).forEach(([t, p]) => s += `<circle cx="${x(t)}" cy="${y(p)}" r="${2.5 * k}" fill="${colour}"/>`);
-        s += `<circle cx="${x(last[0])}" cy="${y(last[1])}" r="${4.5 * k}" fill="${colour}" stroke="#1e293b" stroke-width="2"/>`;
+        s += `<polyline points="${pts.map(([t, p]) => x(t) + "," + y(p)).join(" ")}" style="fill:none;stroke:var(--foreground)" stroke-width="${2.5 * k}" stroke-linejoin="round"/>`;
+        pts.slice(1, -1).forEach(([t, p]) => s += `<circle cx="${x(t)}" cy="${y(p)}" r="${2.5 * k}" style="fill:var(--foreground)"/>`);
+        s += `<circle cx="${x(last[0])}" cy="${y(last[1])}" r="${4.5 * k}" style="fill:var(--foreground);stroke:var(--card)" stroke-width="2"/>`;
       }
-      s += `<line x1="${x(nowMs)}" x2="${x(nowMs)}" y1="${T}" y2="${H - B}" stroke="#e2e8f0" stroke-width="1" stroke-dasharray="2 3"/>`;
-      s += `<text x="${x(nowMs)}" y="${T - 4 * k}" font-size="${fs}" fill="#e2e8f0" text-anchor="middle">now</text>`;
+      s += `<line x1="${x(nowMs)}" x2="${x(nowMs)}" y1="${T}" y2="${H - B}" style="stroke:var(--muted-foreground)" stroke-width="1" stroke-dasharray="2 3"/>`;
+      s += `<text x="${x(nowMs)}" y="${T - 4 * k}" font-size="${fs}" style="fill:var(--foreground)" text-anchor="middle">now</text>`;
       if (chartSel && chartSel.cs === cs) {   // tapped point or time
-        s += `<line x1="${x(chartSel.ms)}" x2="${x(chartSel.ms)}" y1="${T}" y2="${H - B}" stroke="#e2e8f0" stroke-width="${k}" opacity="0.35"/>`;
-        s += `<circle cx="${x(chartSel.ms)}" cy="${y(chartSel.pct)}" r="${6 * k}" fill="none" stroke="#e2e8f0" stroke-width="${1.5 * k}"/>`;
+        s += `<line x1="${x(chartSel.ms)}" x2="${x(chartSel.ms)}" y1="${T}" y2="${H - B}" style="stroke:var(--foreground)" stroke-width="${k}" opacity="0.35"/>`;
+        s += `<circle cx="${x(chartSel.ms)}" cy="${y(chartSel.pct)}" r="${6 * k}" style="fill:none;stroke:var(--foreground)" stroke-width="${1.5 * k}"/>`;
       }
       box.innerHTML =
         `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Weekly usage against the target line">${s}</svg>`;
@@ -2588,7 +2345,6 @@
         if (restMs) info.insertAdjacentHTML("beforeend", `<div class="info-actions">
           <button data-cal="google">+ Google Calendar</button><button data-cal="ics">+ Apple / other (.ics)</button></div>`);
       };
-      big.style.color = colour;
       title.textContent = "Next session";
       const how = "How much of your next 5-hour session to use so you are back on the target line when it ends.";
       if (weeklyPct === null) return show("—", "Set weekly % with +", how);
@@ -2633,7 +2389,8 @@
       if (!plan) { passReminders = null; return; }
       const p = plan.pass, sel = plan.sel, cur = cycleStartFor(nowMs);
       const weekName = cs => cs === cur ? "this week" : "week of " + new Date(cs).toLocaleString("en-AU", { day: "numeric", month: "short" });
-      document.getElementById("passExpiry").textContent = `expires ${passDate(p.expiresTs)} · ${formatDuration(p.expiresTs - nowMs)}`;
+      const leftTxt = formatDuration(p.expiresTs - nowMs).replace(/^(\d+d \d+h) \d+m$/, "$1");
+      document.getElementById("passExpiry").textContent = `Expires ${new Date(p.expiresTs).toLocaleString("en-AU", { weekday: "short", day: "numeric", month: "short" }).replace(",", "")} · ${leftTxt}`;
       const whenEl = document.getElementById("passWhen"), gainEl = document.getElementById("passGain");
       const warn = document.getElementById("passWarn");
       const useNow = sel && sel.cs === cur && sel.at <= nowMs + 60000;
@@ -2646,7 +2403,7 @@
       }
       document.getElementById("passWeeks").innerHTML = plan.weeks.length > 1 ? plan.weeks.map(w => `
         <button class="pass-week" data-week="${w.cs}" aria-pressed="${sel && w.cs === sel.cs}">
-          <b>${w.cs === cur ? "This wk" : new Date(w.cs).toLocaleString("en-AU", { day: "numeric", month: "short" })}</b>+${w.gain.toFixed(0)}%</button>`).join("") : "";
+          <b>${w.cs === cur ? "This week" : new Date(w.cs).toLocaleString("en-AU", { day: "numeric", month: "short" })}</b><small>+${w.gain.toFixed(0)}%</small></button>`).join("") : "";
       const warnText = !sel ? "No session slot fits before it expires"
         : sel.limited ? `It expires before the best time in this week, so this is the last slot before it expires`
         : sel.reason === "short" ? "Not enough sessions left after it to use another full 100%"
@@ -2697,10 +2454,9 @@
 
       // Hero
       const pctEl = document.getElementById("pctNumber");
-      pctEl.style.color = colour;
       pctEl.innerHTML   = pct.toFixed(2) + '<span class="unit">%</span>';
-      document.getElementById("heroSub").textContent = m.kind === "plan" ? "target · free pass plan"
-        : m.kind === "used" ? "target since free pass" : "of the week elapsed";
+      document.getElementById("heroSub").textContent = m.kind === "plan" ? "Target now · free pass plan"
+        : m.kind === "used" ? "Target since free pass" : "Week elapsed";
       document.getElementById("heroUsed").innerHTML =
         weeklyPct === null ? "— used" : `<b>${weeklyPct.toFixed(1)}%</b> used`;
       const pill = document.getElementById("statusPill");
@@ -2925,7 +2681,29 @@
     // ─── Settings (C9 reset time, sync, backup) ───────────────────────────────
     const resetDay  = document.getElementById("resetDay");
     const resetTime = document.getElementById("resetTime");
+    // Appearance: per device, kept apart from synced data
+    const themeSelect = document.getElementById("themeSelect");
+    function getTheme() { try { return localStorage.getItem("claude-tracker-theme") || "system"; } catch (e) { return "system"; } }
+    function applyTheme(t) {
+      if (t === "dark" || t === "light") document.documentElement.setAttribute("data-theme", t);
+      else document.documentElement.removeAttribute("data-theme");
+      const bg = getComputedStyle(document.documentElement).getPropertyValue("--background").trim();
+      if (bg) document.getElementById("themeColor").setAttribute("content", bg);
+    }
+    themeSelect.addEventListener("change", () => {
+      try { localStorage.setItem("claude-tracker-theme", themeSelect.value); } catch (e) {}
+      applyTheme(themeSelect.value);
+      if (chartArgs) renderChart(...chartArgs);
+    });
+    if (window.matchMedia) {
+      const mq = matchMedia("(prefers-color-scheme: light)");
+      const onScheme = () => { if (getTheme() === "system") applyTheme("system"); };
+      if (mq.addEventListener) mq.addEventListener("change", onScheme); else if (mq.addListener) mq.addListener(onScheme);
+    }
+    applyTheme(getTheme());
+
     function openSettings() {
+      themeSelect.value = getTheme();
       const next = getCycleStartUTC() + CYCLE_MS;
       const d = new Date(next);
       resetDay.value  = String(d.getDay());
