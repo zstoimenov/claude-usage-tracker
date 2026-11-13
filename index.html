@@ -745,14 +745,14 @@
     <div class="sheet-pane" id="paneComplete">
       <div class="complete-banner" id="completeBanner">Session ended — enter what you used.</div>
       <div class="spot-pane-field">
-        <div class="spot-pane-label">Session % used</div>
+        <label class="spot-pane-label" for="completeSession">Session % used</label>
         <input type="number" class="spot-pane-input" id="completeSession" min="1" max="100" step="1" placeholder="e.g. 80" inputmode="decimal" />
       </div>
       <div class="spot-pane-field">
-        <div class="spot-pane-label">Current weekly usage %</div>
+        <label class="spot-pane-label" for="completeAfter">Current weekly usage %</label>
         <input type="number" class="spot-pane-input" id="completeAfter" min="0" max="100" step="0.1" placeholder="e.g. 40" inputmode="decimal" />
       </div>
-      <div class="log-delta-preview" id="completePreview" style="margin-bottom:12px">Enter both to preview</div>
+      <div class="log-delta-preview" id="completePreview" style="margin-bottom:16px">Enter both to preview</div>
       <button class="spot-save-btn" id="completeBtn" disabled>Log session</button>
     </div>
 
@@ -2089,7 +2089,7 @@
     function openCompletion() {
       const as = trackerData.activeSession;
       if (!as) return;
-      showSpecialPane(paneComplete, "Log Session");
+      showSpecialPane(paneComplete, "Log session");
       const crossed = completionBefore(as) === 0 && as.weekBefore !== 0;
       completeBanner.textContent = crossed
         ? "Session ended. Your usage reset during it (weekly reset or free pass), so enter your weekly % now."
