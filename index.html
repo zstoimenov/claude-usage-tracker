@@ -1169,8 +1169,11 @@
         at = current ? from : slots.length && slots[0].start <= deadline ? slots[0].start : null;
         if (at === null) return null;
       }
+      // Where the target line puts the pass: never the pace estimate below,
+      // which is worked out from your usage and would bend the line to it
+      let lineAt = at;
       if (current && weekly) {
-        if (weekly.value >= 100) { at = nowMs; reason = "full"; }
+        if (weekly.value >= 100) { at = lineAt = nowMs; reason = "full"; }
         else if (weekly.value > 0 && weekly.ts - cs > 3600000) {
           const t100 = weekly.ts + (100 - weekly.value) / (weekly.value / (weekly.ts - cs));
           if (t100 < at) { at = Math.max(nowMs, t100); reason = "pace"; }
@@ -1180,7 +1183,7 @@
       const pre = Math.min(100, base + (i + running) * per);
       const post = Math.min(100, (slots.length - i) * per);
       const without = Math.min(100, base + (slots.length + running) * per);
-      return { cs, at, reason, gain: Math.max(0, pre + post - without),
+      return { cs, at, lineAt, reason, gain: Math.max(0, pre + post - without),
                limited: reason === "slots" && ideal > i };
     }
     // Every week you could use the pass in, and the one planned: yours if you
@@ -1213,7 +1216,7 @@
       const used = usedPassIn(cs);
       if (used && nowMs >= used.usedTs) return { kind: "used", cs, ce, start: used.usedTs, end: ce, passAt: used.usedTs };
       if (plan && plan.sel && plan.sel.cs === cs) {
-        const at = Math.min(ce - 60000, Math.max(plan.sel.at, nowMs, cs + 3600000));
+        const at = Math.min(ce - 60000, Math.max(plan.sel.lineAt, nowMs, cs + 3600000));
         return { kind: "plan", cs, ce, start: cs, end: at, passAt: at };
       }
       return { kind: "normal", cs, ce, start: cs, end: ce };

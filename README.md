@@ -167,6 +167,10 @@ Bump `CACHE_NAME` in `sw.js` only when you want old caches cleared.
 
 ## Changelog
 
+- **3.1.4** (2026-11-25): fix "Target now" with a free pass planned this week.
+  Updating your used % no longer sets the target to that same number: the
+  target line runs to the planned pass time, not to the "use it early at your
+  pace" estimate, which was worked out from your usage.
 - **3.1.3** (2026-11-13): "Session ended" bar redone: one row with status,
   details and a "Log now" button, amber border and pulsing dot, no full
   progress bar. "Active session" in sentence case.
