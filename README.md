@@ -62,10 +62,11 @@ Live at `https://zstoimenov.github.io/claude-usage-tracker/`
 | Next session target | (target at the session's end - weekly %) ÷ avg session value. Assumes you start now; when ahead, when the target line catches up (the rest time). Not tied to any slot. A running session is measured from its starting reading. Over 100% it shows how many sessions to max out |
 | Projection | Average rate so far, extended from the latest reading to the reset |
 | Check-in "to go" | % of week elapsed at that time minus your current weekly % |
-| Free pass: best time | In a week, the latest session slot (before expiry) that still leaves enough slots before the reset to use another 100% (100 ÷ avg session value). In the current week, sooner if your pace hits 100% first, or now if you are at 100% |
+| Free pass: use-by | The latest time to use the pass and still use 100% after it: on the week's usual session times counted from the reset, the slot that leaves 100 ÷ avg session value slots after it (half the week's slots with no average yet), or the expiry if sooner. Fixed for the week; moves only when your average changes |
+| Free pass: best time | The use-by time. In the current week, sooner if your pace hits 100% first, or now if you are at 100% |
 | Free pass: extra | (usage before the pass, up to 100%) + (usage after, up to 100%) - (usage without a pass, up to 100%), from slots left × avg session value |
 | Free pass: week | The week you tap. Until then: this week if you are at 100%, else the latest week before expiry that still gets the full extra |
-| Target with a pass | Planned week: 0% at the reset to 100% at the pass, then 0% to 100% at the reset. After using it: 0% at the pass to 100% at the reset. Pace, gap, check-ins and next session follow this line |
+| Target with a pass | Planned week: 0% at the reset to 100% at the use-by time, then 0% to 100% at the reset; past the use-by time, 100% until you use it. After using it: a standard week in the time left, 0% at the pass to 100% at the reset. Pace, gap, check-ins and next session follow this line. Ahead of the line before the pass: no rest needed, use the pass at 100% |
 | Week total with a pass | Usage before the pass + usage after, capped at 100% |
 
 ## Sync
@@ -167,6 +168,13 @@ Bump `CACHE_NAME` in `sw.js` only when you want old caches cleared.
 
 ## Changelog
 
+- **3.2** (2026-11-26): free pass target reworked. Before the pass, the
+  target runs to 100% at the latest time you can use the pass and still use a
+  full 100% after it ("Target · pass by Sat 11:00"). That time is counted on
+  the week's usual session times, so it no longer drifts through the day or
+  jumps with each reading. Ahead of the line, Next session says to keep going
+  and use the pass at 100% instead of resting. After the pass the target is a
+  standard week over the time left. Chart marks "Pass by".
 - **3.1.4** (2026-11-25): fix "Target now" with a free pass planned this week.
   Updating your used % no longer sets the target to that same number: the
   target line runs to the planned pass time, not to the "use it early at your

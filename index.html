@@ -1077,8 +1077,8 @@
     // C4/C5: 5h windows that still fit before the reset, inside waking hours,
     // counted from now (or after a running session). An estimate of capacity:
     // later days show the usual 06:00, 11:00, 16:00, but you can start any time.
-    function listSlots(nowMs, cycleEndMs) {
-      const as = trackerData.activeSession;
+    function listSlots(nowMs, cycleEndMs, ignoreActive) {
+      const as = ignoreActive ? null : trackerData.activeSession;
       let earliest = nowMs;
       if (as) earliest = Math.max(earliest, as.startTs + SESSION_MS);
       const slots = [];
@@ -1114,7 +1114,7 @@
         return { running: true, from: as.startTs, end, need: Math.max(0, target(end) - completionBefore(as)) };
       }
       let from = nowMs, restUntil = null;
-      if (weeklyPct > target(nowMs)) {
+      if (weeklyPct > target(nowMs) && m.kind !== "plan") {
         restUntil = m.start + (weeklyPct / 100) * (m.end - m.start);
         if (restUntil >= m.end) return { none: true };
         from = restUntil;
@@ -1144,57 +1144,54 @@
     function usedPassIn(cs) {
       return trackerData.passes.find(p => p.usedTs && p.usedTs >= cs && p.usedTs < cs + CYCLE_MS) || null;
     }
-    // Best time in one week: the latest slot that still leaves enough sessions
-    // after it to use another 100%, no later than the expiry. In the current
-    // week, sooner if you will hit 100% before then at your pace so far.
-    function planPassWeek(pass, cs, nowMs, weekly, per) {
+    // Use-by: the latest time to use the pass and still have enough sessions
+    // left to use a full 100% after it. Counted on the week's usual session
+    // times from the reset (so it does not drift as the day goes on), at your
+    // average weekly % per session; with no average yet, half the week's
+    // sessions are kept for after it. Never later than the expiry.
+    function passUseBy(pass, cs, per) {
+      const grid = listSlots(cs, cs + CYCLE_MS, true);
+      if (!grid.length) return { useBy: cs, expiryFirst: false, fits: false };
+      const needAfter = per ? Math.max(1, Math.ceil(100 / per - 1e-9)) : Math.ceil(grid.length / 2);
+      const slotAt = grid[Math.max(0, grid.length - needAfter)].start;
+      return { useBy: Math.min(slotAt, pass.expiresTs), expiryFirst: pass.expiresTs < slotAt, fits: grid.length >= needAfter };
+    }
+    // Best time in one week: the use-by time. In the current week, sooner if
+    // you will hit 100% before then at your pace so far (using it early never
+    // costs anything: it just leaves more time after it).
+    function planPassWeek(pass, cs, nowMs, weekly, avg) {
       const ce = cs + CYCLE_MS, current = cs <= nowMs;
       const from = Math.max(nowMs, cs);
       if (pass.expiresTs <= from) return null;
+      const per = avg || 100;
       const slots = listSlots(from, ce);
-      const deadline = Math.min(pass.expiresTs, ce);
-      const needAfter = Math.max(1, Math.ceil(100 / per - 1e-9));
+      const { useBy, expiryFirst, fits } = passUseBy(pass, cs, avg);
       const base = current && weekly ? weekly.value : 0;
       const as = trackerData.activeSession;
       const running = current && as && as.startTs + SESSION_MS > nowMs ? 1 : 0;
-      const latest = lim => {
-        for (let i = slots.length - 1; i >= 0; i--) if (slots[i].start <= lim && slots.length - i >= needAfter) return i;
-        return -1;
-      };
-      let i = latest(deadline), at, reason = "slots";
-      const ideal = latest(ce);
-      if (i >= 0) at = slots[i].start;
-      else {   // Not enough time left for a full 100% after it: the sooner the better
-        i = 0; reason = "short";
-        at = current ? from : slots.length && slots[0].start <= deadline ? slots[0].start : null;
-        if (at === null) return null;
-      }
-      // Where the target line puts the pass: never the pace estimate below,
-      // which is worked out from your usage and would bend the line to it
-      let lineAt = at;
+      let at = Math.max(useBy, from), reason = useBy >= from && fits ? "slots" : "short";
       if (current && weekly) {
-        if (weekly.value >= 100) { at = lineAt = nowMs; reason = "full"; }
+        if (weekly.value >= 100) { at = nowMs; reason = "full"; }
         else if (weekly.value > 0 && weekly.ts - cs > 3600000) {
           const t100 = weekly.ts + (100 - weekly.value) / (weekly.value / (weekly.ts - cs));
           if (t100 < at) { at = Math.max(nowMs, t100); reason = "pace"; }
         }
-        if (reason !== "slots" && reason !== "short") i = slots.filter(sl => sl.start < at).length;
       }
+      const i = slots.filter(sl => sl.start < at).length;
       const pre = Math.min(100, base + (i + running) * per);
       const post = Math.min(100, (slots.length - i) * per);
       const without = Math.min(100, base + (slots.length + running) * per);
-      return { cs, at, lineAt, reason, gain: Math.max(0, pre + post - without),
-               limited: reason === "slots" && ideal > i };
+      return { cs, at, useBy, reason, gain: Math.max(0, pre + post - without),
+               limited: reason === "slots" && expiryFirst };
     }
     // Every week you could use the pass in, and the one planned: yours if you
     // picked one, else the latest week that still gets (nearly) the full gain.
     function passPlan(nowMs, weekly, avg) {
       const pass = activePass(nowMs);
       if (!pass) return null;
-      const per = avg || 100;
       const weeks = [];
       for (let cs = cycleStartFor(nowMs), n = 0; cs < pass.expiresTs && n < PASS_WEEKS_MAX; cs += CYCLE_MS, n++) {
-        const w = planPassWeek(pass, cs, nowMs, weekly, per);
+        const w = planPassWeek(pass, cs, nowMs, weekly, avg);
         if (w && (w.gain >= 1 || w.cs === pass.week)) weeks.push(w);   // skip weeks it would add nothing to
       }
       if (!weeks.length) return { pass, weeks, sel: null };
@@ -1209,15 +1206,18 @@
       return { pass, weeks, sel, auto, estimated: !avg };
     }
     // The target line. Normally 0% at the reset to 100% at the next. In the
-    // week a pass is planned: 0 to 100% by the pass, then 0 to 100% again by
-    // the reset. After a pass: 0% at the pass to 100% at the reset.
+    // week a pass is planned: 0 to 100% by its use-by time (the latest you can
+    // use it and still use 100% after it), then 0 to 100% again by the reset.
+    // After a pass: a standard week in the time left, 0% at the pass to 100%
+    // at the reset.
     function paceModel(cs, nowMs, plan) {
       const ce = cs + CYCLE_MS;
       const used = usedPassIn(cs);
       if (used && nowMs >= used.usedTs) return { kind: "used", cs, ce, start: used.usedTs, end: ce, passAt: used.usedTs };
       if (plan && plan.sel && plan.sel.cs === cs) {
-        const at = Math.min(ce - 60000, Math.max(plan.sel.lineAt, nowMs, cs + 3600000));
-        return { kind: "plan", cs, ce, start: cs, end: at, passAt: at };
+        // Past the use-by time and not used yet: the target stays at 100% until you use it
+        const at = Math.min(ce - 60000, Math.max(plan.sel.useBy, nowMs, cs + 3600000));
+        return { kind: "plan", cs, ce, start: cs, end: at, passAt: at, late: nowMs > plan.sel.useBy };
       }
       return { kind: "normal", cs, ce, start: cs, end: ce };
     }
@@ -1550,7 +1550,7 @@
             Solid grey line: the target, rising evenly from 0% at the reset to 100% at the next.
             Coloured line: your readings. Dashed line: your average rate so far, extended to the reset.
             Circles: your next check-ins. Shaded bands: outside your day (see Settings). Tap the chart to read a value.
-            With a free pass planned this week, the target reaches 100% at the pass (amber line), then climbs from 0% again to the reset.
+            With a free pass planned this week, the target reaches 100% at the latest time to use it (dotted line), the last moment that still leaves enough sessions to use 100% again, then climbs from 0% again to the reset. Once used, the line runs from 0% at the pass to 100% at the reset.
           </div>
         </div>
       </div>
@@ -2346,7 +2346,7 @@
         if (m.kind === "plan") { tline(cs, m.passAt); tline(m.passAt, ce, ` stroke-dasharray="${5 * k} ${3 * k}"`); }
         else { tline(cs, m.passAt, ` opacity="0.35"`); tline(m.passAt, ce); }
         s += `<line x1="${x(m.passAt)}" x2="${x(m.passAt)}" y1="${T}" y2="${H - B}" style="stroke:var(--foreground)" stroke-width="${k}" stroke-dasharray="${2 * k} ${3 * k}"/>`;
-        s += `<text x="${x(m.passAt) + 3 * k}" y="${H - B - 4 * k}" font-size="${fs}" style="fill:var(--foreground)">Free pass</text>`;
+        s += `<text x="${x(m.passAt) + 3 * k}" y="${H - B - 4 * k}" font-size="${fs}" style="fill:var(--foreground)">${m.kind === "plan" ? "Pass by" : "Free pass"}</text>`;
       }
       const tx = m.start + 0.155 * (m.end - m.start);
       s += `<text x="${x(tx)}" y="${y(15.5) - 6 * k}" font-size="${fs}" style="fill:var(--muted-foreground)" text-anchor="end">target</text>`;
@@ -2403,6 +2403,8 @@
       if (weeklyPct >= 100 && m.kind === "plan") return show("Pass", "Weekly at 100%: use your free pass now",
         how + " You have used this week's allowance and your free pass is planned for this week, so use it now to start again from 0%.");
       if (weeklyPct >= 100)   return show("Done", "Allowance fully used", how);
+      if (m.kind === "plan" && weeklyPct > targetTotal(m, nowMs)) return show("Any", "ahead · use your pass at 100%",
+        how + ` You are ahead of the line to your free pass, so there is no need to slow down. Keep going and use the pass when you reach 100%, or by ${dayTime(m.passAt)} at the latest. Using it earlier just leaves more time after it.`);
       const p = planNextSession(nowMs, m, weeklyPct);
       if (p.none) return show("0%", "Nothing needed before reset", how);
       if (p.restUntil) restMs = p.restUntil;
@@ -2457,7 +2459,7 @@
         <button class="pass-week" data-week="${w.cs}" aria-pressed="${sel && w.cs === sel.cs}">
           <b>${w.cs === cur ? "This week" : new Date(w.cs).toLocaleString("en-AU", { day: "numeric", month: "short" })}</b><small>+${w.gain.toFixed(0)}%</small></button>`).join("") : "";
       const warnText = !sel ? "No session slot fits before it expires"
-        : sel.limited ? `It expires before the best time in this week, so this is the last slot before it expires`
+        : sel.limited ? `It expires before the latest useful time this week, so use it before it expires`
         : sel.reason === "short" ? "Not enough sessions left after it to use another full 100%"
         : "";
       warn.hidden = !warnText;
@@ -2470,12 +2472,13 @@
       const why = !sel ? "" : sel.reason === "full" ? "You are at 100% this week, so using it now loses nothing."
         : sel.reason === "pace" ? "At your pace so far you will hit 100% before the usual best time, so use it when you get there."
         : "That is the latest session slot that still leaves enough sessions before the reset to use another 100%.";
+      const late = sel && sel.reason === "pace" && sel.useBy > sel.at ? ` Latest: ${dayTime(sel.useBy)}.` : "";
       const info = document.getElementById("passInfo");
       info.innerHTML = `Using the pass sets your weekly and session usage to 0%; the weekly reset day stays the same. `
         + `The extra is how much more of a week's allowance you can use with the pass than without it, from your usual session times and your average of `
-        + `${plan.estimated ? "about 100% per session until you log sessions" : "weekly % per full session"}. ${why} `
+        + `${plan.estimated ? "about 100% per session until you log sessions" : "weekly % per full session"}. ${why}${late} `
         + `Tap a week to plan it there${plan.auto ? "; until you do, it plans the latest week that still gets the full extra, so the pass stays in reserve" : ""}. `
-        + `In the planned week the target line reaches 100% at the pass, then starts again from 0%. The best time can move a little as your average changes.`
+        + `In the planned week the target line reaches 100% at the latest time to use it, then starts again from 0%. That time moves only when your average changes (with no average yet, half the week's sessions are kept for after it).`
         + (best || expiry ? `<div class="info-actions">${best ? `<button data-pcal="google" data-pkind="best">+ Google: use pass</button><button data-pcal="ics" data-pkind="best">+ .ics: use pass</button>` : ""}`
           + `${expiry ? `<button data-pcal="google" data-pkind="expiry">+ Google: day before expiry</button><button data-pcal="ics" data-pkind="expiry">+ .ics: day before expiry</button>` : ""}</div>` : "");
       maybeNotifyPass(plan, nowMs);
@@ -2507,7 +2510,7 @@
       // Hero
       const pctEl = document.getElementById("pctNumber");
       pctEl.innerHTML   = pct.toFixed(2) + '<span class="unit">%</span>';
-      document.getElementById("heroSub").textContent = m.kind === "plan" ? "Target now · free pass plan"
+      document.getElementById("heroSub").textContent = m.kind === "plan" ? (m.late ? "Target · use pass now" : "Target · pass by " + dayTime(m.passAt))
         : m.kind === "used" ? "Target since free pass" : "Week elapsed";
       document.getElementById("heroUsed").innerHTML =
         weeklyPct === null ? "— used" : `<b>${weeklyPct.toFixed(1)}%</b> used`;
@@ -2556,7 +2559,7 @@
       const segMs   = m.end - m.start;   // the target line's current stretch: the week, or up to / since a free pass
       const gapHow  = (m.kind === "normal"
         ? "Your usage minus the target line (the % of the week elapsed). As time, 1% of the week is 1h 41m."
-        : `Your usage minus the target line, which runs ${m.kind === "plan" ? "to 100% at your planned free pass" : "from 0% at your free pass to 100% at the reset"}. As time, 1% is ${formatDuration(segMs / 100)}.`)
+        : `Your usage minus the target line, which runs ${m.kind === "plan" ? "to 100% at the latest time to use your free pass" : "from 0% at your free pass to 100% at the reset"}. As time, 1% is ${formatDuration(segMs / 100)}.`)
         + " As sessions, the gap ÷ your average weekly % per full session.";
       if (weeklyPct === null) {
         gapPct.textContent = "—";
